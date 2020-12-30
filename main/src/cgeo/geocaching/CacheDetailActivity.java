@@ -462,7 +462,8 @@ public class CacheDetailActivity extends AbstractViewPagerActivity<CacheDetailAc
             menu.findItem(R.id.menu_waypoint_caches_around).setVisible(hasCoords);
             menu.findItem(R.id.menu_waypoint_copy_coordinates).setVisible(hasCoords);
             final boolean canClearCoords = hasCoords && (selectedWaypoint.isUserDefined() || selectedWaypoint.isOriginalCoordsEmpty());
-            menu.findItem(R.id.menu_waypoint_clear_coordinates).setVisible(canClearCoords);
+            final boolean hasCalcState = null != selectedWaypoint.getCalcStateJson();
+            menu.findItem(R.id.menu_waypoint_clear_coordinates).setVisible(canClearCoords || hasCalcState);
             menu.findItem(R.id.menu_waypoint_toclipboard).setVisible(true);
         } else {
             if (imagesList != null) {
@@ -615,6 +616,7 @@ public class CacheDetailActivity extends AbstractViewPagerActivity<CacheDetailAc
     private static final class ClearCoordinatesCommand extends AbstractWaypointModificationCommand {
 
         private Geopoint coords;
+        private String calcStateJson;
 
         ClearCoordinatesCommand(final CacheDetailActivity context, final Geocache cache, final Waypoint waypoint) {
             super(context, cache, waypoint);
@@ -623,12 +625,15 @@ public class CacheDetailActivity extends AbstractViewPagerActivity<CacheDetailAc
         @Override
         protected void doCommand() {
             coords = waypoint.getCoords();
+            calcStateJson = waypoint.getCalcStateJson();
             waypoint.setCoords(null);
+            waypoint.setCalcStateJson(null);
             DataStore.saveCache(cache, EnumSet.of(SaveFlag.DB));
         }
 
         @Override
         protected void undoCommand() {
+            waypoint.setCalcStateJson(calcStateJson);
             waypoint.setCoords(coords);
             DataStore.saveCache(cache, EnumSet.of(SaveFlag.DB));
         }

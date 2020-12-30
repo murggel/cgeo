@@ -653,6 +653,7 @@ public class CoordinatesInputDialog extends DialogFragment {
 
         @Override
         public void onClick(final View v) {
+            ((CalculateState) getActivity()).saveCalculatorState(null);
             ((CoordinateUpdate) getActivity()).updateCoordinates(null);
             dismiss();
         }
