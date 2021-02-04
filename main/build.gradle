@@ -57,6 +57,8 @@ android {
         buildConfigField "String[]", "TRANSLATION_ARRAY", "new String[]{\""+locales.join("\",\"")+"\"}"
 
         resConfigs locales
+
+        vectorDrawables.useSupportLibrary = true
     }
 
     // signing is handled via private.properties
