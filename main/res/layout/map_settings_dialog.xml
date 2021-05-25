@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout 
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
     android:paddingTop="8dp"
@@ -78,35 +80,35 @@
             android:id="@+id/routing_off"
             style="@style/button_icon"
             android:layout_below="@id/routing_title"
-            android:src="@drawable/routing_off" />
+            app:srcCompat="@drawable/routing_off" />
 
         <ImageButton
             android:id="@+id/routing_straight"
             style="@style/button_icon"
             android:layout_below="@id/routing_title"
             android:layout_toRightOf="@id/routing_off"
-            android:src="@drawable/routing_straight" />
+            app:srcCompat="@drawable/routing_straight" />
 
         <ImageButton
             android:id="@+id/routing_walk"
             style="@style/button_icon"
             android:layout_below="@id/routing_title"
             android:layout_toRightOf="@id/routing_straight"
-            android:src="@drawable/routing_walk" />
+            app:srcCompat="@drawable/routing_walk" />
 
         <ImageButton
             android:id="@+id/routing_bike"
             style="@style/button_icon"
             android:layout_below="@id/routing_title"
             android:layout_toRightOf="@id/routing_walk"
-            android:src="@drawable/routing_bike" />
+            app:srcCompat="@drawable/routing_bike" />
 
         <ImageButton
             android:id="@+id/routing_car"
             style="@style/button_icon"
             android:layout_below="@id/routing_title"
             android:layout_toRightOf="@id/routing_bike"
-            android:src="@drawable/routing_car" />
+            app:srcCompat="@drawable/routing_car" />
 
         <TextView
             android:id="@+id/brouter_install"
