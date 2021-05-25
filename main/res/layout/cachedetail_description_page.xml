@@ -105,8 +105,8 @@
                 android:layout_marginTop="6dip"
                 android:drawablePadding="3dip"
                 android:text="@string/cache_menu_spoilers"
-                android:textSize="@dimen/textSize_detailsPrimary"
-                app:drawableLeftCompat="@drawable/log_img" />
+                app:drawableLeftCompat="@drawable/log_img_icon" />
+                android:textSize="@dimen/textSize_detailsPrimary" />
         </LinearLayout>
 
         <!-- Personal note box -->

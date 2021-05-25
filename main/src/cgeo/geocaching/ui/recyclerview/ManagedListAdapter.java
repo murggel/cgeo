@@ -272,7 +272,7 @@ public abstract class ManagedListAdapter<T, V extends RecyclerView.ViewHolder> e
 
         //special handling for "normal" case (where button is imageview with standard c:geo drag/drop image)
         if (button instanceof ImageView) {
-            ((ImageView) button).setImageResource(Settings.isLightSkin() ? R.drawable.ic_menu_reorder_black : R.drawable.ic_menu_reorder);
+            ((ImageView) button).setImageResource(R.drawable.ic_menu_reorder);
         }
 
         button.setOnTouchListener((v, e) -> {

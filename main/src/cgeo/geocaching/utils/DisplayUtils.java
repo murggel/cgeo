@@ -7,6 +7,7 @@ import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Point;
+import android.graphics.drawable.Drawable;
 import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
@@ -56,7 +57,16 @@ public class DisplayUtils {
     public static Pair<Integer, Integer> getDrawableDimensions(final Resources res, @DrawableRes final int resToFitIn) {
         final Bitmap calc = BitmapFactory.decodeResource(res, resToFitIn);
         return new Pair<>(calc.getWidth(), calc.getHeight());
+    }
 
+    /**
+     * get actual height of given drawable resource
+     * @param res - resources to load from
+     * @param resToFitIn - resource to check
+     * @return actual height
+     */
+    public static Pair<Integer, Integer> getDrawableDimensions(final Drawable resToFitIn) {
+        return new Pair<>(resToFitIn.getIntrinsicWidth(), resToFitIn.getIntrinsicHeight());
     }
 
     /**

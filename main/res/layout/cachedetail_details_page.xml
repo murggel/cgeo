@@ -424,7 +424,7 @@
                 android:onClick="showNavigationMenu"
                 android:scaleType="fitCenter"
                 android:src="@null"
-                tools:src="@drawable/ic_menu_mapmode"/>
+                app:srcCompat="@drawable/ic_menu_mapmode"/>
         </LinearLayout>
     </LinearLayout>
 

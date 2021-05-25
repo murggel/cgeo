@@ -753,10 +753,10 @@ public class CacheListActivity extends AbstractListActivity implements FilteredA
             setVisibleEnabled(menu, R.id.menu_sort, !isHistory, !isEmpty);
             if (adapter.isSelectMode()) {
                 menu.findItem(R.id.menu_switch_select_mode).setTitle(res.getString(R.string.caches_select_mode_exit))
-                        .setIcon(R.drawable.ic_menu_clear_playlist);
+                        .setIcon(R.drawable.ic_menu_selection_clear);
             } else {
                 menu.findItem(R.id.menu_switch_select_mode).setTitle(res.getString(R.string.caches_select_mode))
-                        .setIcon(R.drawable.ic_menu_agenda);
+                        .setIcon(R.drawable.ic_menu_selection);
             }
             setEnabled(menu, R.id.menu_switch_select_mode, !isEmpty);
             setVisible(menu, R.id.menu_invert_selection, adapter.isSelectMode()); // exception to the general rule: only show in select mode
