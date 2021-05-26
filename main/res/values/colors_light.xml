@@ -18,6 +18,6 @@
 
     <color name="colorSeparator">#44000000</color>
 
-    <color name="colorIcon">@color/text_icon</color>
+    <color name="colorIcon">@color/colorText</color>
 
 </resources>
