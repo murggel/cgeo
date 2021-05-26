@@ -30,6 +30,7 @@ import static android.view.MenuItem.SHOW_AS_ACTION_ALWAYS;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
+import androidx.core.content.res.ResourcesCompat;
 
 import java.util.List;
 
@@ -133,7 +134,7 @@ public class ViewUtils {
         final CheckboxItemBinding itemBinding = CheckboxItemBinding.bind(itemView);
         itemBinding.itemText.setText(text);
         if (iconId > -1) {
-            itemBinding.itemIcon.setImageResource(iconId);
+            itemBinding.itemIcon.setImageDrawable(ResourcesCompat.getDrawable(activity.getResources(), iconId, null));
         }
         if (infoTextId != 0) {
             itemBinding.itemInfo.setVisibility(View.VISIBLE);

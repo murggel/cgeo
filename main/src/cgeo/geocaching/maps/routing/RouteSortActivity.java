@@ -33,6 +33,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.res.ResourcesCompat;
 
 import java.util.ArrayList;
 
@@ -77,8 +78,8 @@ public class RouteSortActivity extends AbstractActivity {
                 View v = convertView;
                 if (null == convertView) {
                     v = getLayoutInflater().inflate(R.layout.twotexts_button_image_item, parent, false);
-                    ((ImageButton) v.findViewById(R.id.button_left)).setImageResource(R.drawable.ic_menu_delete);
-                    ((ImageView) v.findViewById(R.id.img_right)).setImageResource(R.drawable.ic_menu_reorder);
+                    ((ImageButton) v.findViewById(R.id.button_left)).setImageDrawable(ResourcesCompat.getDrawable(getResources(), R.drawable.ic_menu_delete, null));
+                    ((ImageView) v.findViewById(R.id.img_right)).setImageDrawable(ResourcesCompat.getDrawable(getResources(), R.drawable.ic_menu_reorder, null));
                 }
 
                 final RouteItem routeItem = routeItems.get(position);
