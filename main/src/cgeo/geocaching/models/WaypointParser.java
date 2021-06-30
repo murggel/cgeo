@@ -1,5 +1,6 @@
 package cgeo.geocaching.models;
 
+import cgeo.geocaching.calculator.ButtonData;
 import cgeo.geocaching.calculator.CalcStateEvaluator;
 import cgeo.geocaching.calculator.CoordinatesCalculateUtils;
 import cgeo.geocaching.calculator.FormulaParser;
@@ -16,6 +17,7 @@ import cgeo.geocaching.utils.TextUtils;
 import androidx.annotation.NonNull;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
@@ -28,6 +30,9 @@ import org.jetbrains.annotations.NotNull;
 public class WaypointParser {
 
     public static final String PARSING_COORD_FORMULA_PLAIN = "(F-PLAIN)";
+    public static final String PARSING_COORD_FORMULA_DEG = "(F-DEG)";
+    public static final String PARSING_COORD_FORMULA_MIN = "(F-MIN)";
+    public static final String PARSING_COORD_FORMULA_SEC = "(F-SEC)";
 
     //Constants for waypoint parsing
     private static final String PARSING_NAME_PRAEFIX = "@";
@@ -451,11 +456,40 @@ public class WaypointParser {
         final StringBuilder sb = new StringBuilder();
         if (calcState.format == Settings.CoordInputFormatEnum.Plain) {
             sb.append(PARSING_COORD_FORMULA_PLAIN + " ");
-            sb.append(calcState.plainLat + " " + calcState.plainLon + " ");
+            sb.append(calcState.plainLat + " " + calcState.plainLon);
+            sb.append(" ");
+        } else if (calcState.format == Settings.CoordInputFormatEnum.Deg) {
+            sb.append(PARSING_COORD_FORMULA_DEG + " ");
+            sb.append(calcState.latHemisphere + " " + getButtonChar(calcState, 0) + getButtonChar(calcState, 1) + "."
+                + getButtonChar(calcState, 6) + getButtonChar(calcState, 7) + getButtonChar(calcState, 8) + getButtonChar(calcState, 9) + getButtonChar(calcState, 10));
+            sb.append(" ");
+            sb.append(calcState.lonHemisphere + " " + getButtonChar(calcState, 11) + getButtonChar(calcState, 12) + getButtonChar(calcState, 13) + "."
+                + getButtonChar(calcState, 18) + getButtonChar(calcState, 19) + getButtonChar(calcState, 20) + getButtonChar(calcState, 21) + getButtonChar(calcState, 22));
+            sb.append(" ");
+        } else if (calcState.format == Settings.CoordInputFormatEnum.Min) {
+            sb.append(PARSING_COORD_FORMULA_MIN + " ");
+            sb.append(calcState.latHemisphere + " " + getButtonChar(calcState, 0) + getButtonChar(calcState, 1) + "° "
+                + getButtonChar(calcState, 2) + getButtonChar(calcState, 3) + "." + getButtonChar(calcState, 8) + getButtonChar(calcState, 9) + getButtonChar(calcState, 10) + "'");
+            sb.append(" ");
+            sb.append(calcState.lonHemisphere + " " + getButtonChar(calcState, 11) + getButtonChar(calcState, 12) + getButtonChar(calcState, 13) + "° "
+                + getButtonChar(calcState, 14) + getButtonChar(calcState, 15) + "." + getButtonChar(calcState, 20) + getButtonChar(calcState, 21) + getButtonChar(calcState, 22) + "'");
+            sb.append(" ");
+        } else if (calcState.format == Settings.CoordInputFormatEnum.Sec) {
+            sb.append(PARSING_COORD_FORMULA_SEC + " ");
+            sb.append(calcState.latHemisphere + " " + getButtonChar(calcState, 0) + getButtonChar(calcState, 1) + "° "
+                + getButtonChar(calcState, 2) + getButtonChar(calcState, 3) + "' " + getButtonChar(calcState, 4) + getButtonChar(calcState, 5) + "." + getButtonChar(calcState, 8) + getButtonChar(calcState, 9) + getButtonChar(calcState, 10) + "''");
+            sb.append(" ");
+            sb.append(calcState.lonHemisphere + " " + getButtonChar(calcState, 11) + getButtonChar(calcState, 12) + getButtonChar(calcState, 13) + "° "
+                + getButtonChar(calcState, 14) + getButtonChar(calcState, 15) + "' " + getButtonChar(calcState, 16) + getButtonChar(calcState, 17) + "." + getButtonChar(calcState, 20) + getButtonChar(calcState, 21) + getButtonChar(calcState, 22) + "''");
+            sb.append(" ");
         }
         return sb.toString();
     }
 
+    private static char getButtonChar( final CalcState calcState, final int index) {
+        final ButtonData buttonData = calcState.buttons.get(index);
+        return buttonData.type.getLabel(buttonData);
+    }
     private static String getParseableVariablesString(final CalcState calcState) {
         final StringBuilder sb = new StringBuilder();
         for (VariableData equ : calcState.equations) {
