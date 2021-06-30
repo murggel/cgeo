@@ -410,6 +410,8 @@ dependencies {
 
     // MarkDown view
     implementation 'io.noties.markwon:core:4.6.2'
+
+    implementation 'androidx.preference:preference:1.1.1'
 }
 
 // un-mocking of Android classes that don't depend on the Android device, but are portable Java only, like SparseArray

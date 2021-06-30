@@ -30,6 +30,7 @@ import cgeo.geocaching.sensors.GnssStatusProvider.Status;
 import cgeo.geocaching.sensors.Sensors;
 import cgeo.geocaching.settings.Settings;
 import cgeo.geocaching.settings.SettingsActivity;
+import cgeo.geocaching.settings.SettingsTestActivity;
 import cgeo.geocaching.storage.DataStore;
 import cgeo.geocaching.storage.LocalStorage;
 import cgeo.geocaching.storage.PersistableFolder;
@@ -577,6 +578,8 @@ public class MainActivity extends AbstractActionBarActivity {
             final Intent wizard = new Intent(this, InstallWizardActivity.class);
             wizard.putExtra(InstallWizardActivity.BUNDLE_MODE, InstallWizardActivity.needsFolderMigration() ? InstallWizardActivity.WizardMode.WIZARDMODE_MIGRATION.id : InstallWizardActivity.WizardMode.WIZARDMODE_RETURNING.id);
             startActivity(wizard);
+        } else if (id == R.id.menu_settings_test) {
+            startActivityForResult(new Intent(this, SettingsTestActivity.class), Intents.SETTINGS_ACTIVITY_REQUEST_CODE);
         } else if (id == R.id.menu_settings) {
             startActivityForResult(new Intent(this, SettingsActivity.class), Intents.SETTINGS_ACTIVITY_REQUEST_CODE);
         } else if (id == R.id.menu_backup) {

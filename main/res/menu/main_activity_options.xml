@@ -4,6 +4,12 @@
 
     <!-- TODO: use ic_action_search -->
     <item
+        android:id="@+id/menu_settings_test"
+        android:icon="@drawable/ic_menu_preferences"
+        android:title="@string/menu_settings"
+        app:showAsAction="ifRoom">
+    </item>
+    <item
         android:id="@+id/menu_gosearch"
         android:icon="@drawable/ic_menu_search"
         android:title="@string/search_bar_hint"

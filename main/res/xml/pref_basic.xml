@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:key="preference_screen_basic"
+        android:icon="?attr/settings_details"
+        android:title="@string/settings_title_cachedetails"
+        android:summary="@string/settings_summary_cachedetails" >
+        <CheckBoxPreference
+            android:defaultValue="true"
+            android:key="@string/pref_friendlogswanted"
+            android:summary="@string/init_summary_friends_and_own_logs_wanted"
+            android:title="@string/init_friends_and_own_logs_wanted" />
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:key="@string/pref_opendetailslastpage"
+            android:summary="@string/init_summary_openlastdetailspage"
+            android:title="@string/init_openlastdetailspage" />
+        <CheckBoxPreference
+            android:defaultValue="true"
+            android:key="@string/pref_livelist"
+            android:summary="@string/init_summary_livelist"
+            android:title="@string/init_livelist" />
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:key="@string/pref_global_wp_extraction_disable"
+            android:title="@string/init_global_wp_extraction_disable"
+            android:summary="@string/init_summary_global_wp_extraction_disable" />
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:key="@string/pref_customtabs_as_browser"
+            android:title="@string/init_customtabs_as_browser"
+            android:summary="@string/init_summary_customtabs_as_browser" />
+
+        <PreferenceCategory android:title="@string/init_category_exclude"
+            android:layout="@layout/preference_category" >
+            <CheckBoxPreference
+                android:defaultValue="false"
+                android:key="@string/pref_excludemine"
+                android:summary="@string/init_summary_exclude_own"
+                android:title="@string/init_exclude_own" />
+            <CheckBoxPreference
+                android:defaultValue="false"
+                android:key="@string/pref_excludefound"
+                android:summary="@string/init_summary_exclude_found"
+                android:title="@string/init_exclude_found" />
+            <CheckBoxPreference
+                android:defaultValue="false"
+                android:key="@string/pref_excludedisabled"
+                android:summary="@string/init_summary_disabled"
+                android:title="@string/init_disabled" />
+            <CheckBoxPreference
+                android:defaultValue="false"
+                android:key="@string/pref_excludearchived"
+                android:summary="@string/init_summary_archived"
+                android:title="@string/init_archived" />
+            <CheckBoxPreference
+                android:defaultValue="false"
+                android:key="@string/pref_excludeofflinelog"
+                android:summary="@string/init_summary_offlinelog"
+                android:title="@string/init_offlinelog" />
+        </PreferenceCategory>
+    </PreferenceScreen>

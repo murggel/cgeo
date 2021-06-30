@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:key="preference_screen_map"
+        android:icon="?attr/settings_map"
+        android:title="@string/settings_title_map"
+        android:summary="@string/settings_summary_map" >
+
+        <PreferenceCategory android:title="@string/settings_title_map_data"
+            android:layout="@layout/preference_category" >
+            <ListPreference
+                android:defaultValue="0"
+                android:dialogTitle="@string/init_mapsource_select"
+                android:key="@string/pref_mapsource"
+                android:title="@string/init_mapsource_select" />
+            <cgeo.geocaching.settings.InfoPreference
+                android:text="@string/settings_info_offline_maps"
+                android:title="@string/settings_info_offline_maps_title"
+                app:url="@string/manual_url_settings_offline_maps"
+                app:urlButton="@string/settings_goto_url_button" />
+            <cgeo.geocaching.settings.InfoPreferenceMap
+                android:text="@string/downloadmap_info"
+                android:title="@string/downloadmap_title"
+                app:urlButton="@string/downloadmap_choose" />
+
+            <CheckBoxPreference
+                android:defaultValue="false"
+                android:key="@string/pref_mapAutoDownloads"
+                android:summary="@string/init_mapAutoDownloads_description"
+                android:title="@string/init_autoDownloads" />
+            <Preference
+                android:selectable="false"
+                android:summary="@string/init_updateinterval_description"
+                android:title="@string/init_updateinterval_title"
+                android:dependency="@string/pref_mapAutoDownloads" />
+            <cgeo.geocaching.settings.SeekbarPreference
+                android:key="@string/pref_mapAutoDownloadsInterval"
+                app:min="0"
+                app:max="@integer/map_updateinterval_max"
+                android:defaultValue="@integer/map_updateinterval_default"
+                android:dependency="@string/pref_mapAutoDownloads" />
+
+            <Preference
+                android:key="@string/pref_persistablefolder_offlinemaps"
+                android:title="@string/init_map_directory_description" />
+            <cgeo.geocaching.settings.InfoPreference
+                android:text="@string/settings_info_themes"
+                android:title="@string/settings_info_themes_title"
+                app:url="@string/faq_url_settings_themes"
+                app:urlButton="@string/settings_goto_url_button" />
+            <Preference
+                android:key="@string/pref_persistablefolder_offlinemapthemes"
+                android:title="@string/init_rendertheme_folder" />
+            <CheckBoxPreference
+                android:defaultValue="false"
+                android:key="@string/pref_renderthemefolder_synctolocal"
+                android:summary="@string/init_summary_renderthemefolder_synctolocal"
+                android:title="@string/init_renderthemefolder_synctolocal" />
+            <ListPreference
+                android:title="@string/settings_title_map_rotation"
+                android:summary="%s"
+                android:key="@string/pref_mapRotation"
+                android:defaultValue="@string/pref_maprotation_manual"
+                android:entries="@array/maprotation"
+                android:entryValues="@array/maprotationValues" />
+        </PreferenceCategory>
+    </PreferenceScreen>
