@@ -92,7 +92,7 @@ public final class CoordinatesCalculateUtils {
      * @param variableDataList list with already known variables / equations for formula
      * @return calc state.
      */
-    public static CalcState createCalcState(final String latText, final String lonText, final List<VariableData> variableDataList) {
+    public static CalcState createCalcState(final Settings.CoordInputFormatEnum inputFormat, final String latText, final String lonText, final List<VariableData> variableDataList) {
 
         String coordinateChars = ""; // All the characters that appear in the coordinate representation.
 
@@ -131,8 +131,18 @@ public final class CoordinatesCalculateUtils {
         freeVarData = CoordinatesCalculateUtils.updateVariablesList(freeVarData, variableDataList, equationStrings, false);
 
         final List<ButtonData> butData = new ArrayList<>();
+        if (inputFormat == Settings.CoordInputFormatEnum.Sec) {
+            final ButtonData data0 = new ButtonData();
+            data0.customChar = '0';
+            data0.type = ButtonData.ValueType.CUSTOM;
+            butData.add(0, data0);
+            final ButtonData data1 = new ButtonData();
+            data1.customChar = '1';
+            data1.type = ButtonData.ValueType.CUSTOM;
+            butData.add(1, data1);
+        }
 
-        final CalcState calcState = new CalcState(Settings.CoordInputFormatEnum.Plain,
+        final CalcState calcState = new CalcState(inputFormat,
             latText,
             lonText,
             latHem,

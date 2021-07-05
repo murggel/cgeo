@@ -494,6 +494,24 @@ public class WaypointParserTest {
         assertThat(waypoints).hasSize(0);
     }
 
+    /**
+     * Parse Waypoint with formula and variables and get parseable text.
+     * Formula and description should be correct.
+     */
+    @Test
+    public void testParseWaypointWithFormulaSec() {
+        final String note = "@name (F) " + WaypointParser.PARSING_COORD_FORMULA_SEC + " N A6° B7' C5,D'' E E5° F3' G1,H8'' | A = a + b |B=|a=2|b=| this is the description\n\"this shall NOT be part of the note\"";
+        final WaypointParser waypointParser = new WaypointParser("Prefix");
+        final Collection<Waypoint> waypoints = waypointParser.parseWaypoints(note);
+        assertThat(waypoints).hasSize(1);
+        final Iterator<Waypoint> iterator = waypoints.iterator();
+        final Waypoint wp = iterator.next();
+
+        final String parseableText = WaypointParser.getParseableText(wp, -1);
+        assertThat(parseableText).isEqualTo(
+            "@name (F) " + WaypointParser.PARSING_COORD_FORMULA_SEC + " N A6° B7'C5.D'' E E5° F3'G1.H8'' |A=a + b|a=2| \"this is the description\"");
+    }
+
     private static String toParseableWpString(final Geopoint gp) {
         return gp.format(GeopointFormatter.Format.LAT_LON_DECMINUTE_SHORT_RAW);
 

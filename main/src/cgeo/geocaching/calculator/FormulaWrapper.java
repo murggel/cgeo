@@ -1,5 +1,7 @@
 package cgeo.geocaching.calculator;
 
+import cgeo.geocaching.settings.Settings;
+
 /**
  * Class to store the information of a parsed formula with their starting and ending position and the appropriate text
  * 'start' points at the first char of the formula text, 'end' points at the first char AFTER the formula text.
@@ -10,13 +12,15 @@ public class FormulaWrapper {
 
     private final String formulaLat;
     private final String formulaLon;
+    private final Settings.CoordInputFormatEnum formulaFormat;
     private final String matcherText;
     private final int matcherStart;
     private final int matcherLength;
 
-    public FormulaWrapper(final String formulaLat, final String formulaLon, final int stringStart, final int stringLength, final String matcherText) {
+    public FormulaWrapper(final String formulaLat, final String formulaLon, final Settings.CoordInputFormatEnum formulaFormat, final int stringStart, final int stringLength, final String matcherText) {
         this.formulaLat = formulaLat;
         this.formulaLon = formulaLon;
+        this.formulaFormat = formulaFormat;
         this.matcherStart = stringStart;
         this.matcherLength = stringLength;
         this.matcherText = matcherText;
@@ -28,6 +32,11 @@ public class FormulaWrapper {
 
     public String getFormulaLon() {
         return formulaLon;
+    }
+
+
+    public Settings.CoordInputFormatEnum getFormulaFormat() {
+        return formulaFormat;
     }
 
     /**

@@ -32,10 +32,11 @@ public final class FormulaParser {
     public  static final String WPC_DELIM_PATTERN_STRING = "\\|";
 
     private static final String COORD_FORMULA_PATTERN_STRING = "[\\[\\]\\(\\){}" + CalculationUtils.VALID_OPERATOR_PATTERN + "A-Z\\d]+";
+    private static final String COORD_VARIABLE_PATTERN_STRING = "[A-Z\\d]+";
     private static final Pattern PATTERN_BAD_BLANK_COMMA = Pattern.compile("(" + COORD_FORMULA_PATTERN_STRING + "), (" + COORD_FORMULA_PATTERN_STRING + ")");
     private static final Pattern PATTERN_BAD_BLANK_DOT = Pattern.compile("(" + COORD_FORMULA_PATTERN_STRING + ")\\. (" + COORD_FORMULA_PATTERN_STRING + ")");
 
-    private static final List<AbstractFormulaParser> parsers = Arrays.asList(new MinDecFormulaParser());
+    private static final List<AbstractFormulaParser> parsers = Arrays.asList(new DMSParser(), new MinDecParser(), new MinDecFormulaParser());
 
     private Settings.CoordInputFormatEnum desiredFormulaFormat = null;
 
@@ -159,7 +160,7 @@ public final class FormulaParser {
                     return null;
                 }
 
-                return new FormulaWrapper(lat, lon, matcher.start(), matcher.group().length(), text);
+                return new FormulaWrapper(lat, lon, formulaFormat(), matcher.start(), matcher.group().length(), text);
             }
 
             return null;
@@ -193,6 +194,44 @@ public final class FormulaParser {
         public abstract String createCoordinate(@NonNull List<String> groups);
     }
 
+    /**
+     * Parser for MinDec format: X DD° MM.MMM'.
+     */
+    private static final class MinDecParser extends AbstractLatLonFormulaParser {
+        //                                           (  1  )    (  2  )
+        private static final String STRING_LAT = "\\b([NS]?)\\s*(" + COORD_VARIABLE_PATTERN_STRING + "+°?)\\s*(" + COORD_VARIABLE_PATTERN_STRING + "+\\." + COORD_VARIABLE_PATTERN_STRING + "+)['′]?";
+
+        //                                        (   1  )    (    2    )    (      3      )
+        private static final String STRING_LON = "([WEO]?)\\s*(" + COORD_VARIABLE_PATTERN_STRING + "+°?)\\s*(" + COORD_VARIABLE_PATTERN_STRING + "+\\." + COORD_VARIABLE_PATTERN_STRING + "+)\\b['′]?";
+        private static final String STRING_SEPARATOR = "[^\\w'′\"″°]*";
+        private static final Pattern PATTERN_LAT = Pattern.compile(STRING_LAT, Pattern.CASE_INSENSITIVE);
+        private static final Pattern PATTERN_LON = Pattern.compile("\\b" + STRING_LON, Pattern.CASE_INSENSITIVE);
+        private static final Pattern PATTERN_LATLON = Pattern.compile(STRING_LAT + STRING_SEPARATOR + STRING_LON, Pattern.CASE_INSENSITIVE);
+
+        MinDecParser() {
+            super(PATTERN_LAT, PATTERN_LON, PATTERN_LATLON);
+        }
+
+        /**
+         * @see AbstractLatLonFormulaParser#createCoordinate(List)
+         */
+        @Override
+        @Nullable
+        public String createCoordinate(@NonNull final List<String> groups) {
+            final String group1 = groups.get(0).trim();
+            final String group2 = groups.get(1).trim();
+            final String group3 = groups.get(2).trim();
+
+            final String strippedGroup2 = StringUtils.stripEnd(group2, "°").trim();
+
+            final String result = group1 + " " + strippedGroup2 + "° " + group3 + "'";
+            return result;
+        }
+
+        public Settings.CoordInputFormatEnum formulaFormat() {
+            return Settings.CoordInputFormatEnum.Min;
+        }
+    }
 
     /**
      * Parser for MinDec format: X DD° MM.MMM'.
@@ -233,6 +272,50 @@ public final class FormulaParser {
 
         public Settings.CoordInputFormatEnum formulaFormat() {
             return Settings.CoordInputFormatEnum.Plain;
+        }
+    }
+
+    /**
+     * Parser for DMS format: X DD° MM' SS.SS".
+     */
+    private static final class DMSParser extends AbstractLatLonFormulaParser {
+        //                                           (  1  )    (  2  )( 3)    (  4  )         (      5      )
+        private static final String STRING_LAT = "\\b([NS]?)\\s*(" + COORD_VARIABLE_PATTERN_STRING + "+)(°?)\\s*(" + COORD_VARIABLE_PATTERN_STRING + "+)['′]?\\s*(" + COORD_VARIABLE_PATTERN_STRING + "+\\." + COORD_VARIABLE_PATTERN_STRING + "+)(?:''|\"|″)?";
+
+        //                                        (   1  )    (  2  )( 3)    (  4  )         (      5      )
+        private static final String STRING_LON = "([WEO]?)\\s*(" + COORD_VARIABLE_PATTERN_STRING + "+)(°?)\\s*(" + COORD_VARIABLE_PATTERN_STRING + "+)['′]?\\s*(" + COORD_VARIABLE_PATTERN_STRING + "+\\." + COORD_VARIABLE_PATTERN_STRING + "+)\\b(?:''|\"|″)?";
+
+        private static final String STRING_SEPARATOR = "[^\\w'′\"″°]*";
+        private static final Pattern PATTERN_LAT = Pattern.compile(STRING_LAT, Pattern.CASE_INSENSITIVE);
+        private static final Pattern PATTERN_LON = Pattern.compile("\\b" + STRING_LON, Pattern.CASE_INSENSITIVE);
+        private static final Pattern PATTERN_LATLON = Pattern.compile(STRING_LAT + STRING_SEPARATOR + STRING_LON, Pattern.CASE_INSENSITIVE);
+
+        DMSParser() {
+            super(PATTERN_LAT, PATTERN_LON, PATTERN_LATLON);
+        }
+
+        /**
+         * @see AbstractLatLonFormulaParser#createCoordinate(List)
+         */
+        @Override
+        @Nullable
+        public String createCoordinate(@NonNull final List<String> groups) {
+            final String group1 = groups.get(0).trim();
+            final String group2 = groups.get(1).trim();
+            final String group3 = groups.get(2).trim();
+            final String group4 = groups.get(3).trim();
+            final String group5 = groups.get(4).trim();
+
+            if (StringUtils.isBlank(group1) && (StringUtils.isBlank(group3))) {
+                return null;
+            }
+
+            final String result = group1 + " " + group2 + "° " + group4 + "'" + group5 + "''";
+            return result;
+        }
+
+        public Settings.CoordInputFormatEnum formulaFormat() {
+            return Settings.CoordInputFormatEnum.Sec;
         }
     }
 

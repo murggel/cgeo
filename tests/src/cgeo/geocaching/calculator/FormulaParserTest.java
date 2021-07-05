@@ -2,6 +2,7 @@ package cgeo.geocaching.calculator;
 
 import cgeo.geocaching.models.CalcState;
 import cgeo.geocaching.models.WaypointParser;
+import cgeo.geocaching.settings.Settings;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -58,7 +59,7 @@ public class FormulaParserTest {
         assertThat(parsedLongitude).isNotNull();
 
         final List<VariableData> variables = new ArrayList<>();
-        final CalcState calcState = CoordinatesCalculateUtils.createCalcState(parsedLatitude, parsedLongitude, variables);
+        final CalcState calcState = CoordinatesCalculateUtils.createCalcState(Settings.CoordInputFormatEnum.Plain, parsedLatitude, parsedLongitude, variables);
         assertThat(calcState.plainLat).isEqualTo("N 49° AB.031'");
         assertThat(calcState.plainLon).isEqualTo("E 8° 38.DEF'");
     }
@@ -86,7 +87,7 @@ public class FormulaParserTest {
         assertThat(parsedLongitude).isNotNull();
 
         final List<VariableData> variables = new ArrayList<>();
-        final CalcState calcState = CoordinatesCalculateUtils.createCalcState(parsedLatitude, parsedLongitude, variables);
+        final CalcState calcState = CoordinatesCalculateUtils.createCalcState(Settings.CoordInputFormatEnum.Plain, parsedLatitude, parsedLongitude, variables);
         assertThat(calcState.plainLat).isEqualTo("N AB° 48.[B+C-A]^2'");
         assertThat(calcState.plainLon).isEqualTo("E (B%C)° 38.(D+F)*2'");
     }
@@ -102,7 +103,7 @@ public class FormulaParserTest {
         assertThat(parsedLongitude).isNotNull();
 
         final List<VariableData> variables = new ArrayList<>();
-        final CalcState calcState = CoordinatesCalculateUtils.createCalcState(parsedLatitude, parsedLongitude, variables);
+        final CalcState calcState = CoordinatesCalculateUtils.createCalcState(Settings.CoordInputFormatEnum.Plain, parsedLatitude, parsedLongitude, variables);
         assertThat(calcState.plainLat).isEqualTo("N AB° 48.B+C-A^2'");
         assertThat(calcState.plainLon).isEqualTo("E (B%C)° 38.(D+F)^2'");
     }
@@ -120,12 +121,31 @@ public class FormulaParserTest {
 
     @Test
     public void testParseFullCoordinatesException() {
-        try {
-            final FormulaParser formulaParser = new FormulaParser();
-            formulaParser.parse("N 49° AB.031 | E 8° 38.DEF");
-            failBecauseExceptionWasNotThrown(FormulaParser.ParseException.class);
-        } catch (final FormulaParser.ParseException e) {
-            // expected
-        }
+        final FormulaParser formulaParser = new FormulaParser();
+        final FormulaWrapper parsedFullCoordinates = formulaParser.parse("N 49° AB.031 | E 8° 38.DEF");
+        assertThat(parsedFullCoordinates).isNotNull();
+        assertThat(parsedFullCoordinates.getFormulaFormat()).isEqualTo(Settings.CoordInputFormatEnum.Min);
+        assertThat(parsedFullCoordinates.getFormulaLat()).isEqualTo("N 49° AB.031'");
+        assertThat(parsedFullCoordinates.getFormulaLon()).isEqualTo("E 8° 38.DEF'");
+    }
+
+    @Test
+    public void testParseMinDecFormat() {
+        final FormulaParser formulaParser = new FormulaParser();
+        final FormulaWrapper parsedFullCoordinates = formulaParser.parse("N 49° AB.031  E 8° 38.DEF");
+        assertThat(parsedFullCoordinates).isNotNull();
+        assertThat(parsedFullCoordinates.getFormulaFormat()).isEqualTo(Settings.CoordInputFormatEnum.Min);
+        assertThat(parsedFullCoordinates.getFormulaLat()).isEqualTo("N 49° AB.031'");
+        assertThat(parsedFullCoordinates.getFormulaLon()).isEqualTo("E 8° 38.DEF'");
+    }
+
+    @Test
+    public void testParseSecFormat() {
+        final FormulaParser formulaParser = new FormulaParser();
+        final FormulaWrapper parsedFullCoordinates = formulaParser.parse("N A6° B7' C5,D'' E E5° F3' G1,H8''");
+        assertThat(parsedFullCoordinates).isNotNull();
+        assertThat(parsedFullCoordinates.getFormulaFormat()).isEqualTo(Settings.CoordInputFormatEnum.Sec);
+        assertThat(parsedFullCoordinates.getFormulaLat()).isEqualTo("N A6° B7'C5.D''");
+        assertThat(parsedFullCoordinates.getFormulaLon()).isEqualTo("E E5° F3'G1.H8''");
     }
 }

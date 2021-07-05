@@ -17,7 +17,6 @@ import cgeo.geocaching.utils.TextUtils;
 import androidx.annotation.NonNull;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
@@ -94,6 +93,7 @@ public class WaypointParser {
 
         // search waypoints with formula
         parseWaypointsWithSpecificCoords(text, PARSING_COORD_FORMULA_PLAIN, Settings.CoordInputFormatEnum.Plain);
+        parseWaypointsWithSpecificCoords(text, PARSING_COORD_FORMULA_SEC, Settings.CoordInputFormatEnum.Sec);
     }
 
     private void parseWaypointsWithCoords(final String text) {
@@ -314,7 +314,7 @@ public class WaypointParser {
                         break;
                     }
                 }
-                final CalcState calcState = CoordinatesCalculateUtils.createCalcState(latText, lonText, variables);
+                final CalcState calcState = CoordinatesCalculateUtils.createCalcState(parsedFullCoordinates.getFormulaFormat(), latText, lonText, variables);
 
                 return new ImmutablePair<>(calcState, remainingString);
             }
@@ -486,10 +486,14 @@ public class WaypointParser {
         return sb.toString();
     }
 
-    private static char getButtonChar( final CalcState calcState, final int index) {
-        final ButtonData buttonData = calcState.buttons.get(index);
-        return buttonData.type.getLabel(buttonData);
+    private static char getButtonChar(final CalcState calcState, final int index) {
+        if (index < calcState.buttons.size()) {
+            final ButtonData buttonData = calcState.buttons.get(index);
+            return buttonData.type.getLabel(buttonData);
+        }
+        return ' ';
     }
+
     private static String getParseableVariablesString(final CalcState calcState) {
         final StringBuilder sb = new StringBuilder();
         for (VariableData equ : calcState.equations) {
