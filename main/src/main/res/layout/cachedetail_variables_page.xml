@@ -24,6 +24,7 @@
             android:layout_gravity="center"
             android:textSize="@dimen/textSize_headingSecondary"
             android:text="@string/variables_titletext"
+            android:visibility="gone"
             />
 
         <LinearLayout
