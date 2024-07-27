@@ -112,10 +112,16 @@ public class VariablesViewPageFragment extends TabbedViewPagerFragment<Cachedeta
         if (cache == null) {
             return;
         }
-        adapter.setVariableList(cache.getVariables());
+        updateVariableList(cache);
+
         //register for changes of variableslist -> calculated waypoints may have changed
-        cache.getVariables().addChangeListener(this, s -> activity.runOnUiThread(() -> adapter.setVariableList(cache.getVariables())));
+        cache.getVariables().addChangeListener(this, s -> activity.runOnUiThread(() -> updateVariableList(cache)));
         binding.getRoot().setVisibility(View.VISIBLE);
+    }
+
+    void updateVariableList(final Geocache cache) {
+        adapter.setVariableList(cache.getVariables());
+        adapter.sortVariables(TextUtils.COLLATOR::compare);
     }
 
     private void checkUnsavedChanges() {
