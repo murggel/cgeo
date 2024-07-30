@@ -118,6 +118,7 @@ import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AlertDialog;
+import androidx.core.internal.view.SupportMenu;
 import androidx.core.util.Consumer;
 import androidx.core.view.MenuItemCompat;
 import androidx.loader.app.LoaderManager;
@@ -611,7 +612,7 @@ public class CacheListActivity extends AbstractListActivity implements FilteredA
         });
 
         final View sortView = this.findViewById(R.id.sort_bar);
-        sortView.setOnClickListener(v -> menu.performIdentifierAction(R.id.menu_sort, 0));
+        sortView.setOnClickListener(v -> menu.performIdentifierAction(R.id.menu_sort, SupportMenu.FLAG_KEEP_OPEN_ON_SUBMENU_OPENED));
         sortView.setOnLongClickListener(v -> sortProvider.onSortTypeSelection(sortContext.getSort().getType()));
 
         ListNavigationSelectionActionProvider.initialize(menu.findItem(R.id.menu_cache_list_app_provider), app -> app.invoke(CacheListAppUtils.filterCoords(adapter.getList()), CacheListActivity.this, getFilteredSearch()));
