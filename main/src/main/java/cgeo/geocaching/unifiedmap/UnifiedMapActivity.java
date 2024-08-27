@@ -156,12 +156,12 @@ public class UnifiedMapActivity extends AbstractNavigationBarMapActivity impleme
     private boolean overridePositionAndZoom = false; // to preserve those on config changes in favour to mapType defaults
 
     private final CacheListActionBarChooser listChooser = new CacheListActionBarChooser(this, () -> getSupportActionBar(), newListId -> {
-            final Optional<AbstractList> lNew = StoredList.UserInterface.getMenuLists(false, PseudoList.NEW_LIST.id).stream().filter(l2 -> l2.id == newListId).findFirst();
-            if (lNew.isPresent()) {
-                new UnifiedMapType(newListId).launchMap(this);
-                finish();
-            }
-        });
+        final Optional<AbstractList> lNew = StoredList.UserInterface.getMenuLists(false, PseudoList.NEW_LIST.id).stream().filter(l2 -> l2.id == newListId).findFirst();
+        if (lNew.isPresent()) {
+            new UnifiedMapType(newListId).launchMap(this);
+            finish();
+        }
+    });
 
     private UnifiedMapState lastMapStateFromOnPause = null;
     private static WeakReference<UnifiedMapActivity> unifiedMapActivity = new WeakReference<>(null);
@@ -202,7 +202,7 @@ public class UnifiedMapActivity extends AbstractNavigationBarMapActivity impleme
             mapType = new UnifiedMapType();
         }
 
-        viewModel.transientIsLiveEnabled.setValue(mapType.type == UMTT_PlainMap && Settings.isLiveMap());
+        viewModel.transientIsLiveEnabled.setValue(mapType.enableLiveMap() && Settings.isLiveMap());
 
         routeTrackUtils = new RouteTrackUtils(this, savedInstanceState == null ? null : savedInstanceState.getBundle(STATE_ROUTETRACKUTILS), this::centerMap, viewModel::clearIndividualRoute, viewModel::reloadIndividualRoute, viewModel::setTrack, this::isTargetSet);
         viewModel.configureProximityNotification();
@@ -336,8 +336,8 @@ public class UnifiedMapActivity extends AbstractNavigationBarMapActivity impleme
         }
 
         getSupportFragmentManager().beginTransaction()
-                .replace(R.id.mapViewFragment, mapFragment)
-                .commit();
+                                   .replace(R.id.mapViewFragment, mapFragment)
+                                   .commit();
     }
 
     private void onMapReadyTasks(final AbstractTileProvider newSource, final boolean mapChanged, @Nullable final UnifiedMapState mapState) {
@@ -479,7 +479,7 @@ public class UnifiedMapActivity extends AbstractNavigationBarMapActivity impleme
         refreshListChooser();
 
         // only initialize loadInBackgroundHandler if caches should actually be loaded
-        if (mapType.type == UMTT_PlainMap) {
+        if (mapType.enableLiveMap()) {
             refreshMapData(false, true);
             if (loadInBackgroundHandler == null) {
                 loadInBackgroundHandler = new LoadInBackgroundHandler(this);
@@ -754,7 +754,7 @@ public class UnifiedMapActivity extends AbstractNavigationBarMapActivity impleme
     public boolean onOptionsItemSelected(@NonNull final MenuItem item) {
         final int id = item.getItemId();
         if (id == R.id.menu_map_live) {
-            if (mapType.type == UMTT_PlainMap) {
+            if (mapType.enableLiveMap()) {
                 Settings.setLiveMap(!Settings.isLiveMap());
                 viewModel.transientIsLiveEnabled.setValue(Settings.isLiveMap());
                 ActivityMixin.invalidateOptionsMenu(this);
@@ -795,17 +795,17 @@ public class UnifiedMapActivity extends AbstractNavigationBarMapActivity impleme
             }
             positionHistory.reset();
         })
-                || DownloaderUtils.onOptionsItemSelected(this, id, true)) {
+                           || DownloaderUtils.onOptionsItemSelected(this, id, true)) {
             return true;
         } else if (id == R.id.menu_filter) {
             showFilterMenu();
         } else if (id == R.id.menu_store_caches) {
             final Set<String> geocodes = viewModel.caches.readWithResult(caches ->
-                mapFragment.getViewport()
-                .filter(caches)
-                .stream()
-                .map(Geocache::getGeocode)
-                .collect(Collectors.toSet()));
+                                                                                 mapFragment.getViewport()
+                                                                                            .filter(caches)
+                                                                                            .stream()
+                                                                                            .map(Geocache::getGeocode)
+                                                                                            .collect(Collectors.toSet()));
             CacheDownloaderService.downloadCaches(this, geocodes, false, false, () -> viewModel.caches.notifyDataChanged(false));
         } else if (id == R.id.menu_theme_mode) {
             mapFragment.selectTheme(this);
@@ -829,7 +829,7 @@ public class UnifiedMapActivity extends AbstractNavigationBarMapActivity impleme
             }
         } else if (id == R.id.menu_as_list) {
             final Collection<Geocache> caches = viewModel.caches.readWithResult(vmCaches ->
-                mapFragment.getViewport().filter(vmCaches));
+                                                                                        mapFragment.getViewport().filter(vmCaches));
             CacheListActivity.startActivityMap(this, new SearchResult(caches));
         } else {
             final String language = TileProviderFactory.getLanguage(id);
@@ -986,7 +986,6 @@ public class UnifiedMapActivity extends AbstractNavigationBarMapActivity impleme
             }
 
 
-
         }
         Log.d("touched elements on " + touchedPoint + " (" + result.size() + "): " + result);
 
@@ -1012,11 +1011,11 @@ public class UnifiedMapActivity extends AbstractNavigationBarMapActivity impleme
 
                 final SimpleDialog.ItemSelectModel<MapSelectableItem> model = new SimpleDialog.ItemSelectModel<>();
                 model
-                    .setItems(sorted)
-                    .setDisplayViewMapper((item, itemGroup, ctx, view, parent) ->
-                        GeoItemSelectorUtils.createMapSelectableItemView(UnifiedMapActivity.this, item, GeoItemSelectorUtils.getOrCreateView(UnifiedMapActivity.this, view, parent)),
-                        (item, itemGroup) -> item == null ? "" : item.getSortFilterString())
-                    .setItemPadding(0);
+                        .setItems(sorted)
+                        .setDisplayViewMapper((item, itemGroup, ctx, view, parent) ->
+                                                      GeoItemSelectorUtils.createMapSelectableItemView(UnifiedMapActivity.this, item, GeoItemSelectorUtils.getOrCreateView(UnifiedMapActivity.this, view, parent)),
+                                (item, itemGroup) -> item == null ? "" : item.getSortFilterString())
+                        .setItemPadding(0);
 
                 SimpleDialog.of(this).setTitle(R.string.map_select_multiple_items).selectSingle(model, item -> {
                     handleTap(item, touchedPoint, isLongTap, x, y);
