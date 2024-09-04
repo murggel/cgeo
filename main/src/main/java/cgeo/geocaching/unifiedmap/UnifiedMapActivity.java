@@ -194,7 +194,7 @@ public class UnifiedMapActivity extends AbstractNavigationBarMapActivity impleme
             if (mapType != null) {
                 viewModel.followMyLocation.setValue(mapType.followMyLocation);
             } else {
-                viewModel.followMyLocation.setValue(Boolean.TRUE.equals(viewModel.followMyLocation.getValue()) && mapType.type == UMTT_PlainMap);
+                viewModel.followMyLocation.setValue(Boolean.TRUE.equals(viewModel.followMyLocation.getValue()));
             }
         }
         // make sure we have a defined mapType
