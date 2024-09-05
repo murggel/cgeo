@@ -1,5 +1,6 @@
 package cgeo.geocaching.utils;
 
+import cgeo.geocaching.settings.Settings;
 import cgeo.geocaching.utils.functions.Action1;
 import cgeo.geocaching.utils.functions.Action2;
 import cgeo.geocaching.utils.functions.Func1;
@@ -78,7 +79,7 @@ public class AsynchronousMapWrapper<K, V, C> {
             runnable.run();
         }
         default boolean continueMapChangeExecutions(long startTime, int queueLength) {
-            final long diffTimeInMs = 400;
+            final long diffTimeInMs = Settings.getAsyncMapChangeTimeInMs();
             return System.currentTimeMillis() - startTime < diffTimeInMs;
         }
 

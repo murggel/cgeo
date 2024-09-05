@@ -2,6 +2,7 @@ package cgeo.geocaching.unifiedmap.geoitemlayer;
 
 import cgeo.geocaching.models.geoitem.GeoPrimitive;
 import cgeo.geocaching.models.geoitem.ToScreenProjector;
+import cgeo.geocaching.settings.Settings;
 import cgeo.geocaching.utils.AndroidRxUtils;
 import cgeo.geocaching.utils.Log;
 
@@ -71,7 +72,7 @@ public interface IProviderGeoItemLayer<C> {
     }
 
     default boolean continueMapChangeExecutions(final long startTime, final  int queueLength) {
-        final long diffTimeInMs = 400;
+        final long diffTimeInMs = Settings.getGeoitemMapChangeTimeInMs();
         return System.currentTimeMillis() - startTime < diffTimeInMs;
     }
 }

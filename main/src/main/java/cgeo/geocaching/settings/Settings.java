@@ -1080,6 +1080,14 @@ public class Settings {
         return hasOSMMultiThreading() ? Math.max(1, getInt(R.string.pref_map_osm_threads, Math.min(Runtime.getRuntime().availableProcessors() + 1, 4))) : 1;
     }
 
+    public static long getAsyncMapChangeTimeInMs() {
+        return getLong(R.string.pref_async_map_change_time_in_ms, 0);
+    }
+
+    public static long getGeoitemMapChangeTimeInMs() {
+        return getLong(R.string.pref_geoitem_map_change_time_in_ms, 40);
+    }
+
     public static int getCompactIconMode() {
         final String prefValue = getString(R.string.pref_compactIconMode, "");
         if (prefValue.equals(getKey(R.string.pref_compacticon_on))) {
