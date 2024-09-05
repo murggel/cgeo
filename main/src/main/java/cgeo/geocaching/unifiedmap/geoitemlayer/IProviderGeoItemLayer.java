@@ -71,6 +71,7 @@ public interface IProviderGeoItemLayer<C> {
     }
 
     default boolean continueMapChangeExecutions(final long startTime, final  int queueLength) {
-        return System.currentTimeMillis() - startTime < 40;
+        final long diffTimeInMs = 400;
+        return System.currentTimeMillis() - startTime < diffTimeInMs;
     }
 }

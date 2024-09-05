@@ -78,7 +78,8 @@ public class AsynchronousMapWrapper<K, V, C> {
             runnable.run();
         }
         default boolean continueMapChangeExecutions(long startTime, int queueLength) {
-            return true;
+            final long diffTimeInMs = 400;
+            return System.currentTimeMillis() - startTime < diffTimeInMs;
         }
 
         /** called whenever a batch of map changes has been processed */
