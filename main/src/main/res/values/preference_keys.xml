@@ -538,13 +538,14 @@
     <string translatable="false" name="pref_vtm_marker_atlas_usage">vtmMarkerAtlasUsage</string>
 
 
-
     <!-- additional map settings -->
     <string translatable="false" name="pref_showUnifiedMap">showUnifiedMap</string>
     <string translatable="false" name="pref_showCircles">showCircles</string>
     <string translatable="false" name="pref_supersizeDistance">supersizeDistanceToggle</string>
     <string translatable="false" name="pref_mapLanguage">mapLanguage</string>
     <string translatable="false" name="pref_map_osm_threads">map_osm_threads</string>
+    <string translatable="false" name="pref_async_map_change_time_in_ms">asyncMapChangeTimeInMs</string>
+    <string translatable="false" name="pref_geoitem_map_change_time_in_ms">geoitemMapChangeTimeInMs</string>
     <string translatable="false" name="pref_compactIconMode">compactIconMode</string>
     <string translatable="false" name="pref_maplive">maplive</string>
     <string translatable="false" name="pref_lastmapzoom">mapzoom</string>
