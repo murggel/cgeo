@@ -7,6 +7,7 @@ import cgeo.geocaching.models.Waypoint;
 import cgeo.geocaching.settings.Settings;
 import static cgeo.geocaching.filters.core.GeocacheFilterContext.FilterType.LIVE;
 import static cgeo.geocaching.filters.core.GeocacheFilterContext.FilterType.OFFLINE;
+import static cgeo.geocaching.unifiedmap.UnifiedMapType.UnifiedMapTypeType.UMTT_TargetCoords;
 
 import android.content.Context;
 import android.content.Intent;
@@ -95,6 +96,9 @@ public class UnifiedMapType implements Parcelable {
         fromActivity.startActivity(getLaunchMapIntent(fromActivity));
     }
 
+    public boolean enableLiveMap() {
+        return type == UnifiedMapTypeType.UMTT_PlainMap || type == UnifiedMapTypeType.UMTT_TargetCoords;
+    }
     // ========================================================================
     // parcelable methods
 
