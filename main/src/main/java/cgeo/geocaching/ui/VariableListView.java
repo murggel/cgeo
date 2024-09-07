@@ -375,8 +375,8 @@ public class VariableListView extends LinearLayout {
                 removeVariable(newVar);
             }
 
-            final String var = variables.addVariable(newVar, formula, TextUtils.getSortedPos(variables.asList(), newVar));
-            addItem(TextUtils.getSortedPos(getItems(), VariableMap.VariableState::getVar, newVar), variables.getState(var));
+            final String var = variables.addVariable(newVar, formula, 0);
+            addItem(0, variables.getState(var));
             callCallback();
             notifyItemRangeChanged(0, getItemCount());
         }
@@ -399,7 +399,7 @@ public class VariableListView extends LinearLayout {
         }
 
         public void sortVariables(final Comparator<String> comparator) {
-            if (comparator == null) {
+            if (comparator == null || 0 == getItemCount()) {
                 return;
             }
             sortItems((v1, v2) -> comparator.compare(v1.getVar(), v2.getVar()));
