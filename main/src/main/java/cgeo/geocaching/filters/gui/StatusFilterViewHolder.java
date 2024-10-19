@@ -38,6 +38,7 @@ public class StatusFilterViewHolder extends BaseFilterViewHolder<StatusGeocacheF
     private ButtonToggleGroup statusSolvedMystery = null;
     private ButtonToggleGroup statusCorrectedCoordinates = null;
     private ButtonToggleGroup statusHasUserDefinedWaypoints = null;
+    private ButtonToggleGroup statusHasOriginalWaypoint = null;
 
     private final List<ButtonToggleGroup> advancedGroups = new ArrayList<>();
     private final List<View> advancedGroupViews = new ArrayList<>();
@@ -101,6 +102,7 @@ public class StatusFilterViewHolder extends BaseFilterViewHolder<StatusGeocacheF
         statusSolvedMystery = createGroup(ll, StatusGeocacheFilter.StatusType.SOLVED_MYSTERY, true);
         statusCorrectedCoordinates = createGroup(ll, StatusGeocacheFilter.StatusType.CORRECTED_COORDINATES, true);
         statusHasUserDefinedWaypoints = createGroup(ll, StatusGeocacheFilter.StatusType.HAS_USER_DEFINED_WAYPOINTS, true);
+        statusHasOriginalWaypoint = createGroup(ll, StatusGeocacheFilter.StatusType.HAS_ORIGINAL_WAYPOINT, true);
 
         setSimpleView(this.simpleView);
 
@@ -151,6 +153,7 @@ public class StatusFilterViewHolder extends BaseFilterViewHolder<StatusGeocacheF
         setFromBoolean(statusSolvedMystery, filter.getStatusSolvedMystery());
         setFromBoolean(statusCorrectedCoordinates, filter.getStatusCorrectedCoordinates());
         setFromBoolean(statusHasUserDefinedWaypoints, filter.getStatusHasUserDefinedWaypoint());
+        setFromBoolean(statusHasOriginalWaypoint, filter.getStatusHasOriginalWaypoint());
     }
 
 
@@ -177,6 +180,7 @@ public class StatusFilterViewHolder extends BaseFilterViewHolder<StatusGeocacheF
         filter.setStatusSolvedMystery(getFromGroup(statusSolvedMystery));
         filter.setStatusCorrectedCoordinates(getFromGroup(statusCorrectedCoordinates));
         filter.setStatusHasUserDefinedWaypoint(getFromGroup(statusHasUserDefinedWaypoints));
+        filter.setStatusHasOriginalWaypoint(getFromGroup(statusHasOriginalWaypoint));
         return filter;
     }
 
