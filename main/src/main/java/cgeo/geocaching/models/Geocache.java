@@ -219,7 +219,9 @@ public class Geocache implements IWaypoint {
         changeNotificationHandler = newNotificationHandler;
     }
 
-    /** Sends a change notification for this Geocache to interested parties */
+    /**
+     * Sends a change notification for this Geocache to interested parties
+     */
     public void notifyChange() {
         notifyChange(CgeoApplication.getInstance().getApplicationContext());
     }
@@ -511,6 +513,10 @@ public class Geocache implements IWaypoint {
 
     public boolean hasTrackables() {
         return inventoryItems > 0;
+    }
+
+    public int getTrackableCount() {
+        return inventoryItems;
     }
 
     public boolean canBeAddedToCalendar() {
@@ -1006,7 +1012,9 @@ public class Geocache implements IWaypoint {
         return ListUtils.unmodifiableList(ListUtils.emptyIfNull(spoilers));
     }
 
-    /** applies filter/plausibilization logic to cache spoilers */
+    /**
+     * applies filter/plausibilization logic to cache spoilers
+     */
     @NonNull
     public List<Image> getFilteredSpoilers() {
         if (getSpoilers().isEmpty()) {
@@ -1032,8 +1040,7 @@ public class Geocache implements IWaypoint {
     @NonNull
     public Map<LogType, Integer> getLogCounts() {
         if (logCounts.isEmpty() && inDatabase()) {
-            @Nullable
-            final Map<LogType, Integer> savedLogCounts = DataStore.loadLogCounts(getGeocode());
+            @Nullable final Map<LogType, Integer> savedLogCounts = DataStore.loadLogCounts(getGeocode());
             if (MapUtils.isNotEmpty(savedLogCounts)) {
                 logCounts = savedLogCounts;
             }
@@ -1794,20 +1801,25 @@ public class Geocache implements IWaypoint {
         return null;
     }
 
-    /** Convenience method for {@link #addCacheArtefactsFromNotes(String)} with parameter null */
+    /**
+     * Convenience method for {@link #addCacheArtefactsFromNotes(String)} with parameter null
+     */
     public boolean addCacheArtefactsFromNotes() {
         return addCacheArtefactsFromNotes(null);
     }
 
     /**
      * Detect cache artefacts (waypoints+variables) in the user's notes (cache + waypoints) and add them to user-defined waypoints/variables.
+     *
      * @param previousAllUserNotes if given, then a parse of previous notes is used to help in deciding which values potentially to overwrite
      */
     public boolean addCacheArtefactsFromNotes(@Nullable final String previousAllUserNotes) {
         return addCacheArtefactsFromText(getAllUserNotes(), false, CgeoApplication.getInstance().getString(R.string.cache_personal_note), false, previousAllUserNotes);
     }
 
-    /** returns a concatenation of all user notes (Cache + waypoints) */
+    /**
+     * returns a concatenation of all user notes (Cache + waypoints)
+     */
     @NonNull
     public String getAllUserNotes() {
         final StringBuilder sb = new StringBuilder();
@@ -1825,10 +1837,10 @@ public class Geocache implements IWaypoint {
      * Detect cache artefacts (waypoints+variables) in the given text and add them to user-defined waypoints
      * or updates existing ones with meta information.
      *
-     * @param text            text which might contain coordinates
-     * @param updateDb        if true the added waypoints are stored in DB right away
-     * @param namePrefix      prefix for default waypoint names (if names cannot be extracted from text)
-     * @param forceExtraction if extraction should be enforced, regardless of cache setting
+     * @param text                 text which might contain coordinates
+     * @param updateDb             if true the added waypoints are stored in DB right away
+     * @param namePrefix           prefix for default waypoint names (if names cannot be extracted from text)
+     * @param forceExtraction      if extraction should be enforced, regardless of cache setting
      * @param previousAllUserNotes if given, then a parse of previous notes is used to help in deciding which values potentially to overwrite
      */
     public boolean addCacheArtefactsFromText(@Nullable final String text, final boolean updateDb, @NonNull final String namePrefix, final boolean forceExtraction, @Nullable final String previousAllUserNotes) {
@@ -1851,7 +1863,9 @@ public class Geocache implements IWaypoint {
         return changed;
     }
 
-    /** Returns a map of variables which differ from list and parsing user notes */
+    /**
+     * Returns a map of variables which differ from list and parsing user notes
+     */
     @NonNull
     public Map<String, Pair<String, String>> getVariableDifferencesFromUserNotes() {
         final Map<String, String> noteVars = new CacheArtefactParser(this, "").parse(getAllUserNotes()).getVariables();
@@ -1867,7 +1881,9 @@ public class Geocache implements IWaypoint {
         return result;
     }
 
-    /** changes this cache's variables with the given one's. Change is forced! */
+    /**
+     * changes this cache's variables with the given one's. Change is forced!
+     */
     public void changeVariables(final Map<String, String> newVars) {
         for (Map.Entry<String, String> var : newVars.entrySet()) {
             getVariables().addVariable(var.getKey(), var.getValue());
@@ -2092,11 +2108,11 @@ public class Geocache implements IWaypoint {
     /**
      * Download and store a cache synchronous
      *
-     * @param origCache the cache which should be refreshed, can be null
-     * @param geocode the geocode of the cache which should be downloaded
-     * @param lists to which lists the cache should be added
+     * @param origCache       the cache which should be refreshed, can be null
+     * @param geocode         the geocode of the cache which should be downloaded
+     * @param lists           to which lists the cache should be added
      * @param forceRedownload whether the cache should be re-downloaded, even if it's already stored offline
-     * @param handler a handler to receive status updates, can be null
+     * @param handler         a handler to receive status updates, can be null
      * @return true, if the cache was stored successfully
      */
     @WorkerThread
