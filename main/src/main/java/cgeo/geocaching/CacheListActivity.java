@@ -84,6 +84,7 @@ import cgeo.geocaching.ui.dialog.SimpleDialog;
 import cgeo.geocaching.utils.AndroidRxUtils;
 import cgeo.geocaching.utils.AngleUtils;
 import cgeo.geocaching.utils.CalendarUtils;
+import cgeo.geocaching.utils.CollectionMapUtils;
 import cgeo.geocaching.utils.DisposableHandler;
 import cgeo.geocaching.utils.EmojiUtils;
 import cgeo.geocaching.utils.FilterUtils;
@@ -104,7 +105,6 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.util.Pair;
 import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
 import android.view.Menu;
@@ -2035,21 +2035,15 @@ public class CacheListActivity extends AbstractListActivity implements FilteredA
     }
 
     private boolean openSortDialog() {
-        final List<Pair<GeocacheSort.SortType, String>> availableTypes = sortContext.getSort().getAvailableTypes();
-        final List<GeocacheSort.SortType> typeList = new ArrayList<>();
-        final HashMap<GeocacheSort.SortType, String> typeToString = new HashMap<>();
-        for (Pair<GeocacheSort.SortType, String> entry : availableTypes) {
-            typeToString.put(entry.first, entry.second);
-            typeList.add(entry.first);
-        }
+        final Map<GeocacheSort.SortType, String> availableTypes = sortContext.getSort().getAvailableTypes();
 
         final SimpleDialog.ItemSelectModel<GeocacheSort.SortType> model = new SimpleDialog.ItemSelectModel<>();
         model
                 .setScrollAnchor(sortContext.getSort().getType())
                 .setChoiceMode(SimpleItemListModel.ChoiceMode.SINGLE_RADIO)
-                .setItems(typeList)
+                .setItems(CollectionMapUtils.getListOfKeys(availableTypes))
                 .setSelectedItems(Collections.singleton(sortContext.getSort().getType()))
-                .setDisplayMapper((f) -> TextParam.text(typeToString.get(f)));
+                .setDisplayMapper((f) -> TextParam.text(availableTypes.get(f)));
 
         SimpleDialog.of(this).setTitle(R.string.caches_sort)
                 .selectSingle(model, this::refreshWithSortType);

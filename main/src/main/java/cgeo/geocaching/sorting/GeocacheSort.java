@@ -3,13 +3,13 @@ package cgeo.geocaching.sorting;
 import cgeo.geocaching.R;
 import cgeo.geocaching.enumerations.CacheListType;
 import cgeo.geocaching.location.Geopoint;
+import cgeo.geocaching.utils.CollectionMapUtils;
 import cgeo.geocaching.utils.LocalizationUtils;
 import cgeo.geocaching.utils.Log;
 import cgeo.geocaching.utils.TextUtils;
 
 import android.os.Parcel;
 import android.os.Parcelable;
-import android.util.Pair;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.StringRes;
@@ -17,9 +17,9 @@ import androidx.core.util.Supplier;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 
 /** Represents sort settings applyable to a group/list of geocaches */
 public class GeocacheSort implements Parcelable {
@@ -137,8 +137,8 @@ public class GeocacheSort implements Parcelable {
     /**
      * Returns the currently available sort types (together with their user-displayable name) for user selection
      */
-    public List<Pair<SortType, String>> getAvailableTypes() {
-        final Set<SortType> types = new HashSet<>(Arrays.asList(SortType.values()));
+    public Map<SortType, String> getAvailableTypes() {
+        final List<SortType> types = new ArrayList<>(Arrays.asList(SortType.values()));
         if (isEventList) {
             types.remove(SortType.HIDDEN_DATE);
         } else {
@@ -148,13 +148,15 @@ public class GeocacheSort implements Parcelable {
             types.remove(SortType.TARGET_DISTANCE);
         }
 
-        final List<Pair<SortType, String>> result = new ArrayList<>();
-        for (SortType t : types) {
-            result.add(new Pair<>(t, getNameFor(t, t.equals(type) && isInverse)));
-        }
         //sort by display name, but put AUTO always first
-        TextUtils.sortListLocaleAware(result, p -> p.first.equals(SortType.AUTO) ? "_" : p.second);
-        return result;
+        TextUtils.sortListLocaleAware(types, p -> p.equals(SortType.AUTO) ? "_" : getNameFor(p, p.equals(type) && isInverse));
+
+        final Map<SortType, String> result = new HashMap<>();
+        for (SortType t : types) {
+            result.put(t, getNameFor(t, t.equals(type) && isInverse));
+        }
+
+        return CollectionMapUtils.sortByValue(result);
     }
 
     //Setter/Getters for context values
