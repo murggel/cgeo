@@ -808,9 +808,9 @@ public class CacheListActivity extends AbstractListActivity implements FilteredA
             clearOfflineLogs(adapter.getCheckedOrAllCaches());
             invalidateOptionsMenuCompatible();
         } else if (menuItem == R.id.menu_show_attributes) {
-            adapter.showAttributes();
+            adapter.showAttributes(adapter.getCheckedOrAllCaches());
         } else if (menuItem == R.id.menu_make_list_unique) {
-            new MakeListUniqueCommand(this, listId) {
+            new MakeListUniqueCommand(this, listId, Geocache.getGeocodes(adapter.getCheckedOrAllCaches())) {
 
                 @Override
                 protected void onFinished() {
@@ -1274,11 +1274,10 @@ public class CacheListActivity extends AbstractListActivity implements FilteredA
     public void removeFromHistoryCheck() {
         final int message = (adapter != null && adapter.getCheckedCount() > 0) ? R.string.cache_remove_from_history
                 : R.string.cache_clear_history;
-        SimpleDialog.of(this).setTitle(R.string.caches_removing_from_history).setMessage(message).setButtons(SimpleDialog.ButtonTextSet.YES_NO).confirm(this::removeFromHistory);
+        SimpleDialog.of(this).setTitle(R.string.caches_removing_from_history).setMessage(message).setButtons(SimpleDialog.ButtonTextSet.YES_NO).confirm(() -> removeFromHistory(adapter.getCheckedOrAllCaches()));
     }
 
-    private void removeFromHistory() {
-        final List<Geocache> caches = adapter.getCheckedOrAllCaches();
+    private void removeFromHistory(final Collection<Geocache> caches) {
         final Collection<String> geocodes = new ArrayList<>(caches.size());
         for (final Geocache cache : caches) {
             geocodes.add(cache.getGeocode());
