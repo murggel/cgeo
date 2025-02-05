@@ -373,6 +373,25 @@ public class GeoPointParserTest {
     }
 
     @Test
+    public void test8713_12504_TrailingFormats() {
+        final Geopoint gp1 = GeopointParser.parse("51.3481209N, 7.0445565E");
+        final Geopoint ref1 = GeopointParser.parse("51.3481209, 7.0445565");
+        assertGeopointEquals(gp1, ref1, 1e-4f);
+
+        final Geopoint gp2 = GeopointParser.parse("51°20.88725'N, 7°2.67339'E");
+        final Geopoint ref2 = GeopointParser.parse("N 51°20.88725', E 7°2.67339'");
+        assertGeopointEquals(gp2, ref2, 1e-4f);
+
+        final Geopoint gp3 = GeopointParser.parse("51°20'53.235\"N, 7°2'40.404\"E");
+        final Geopoint ref3 = GeopointParser.parse("N 51°20'53.235\", E 7°2'40.404\"");
+        assertGeopointEquals(gp3, ref3, 1e-4f);
+
+        final Geopoint gp4 = GeopointParser.parse("29°56'33.6\"S 28°28'09.6\"E");
+        final Geopoint ref4 = GeopointParser.parse("S 29°56'33.6\" E 28°28'09.6\"");
+        assertGeopointEquals(gp4, ref4, 1e-4f);
+    }
+
+    @Test
     public void parseMultipleCoordinatesWithCorrectStartEndPositions() {
         final String initalText = "@n1 (W) N48 01.194 E011 43.814\n" +
                 "@n2 (W) N48 01.194 E011 43.814";

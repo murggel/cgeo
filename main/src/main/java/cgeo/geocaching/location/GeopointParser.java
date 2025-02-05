@@ -26,7 +26,7 @@ public class GeopointParser {
     private static final Pattern PATTERN_BAD_BLANK_DOT = Pattern.compile("(\\d)\\. ([-+]?\\d{2,})");
     private static final Pattern PATTERN_BAD_BLANK_FOR_DEG_COMMA_COMMA_PARSER = Pattern.compile("([-+]?\\d{1,3},\\d+), ([-+]?\\d{1,3},\\d+)");
 
-    private static final List<AbstractParser> parsers = Arrays.asList(new MinDecParser(), new MinParser(), new DegParser(), new DMSParser(), new ShortDMSParser(), new DegDecParser(), new ShortDegDecParser(), new UTMParser(), new DegDecCommaParser());
+    private static final List<AbstractParser> parsers = Arrays.asList(new MinDecParser(), new MinParser(), new DegParser(), new DMSParser(), new ShortDMSParser(), new DegDecParser(), new ShortDegDecParser(), new UTMParser(), new DegDecCommaParser(), new MinDecParserTrailing(), new DMSParserTrailing(), new DegDecParserTrailing());
 
     private GeopointParser() {
         // utility class
@@ -305,6 +305,45 @@ public class GeopointParser {
     }
 
     /**
+     * Parser for MinDec format: DD° MM.MMM' X.
+     */
+    private static final class MinDecParserTrailing extends AbstractLatLonParser {
+        //                                           (  1  )        (    2    )          (  3 )
+        private static final String STRING_LAT = "\\b(\\d++°?|°)\\s*(\\d++\\.\\d++)['′]?\\s*([NS])";
+
+        //                                        (   1  )          (    2    )          (  3  )
+        private static final String STRING_LON = "\\s*(\\d++°?|°)\\s*(\\d++\\.\\d++)\\b['′]?\\s*([WEO])";
+        private static final String STRING_SEPARATOR = "[^\\w'′\"″°.]*";
+        private static final Pattern PATTERN_LAT = Pattern.compile(STRING_LAT, Pattern.CASE_INSENSITIVE);
+        private static final Pattern PATTERN_LON = Pattern.compile("\\b" + STRING_LON, Pattern.CASE_INSENSITIVE);
+        private static final Pattern PATTERN_LATLON = Pattern.compile(STRING_LAT + STRING_SEPARATOR + STRING_LON, Pattern.CASE_INSENSITIVE);
+
+        MinDecParserTrailing() {
+            super(PATTERN_LAT, PATTERN_LON, PATTERN_LATLON);
+        }
+
+        /**
+         * @see AbstractLatLonParser#parse(List)
+         */
+        @Override
+        @Nullable
+        public Double parse(@NonNull final List<String> groups) {
+            final String group1 = groups.get(0);
+            final String group2 = groups.get(1);
+            final String group3 = groups.get(2);
+
+            // Handle empty degrees part (see #4620)
+            final String strippedGroup1 = StringUtils.stripEnd(group1, "°");
+            final Double result = createCoordinate(group3, strippedGroup1, group2, "");
+            if (StringUtils.isBlank(group3) && (!StringUtils.endsWith(group2, "°") || isNotZero(result))) {
+                return null;
+            }
+
+            return result;
+        }
+    }
+
+    /**
      * Parser for DMS format: X DD° MM' SS.SS".
      */
     private static final class DMSParser extends AbstractLatLonParser {
@@ -335,6 +374,45 @@ public class GeopointParser {
             final String group5 = groups.get(4);
             final Double result = createCoordinate(group1, group2, group4, group5);
             if (StringUtils.isBlank(group1) && (StringUtils.isBlank(group3) || isNotZero(result))) {
+                return null;
+            }
+
+            return result;
+        }
+    }
+
+
+    /**
+     * Parser for DMS format: DD° MM' SS.SS" X.
+     */
+    private static final class DMSParserTrailing extends AbstractLatLonParser {
+        //                                           (  1  )(  2  )  ( 3)             (  4  )                      (  5 )
+        private static final String STRING_LAT = "\\b(\\d++)(°?)\\s*(\\d++)['′]?\\s*(\\d++\\.\\d++)(?:''|\"|″)?\\s*([NS])";
+
+        //                                            (  1  ) ( 2 )   ( 3 )             (  4  )                        (  5 )
+        private static final String STRING_LON = "\\s*(\\d++)(°?)\\s*(\\d++)['′]?\\s*(\\d++\\.\\d++)\\b(?:''|\"|″)?\\s*([WEO])";
+        private static final String STRING_SEPARATOR = "[^\\w'′\"″°.]*";
+        private static final Pattern PATTERN_LAT = Pattern.compile(STRING_LAT, Pattern.CASE_INSENSITIVE);
+        private static final Pattern PATTERN_LON = Pattern.compile("\\b" + STRING_LON, Pattern.CASE_INSENSITIVE);
+        private static final Pattern PATTERN_LATLON = Pattern.compile(STRING_LAT + STRING_SEPARATOR + STRING_LON, Pattern.CASE_INSENSITIVE);
+
+        DMSParserTrailing() {
+            super(PATTERN_LAT, PATTERN_LON, PATTERN_LATLON);
+        }
+
+        /**
+         * @see AbstractLatLonParser#parse(List)
+         */
+        @Override
+        @Nullable
+        public Double parse(@NonNull final List<String> groups) {
+            final String group1 = groups.get(0);
+            final String group2 = groups.get(1);
+            final String group3 = groups.get(2);
+            final String group4 = groups.get(3);
+            final String group5 = groups.get(4);
+            final Double result = createCoordinate(group5, group1, group3, group4);
+            if (StringUtils.isBlank(group5) && (StringUtils.isBlank(group2) || isNotZero(result))) {
                 return null;
             }
 
@@ -435,6 +513,37 @@ public class GeopointParser {
         public Double parse(@NonNull final List<String> groups) {
             final String group1 = groups.get(0) + "." + groups.get(1);
             return createCoordinate("", group1, "", "");
+        }
+    }
+
+
+    /**
+     * Parser for DegDec format: DD.DDDDDDD X.
+     */
+    private static final class DegDecParserTrailing extends AbstractLatLonParser {
+        //                                        (       1       ) ( 2 )
+        private static final String STRING_LAT = "(\\d++\\.\\d++)([NS])";
+
+        //                                        (       1       ) ( 2 )
+        private static final String STRING_LON = "\\s*(\\d++\\.\\d++)([WEO])\\b";
+        private static final String STRING_SEPARATOR = "[^\\w'′\"″°.=-]*";
+        private static final Pattern PATTERN_LAT = Pattern.compile(STRING_LAT, Pattern.CASE_INSENSITIVE);
+        private static final Pattern PATTERN_LON = Pattern.compile(STRING_LON, Pattern.CASE_INSENSITIVE);
+        private static final Pattern PATTERN_LATLON = Pattern.compile(STRING_LAT + STRING_SEPARATOR + STRING_LON, Pattern.CASE_INSENSITIVE);
+
+        DegDecParserTrailing() {
+            super(PATTERN_LAT, PATTERN_LON, PATTERN_LATLON);
+        }
+
+        /**
+         * @see AbstractLatLonParser#parse(List)
+         */
+        @Override
+        @Nullable
+        public Double parse(@NonNull final List<String> groups) {
+            final String group1 = groups.get(0);
+            final String group2 = groups.get(1);
+            return createCoordinate(group2, group1, "", "");
         }
     }
 
