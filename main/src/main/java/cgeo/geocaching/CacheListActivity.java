@@ -799,17 +799,17 @@ public class CacheListActivity extends AbstractListActivity implements FilteredA
             copyCachesToOtherList(adapter.getCheckedOrAllCaches());
             invalidateOptionsMenuCompatible();
         } else if (menuItem == R.id.menu_delete_events) {
-            deletePastEvents();
+            deletePastEvents(adapter.getCheckedOrAllCaches());
             invalidateOptionsMenuCompatible();
         } else if (menuItem == R.id.menu_create_internal_cache) {
             InternalConnector.interactiveCreateCache(this, coords, StoredList.getConcreteList(listId), false);
         } else if (menuItem == R.id.menu_clear_offline_logs) {
-            clearOfflineLogs();
+            clearOfflineLogs(adapter.getCheckedOrAllCaches());
             invalidateOptionsMenuCompatible();
         } else if (menuItem == R.id.menu_show_attributes) {
-            adapter.showAttributes();
+            adapter.showAttributes(adapter.getCheckedOrAllCaches());
         } else if (menuItem == R.id.menu_make_list_unique) {
-            new MakeListUniqueCommand(this, listId) {
+            new MakeListUniqueCommand(this, listId, Geocache.getGeocodes(adapter.getCheckedOrAllCaches())) {
 
                 @Override
                 protected void onFinished() {
@@ -869,9 +869,9 @@ public class CacheListActivity extends AbstractListActivity implements FilteredA
         return new SearchResult(Geocache.getGeocodes(adapter.getFilteredList()));
     }
 
-    private void deletePastEvents() {
+    private void deletePastEvents(final Collection<Geocache> caches) {
         final List<Geocache> deletion = new ArrayList<>();
-        for (final Geocache cache : adapter.getCheckedOrAllCaches()) {
+        for (final Geocache cache : caches) {
             if (CalendarUtils.isPastEvent(cache)) {
                 deletion.add(cache);
             }
@@ -879,10 +879,10 @@ public class CacheListActivity extends AbstractListActivity implements FilteredA
         deleteCaches(deletion, false);
     }
 
-    private void clearOfflineLogs() {
+    private void clearOfflineLogs(final Collection<Geocache> caches) {
         SimpleDialog.of(this).setTitle(R.string.caches_clear_offlinelogs).setMessage(R.string.caches_clear_offlinelogs_message).setButtons(SimpleDialog.ButtonTextSet.YES_NO).confirm(() -> {
             progress.show(CacheListActivity.this, null, res.getString(R.string.caches_clear_offlinelogs_progress), true, clearOfflineLogsHandler.disposeMessage());
-            clearOfflineLogs(clearOfflineLogsHandler, adapter.getCheckedOrAllCaches());
+            clearOfflineLogs(clearOfflineLogsHandler, caches);
         });
     }
 
@@ -1273,11 +1273,10 @@ public class CacheListActivity extends AbstractListActivity implements FilteredA
     public void removeFromHistoryCheck() {
         final int message = (adapter != null && adapter.getCheckedCount() > 0) ? R.string.cache_remove_from_history
                 : R.string.cache_clear_history;
-        SimpleDialog.of(this).setTitle(R.string.caches_removing_from_history).setMessage(message).setButtons(SimpleDialog.ButtonTextSet.YES_NO).confirm(this::removeFromHistory);
+        SimpleDialog.of(this).setTitle(R.string.caches_removing_from_history).setMessage(message).setButtons(SimpleDialog.ButtonTextSet.YES_NO).confirm(() -> removeFromHistory(adapter.getCheckedOrAllCaches()));
     }
 
-    private void removeFromHistory() {
-        final List<Geocache> caches = adapter.getCheckedOrAllCaches();
+    private void removeFromHistory(final Collection<Geocache> caches) {
         final Collection<String> geocodes = new ArrayList<>(caches.size());
         for (final Geocache cache : caches) {
             geocodes.add(cache.getGeocode());
@@ -1396,7 +1395,7 @@ public class CacheListActivity extends AbstractListActivity implements FilteredA
         }
     }
 
-    private static void clearOfflineLogs(final Handler handler, final List<Geocache> selectedCaches) {
+    private static void clearOfflineLogs(final Handler handler, final Collection<Geocache> selectedCaches) {
         Schedulers.io().scheduleDirect(() -> {
             DataStore.clearLogsOffline(selectedCaches);
             handler.sendEmptyMessage(DownloadProgress.MSG_DONE);
