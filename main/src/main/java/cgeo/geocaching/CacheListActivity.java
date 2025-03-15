@@ -579,15 +579,22 @@ public class CacheListActivity extends AbstractListActivity implements FilteredA
 
             // Manage Caches submenu
             MenuUtils.setEnabled(menu, R.id.menu_refresh_stored, !isEmpty);
-            if (!isOffline && !isHistory) {
-                menu.findItem(R.id.menu_refresh_stored).setTitle(R.string.caches_store_offline);
+            if (isOffline || isHistory) { // only offline list
+                setMenuItemLabel(menu, R.id.menu_refresh_stored, R.string.caches_refresh_selected, R.string.caches_refresh_all);
+            } else { // search and global list (all other than offline and history)
+                setMenuItemLabel(menu, R.id.menu_refresh_stored, R.string.caches_store_selected, R.string.caches_store_offline);
             }
             MenuUtils.setVisibleEnabled(menu, R.id.menu_move_to_list, isHistory || isOffline, !isEmpty);
+            setMenuItemLabel(menu, R.id.menu_move_to_list, R.string.caches_move_selected, R.string.caches_move_all);
             MenuUtils.setVisibleEnabled(menu, R.id.menu_copy_to_list, isHistory || isOffline, !isEmpty);
+            setMenuItemLabel(menu, R.id.menu_copy_to_list, R.string.caches_copy_selected, R.string.caches_copy_all);
+
             MenuUtils.setEnabled(menu, R.id.menu_add_to_route, !isEmpty);
             setMenuItemLabel(menu, R.id.menu_add_to_route, R.string.caches_append_to_route_selected, R.string.caches_append_to_route_all);
-            MenuUtils.setVisibleEnabled(menu, R.id.menu_delete_events, isConcrete, !isEmpty && containsPastEvents());
-            MenuUtils.setVisibleEnabled(menu, R.id.menu_clear_offline_logs, isHistory || isOffline, !isEmpty && containsOfflineLogs());
+            MenuUtils.setVisibleEnabled(menu, R.id.menu_delete_events, isConcrete, !containsPastEvents);
+            setMenuItemLabel(menu, R.id.menu_delete_events, R.string.caches_delete_events, R.string.caches_delete_events);
+            MenuUtils.setVisible(menu, R.id.menu_clear_offline_logs, !containsOfflineLogs);
+            setMenuItemLabel(menu, R.id.menu_clear_offline_logs, R.string.caches_clear_offlinelogs, R.string.caches_clear_offlinelogs);
             MenuUtils.setVisibleEnabled(menu, R.id.menu_remove_from_history, isHistory, !isEmpty);
             setMenuItemLabel(menu, R.id.menu_remove_from_history, R.string.cache_remove_from_history, R.string.cache_clear_history);
 
@@ -597,18 +604,16 @@ public class CacheListActivity extends AbstractListActivity implements FilteredA
             MenuUtils.setVisibleEnabled(menu, R.id.menu_drop_caches_all_lists, isHistory || containsStoredCaches(), !isEmpty);
             setMenuItemLabel(menu, R.id.menu_drop_caches_all_lists, R.string.caches_remove_selected_completely, R.string.caches_remove_all_completely);
 
-            if (isOffline || type == CacheListType.HISTORY) { // only offline list
-                setMenuItemLabel(menu, R.id.menu_refresh_stored, R.string.caches_refresh_selected, R.string.caches_refresh_all);
-                setMenuItemLabel(menu, R.id.menu_move_to_list, R.string.caches_move_selected, R.string.caches_move_all);
-                setMenuItemLabel(menu, R.id.menu_copy_to_list, R.string.caches_copy_selected, R.string.caches_copy_all);
-            } else { // search and global list (all other than offline and history)
-                setMenuItemLabel(menu, R.id.menu_refresh_stored, R.string.caches_store_selected, R.string.caches_store_offline);
-            }
-            MenuUtils.setVisibleEnabled(menu, R.id.menu_upload_bookmarklist, Settings.isGCConnectorActive() && Settings.isGCPremiumMember(), !isEmpty);
-            MenuUtils.setVisibleEnabled(menu, R.id.menu_upload_modifiedcoords, Settings.isGCConnectorActive(), !isEmpty);
-            MenuUtils.setVisibleEnabled(menu, R.id.menu_upload_allcoords, Settings.isGCConnectorActive(), !isEmpty);
+            MenuUtils.setVisibleEnabled(menu, R.id.menu_upload_bookmarklist, isGcPremiumMember, !isEmpty);
+            setMenuItemLabel(menu, R.id.menu_upload_bookmarklist, R.string.caches_upload_bookmarklist, R.string.caches_upload_bookmarklist);
+            MenuUtils.setVisibleEnabled(menu, R.id.menu_upload_modifiedcoords, isGcConnectorActive, !isEmpty);
+            setMenuItemLabel(menu, R.id.menu_upload_modifiedcoords, R.string.caches_upload_modifiedcoords, R.string.caches_upload_modifiedcoords);
+            MenuUtils.setVisibleEnabled(menu, R.id.menu_upload_allcoords, isGcConnectorActive, !isEmpty);
+            setMenuItemLabel(menu, R.id.menu_upload_allcoords, R.string.caches_upload_allcoords, R.string.caches_upload_allcoords);
             MenuUtils.setEnabled(menu, R.id.menu_show_attributes, !isEmpty);
+            setMenuItemLabel(menu, R.id.menu_show_attributes, R.string.caches_show_attributes, R.string.caches_show_attributes);
             MenuUtils.setEnabled(menu, R.id.menu_set_cache_icon, !isEmpty);
+            setMenuItemLabel(menu, R.id.menu_set_cache_icon, R.string.caches_set_cache_icon, R.string.caches_set_cache_icon);
 
             // Manage Lists submenu
             MenuUtils.setVisible(menu, R.id.menu_lists, isOffline);

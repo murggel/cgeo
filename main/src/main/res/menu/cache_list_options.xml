@@ -95,7 +95,7 @@
             <item
                 android:id="@+id/menu_clear_offline_logs"
                 android:title="@string/caches_clear_offlinelogs"
-                android:enabled="false"
+                android:enabled="true"
                 app:showAsAction="never|withText"/>
             <item
                 android:id="@+id/menu_show_attributes"
