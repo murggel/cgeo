@@ -560,8 +560,14 @@ public class CacheListActivity extends AbstractListActivity implements FilteredA
         final boolean isHistory = type == CacheListType.HISTORY;
         final boolean isOffline = type == CacheListType.OFFLINE;
         final boolean isEmpty = adapter.isEmpty();
+        final boolean isSelectMode = adapter.isSelectMode();
+        final boolean containsOfflineLogs = containsOfflineLogs();
+        final boolean containsPastEvents = containsPastEvents();
+        final boolean containsStoredCaches = containsStoredCaches();
         final boolean isConcrete = isConcreteList();
         final boolean isNonDefaultList = isConcrete && listId != StoredList.STANDARD_LIST_ID;
+        final boolean isGcConnectorActive = Settings.isGCConnectorActive();
+        final boolean isGcPremiumMember = isGcConnectorActive && Settings.isGCPremiumMember();
         final List<CacheListApp> listNavigationApps = CacheListApps.getActiveApps();
 
         try {
@@ -571,9 +577,9 @@ public class CacheListActivity extends AbstractListActivity implements FilteredA
 
             MenuUtils.setEnabled(menu, R.id.menu_switch_select_mode, !isEmpty);
             updateSelectSwitchMenuItem(menu.findItem(R.id.menu_switch_select_mode));
-            MenuUtils.setVisible(menu, R.id.menu_invert_selection, adapter.isSelectMode()); // exception to the general rule: only show in select mode
-            MenuUtils.setVisible(menu, R.id.menu_select_next20, adapter.isSelectMode()); // same here
-            MenuUtils.setVisible(menu, R.id.menu_select_next100, adapter.isSelectMode()); // same here
+            MenuUtils.setVisible(menu, R.id.menu_invert_selection, isSelectMode); // exception to the general rule: only show in select mode
+            MenuUtils.setVisible(menu, R.id.menu_select_next20, isSelectMode); // same here
+            MenuUtils.setVisible(menu, R.id.menu_select_next100, isSelectMode); // same here
 
             MenuUtils.setVisibleEnabled(menu, R.id.menu_cache_list_app_provider, listNavigationApps.size() > 1, !isEmpty);
 
@@ -599,9 +605,9 @@ public class CacheListActivity extends AbstractListActivity implements FilteredA
             setMenuItemLabel(menu, R.id.menu_remove_from_history, R.string.cache_remove_from_history, R.string.cache_clear_history);
 
             final boolean removeFromDevice = removeWillDeleteFromDevice(listId);
-            MenuUtils.setVisibleEnabled(menu, R.id.menu_drop_caches, (isHistory || containsStoredCaches()) && !removeFromDevice, !isEmpty);
+            MenuUtils.setVisibleEnabled(menu, R.id.menu_drop_caches, (isHistory || containsStoredCaches) && !removeFromDevice, !isEmpty);
             setMenuItemLabel(menu, R.id.menu_drop_caches, R.string.caches_remove_selected, R.string.caches_remove_all);
-            MenuUtils.setVisibleEnabled(menu, R.id.menu_drop_caches_all_lists, isHistory || containsStoredCaches(), !isEmpty);
+            MenuUtils.setVisibleEnabled(menu, R.id.menu_drop_caches_all_lists, isHistory || containsStoredCaches, !isEmpty);
             setMenuItemLabel(menu, R.id.menu_drop_caches_all_lists, R.string.caches_remove_selected_completely, R.string.caches_remove_all_completely);
 
             MenuUtils.setVisibleEnabled(menu, R.id.menu_upload_bookmarklist, isGcPremiumMember, !isEmpty);
@@ -627,8 +633,8 @@ public class CacheListActivity extends AbstractListActivity implements FilteredA
 
             // Import submenu
             MenuUtils.setVisible(menu, R.id.menu_import, isOffline && listId != PseudoList.ALL_LIST.id);
-            MenuUtils.setEnabled(menu, R.id.menu_import_pq, Settings.isGCConnectorActive() && Settings.isGCPremiumMember());
-            MenuUtils.setEnabled(menu, R.id.menu_bookmarklists, Settings.isGCConnectorActive() && Settings.isGCPremiumMember());
+            MenuUtils.setEnabled(menu, R.id.menu_import_pq, isGcPremiumMember);
+            MenuUtils.setEnabled(menu, R.id.menu_bookmarklists, isGcPremiumMember);
 
             // Export
             MenuUtils.setVisibleEnabled(menu, R.id.menu_export, isHistory || isOffline, !isEmpty);
