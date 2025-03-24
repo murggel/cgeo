@@ -66,6 +66,7 @@ public class CacheListAdapter extends ArrayAdapter<Geocache> implements SectionI
     private float azimuth = 0;
     private long lastGlobalGPSUpdate = 0L;
     private boolean selectMode = false;
+    private int checkedCount = 0;
     private GeocacheFilter currentGeocacheFilter = null;
     private List<Geocache> originalList = null;
     private final boolean isLiveList = Settings.isLiveList();
@@ -229,13 +230,16 @@ public class CacheListAdapter extends ArrayAdapter<Geocache> implements SectionI
     }
 
     public int getCheckedCount() {
-        int checked = 0;
+        return isSelectMode() ? checkedCount : 0;
+    }
+
+    public void updateCheckedCount() {
+        checkedCount = 0;
         for (final Geocache cache : list) {
             if (cache.isStatusChecked()) {
-                checked++;
+                checkedCount++;
             }
         }
-        return checked;
     }
 
     public int getOriginalListCount() {
@@ -441,7 +445,7 @@ public class CacheListAdapter extends ArrayAdapter<Geocache> implements SectionI
 
         holder.binding.checkbox.setVisibility(selectMode ? View.VISIBLE : View.GONE);
         holder.binding.checkbox.setChecked(cache.isStatusChecked());
-        holder.binding.checkbox.setOnClickListener(new SelectionCheckBoxListener(cache));
+        holder.binding.checkbox.setOnClickListener(new SelectionCheckBoxListener(cache, this));
 
         distances.add(holder.binding.distance);
         holder.binding.distance.setCacheData(cache.getCoords(), cache.getDistance());
@@ -518,20 +522,28 @@ public class CacheListAdapter extends ArrayAdapter<Geocache> implements SectionI
         distances.clear();
         compasses.clear();
         buildFastScrollIndex();
+        updateCheckedCount();
     }
 
     private static class SelectionCheckBoxListener implements View.OnClickListener {
 
         private final Geocache cache;
+        @NonNull private final WeakReference<CacheListAdapter> adapterRef;
 
-        SelectionCheckBoxListener(final Geocache cache) {
+        SelectionCheckBoxListener(final Geocache cache, @NonNull final CacheListAdapter adapter) {
             this.cache = cache;
+            adapterRef = new WeakReference<>(adapter);
         }
 
         @Override
         public void onClick(final View view) {
             final boolean checkNow = ((CheckBox) view).isChecked();
             cache.setStatusChecked(checkNow);
+            final CacheListAdapter adapter = adapterRef.get();
+            if (adapter == null) {
+                return;
+            }
+            adapter.updateCheckedCount();
         }
     }
 
@@ -607,6 +619,7 @@ public class CacheListAdapter extends ArrayAdapter<Geocache> implements SectionI
                         if (!adapter.selectMode) {
                             adapter.switchSelectMode();
                             cache.setStatusChecked(true);
+                            adapter.updateCheckedCount();
                         }
                         return true;
                     }

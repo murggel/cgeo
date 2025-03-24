@@ -677,9 +677,11 @@ public class CacheListActivity extends AbstractListActivity implements FilteredA
         if (menuItem == null) {
             return;
         }
-        final boolean hasSelection = adapter != null && adapter.getCheckedCount() > 0;
+
+        final int checkedCount = adapter.getCheckedCount();
+        final boolean hasSelection = adapter != null && checkedCount > 0;
         if (hasSelection) {
-            menuItem.setTitle(res.getString(resIdSelection) + " (" + adapter.getCheckedCount() + ")");
+            menuItem.setTitle(res.getString(resIdSelection) + " (" + checkedCount + ")");
         } else {
             menuItem.setTitle(res.getString(resId));
         }
