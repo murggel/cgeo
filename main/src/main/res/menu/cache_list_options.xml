@@ -200,6 +200,11 @@
                 android:icon="@drawable/ic_menu_upload"
                 android:title="@string/caches_upload_allcoords"
                 app:showAsAction="ifRoom|withText" />
+            <item
+                android:id="@+id/menu_send_offline_logs"
+                android:title="@string/caches_send_offlinelogs"
+                android:enabled="true"
+                app:showAsAction="never|withText" />
         </menu>
     </item>
     <item

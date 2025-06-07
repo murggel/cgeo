@@ -528,6 +528,17 @@
     <string name="caches_filter_title">Filter by</string>
     <string name="caches_filter_select_last">Previous filter</string>
     <string name="caches_removing_from_history">Removing from History…</string>
+    <string name="caches_send_offlinelogs">Send offline logs</string>
+    <string name="caches_send_offlinelogs_progress">Sending offline %1$d logs</string>
+    <string name="caches_send_offlinelogs_message">Do you want to send the offline logs for %1$d caches?</string>
+    <plurals name="caches_send_offlinelogs_status">
+        <item quantity="zero">Sent %1$d offline log successfully</item>
+        <item quantity="one">Sent %1$d offline log successfully</item>
+        <item quantity="two">Sent %1$d offline logs successfully</item>
+        <item quantity="few">Sent %1$d offline logs successfully</item>
+        <item quantity="many">Sent %1$d offline logs successfully</item>
+        <item quantity="other">Sent %1$d offline logs successfully</item>
+    </plurals>
     <string name="caches_clear_offlinelogs">Clear offline logs</string>
     <string name="caches_clear_offlinelogs_message">Do you want to clear the offline logs?</string>
     <string name="caches_clear_offlinelogs_progress">Clearing offline logs</string>

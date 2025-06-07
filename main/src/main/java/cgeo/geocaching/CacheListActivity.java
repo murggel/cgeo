@@ -801,6 +801,9 @@ public class CacheListActivity extends AbstractListActivity implements FilteredA
         } else if (menuItem == R.id.menu_upload_allcoords) {
             final Activity that2 = this;
             SimpleDialog.of(this).setTitle(R.string.caches_upload_allcoords_dialogtitle).setMessage(R.string.caches_upload_allcoords_warning).confirm(() -> new BatchUploadModifiedCoordinates(false).export(adapter.getCheckedOrAllCaches(), that2));
+        } else if (menuItem == R.id.menu_send_offline_logs) {
+            sendOfflineLogs(adapter.getCheckedOrAllCaches());
+            invalidateOptionsMenuCompatible();
         } else if (menuItem == R.id.menu_remove_from_history) {
             removeFromHistoryCheck();
             invalidateOptionsMenuCompatible();
@@ -895,6 +898,13 @@ public class CacheListActivity extends AbstractListActivity implements FilteredA
         SimpleDialog.of(this).setTitle(R.string.caches_clear_offlinelogs).setMessage(R.string.caches_clear_offlinelogs_message).setButtons(SimpleDialog.ButtonTextSet.YES_NO).confirm(() -> {
             progress.show(CacheListActivity.this, null, res.getString(R.string.caches_clear_offlinelogs_progress), true, clearOfflineLogsHandler.disposeMessage());
             clearOfflineLogs(clearOfflineLogsHandler, caches);
+        });
+    }
+
+    private void sendOfflineLogs(final Collection<Geocache> caches) {
+        SimpleDialog.of(this).setTitle(R.string.caches_send_offlinelogs).setMessage(R.string.caches_send_offlinelogs_message).setButtons(SimpleDialog.ButtonTextSet.YES_NO).confirm(() -> {
+            progress.show(CacheListActivity.this, null, res.getString(R.string.caches_send_offlinelogs_progress, caches.size()), true, clearOfflineLogsHandler.disposeMessage());
+            sendOfflineLogs(clearOfflineLogsHandler, caches);
         });
     }
 
@@ -1416,6 +1426,12 @@ public class CacheListActivity extends AbstractListActivity implements FilteredA
         Schedulers.io().scheduleDirect(() -> {
             DataStore.clearLogsOffline(selectedCaches);
             handler.sendEmptyMessage(DownloadProgress.MSG_DONE);
+        });
+    }
+
+    private static void sendOfflineLogs(final Handler handler, final Collection<Geocache> selectedCaches) {
+        Schedulers.io().scheduleDirect(() -> {
+            handler.sendMessage(handler.obtainMessage(DownloadProgress.MSG_DONE, R.plurals.caches_send_offlinelogs_status, selectedCaches.size()));
         });
     }
 
