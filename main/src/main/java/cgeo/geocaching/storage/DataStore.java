@@ -114,7 +114,6 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.stream.Collectors;
 
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Single;
@@ -3020,16 +3019,10 @@ public class DataStore {
 
             if (loadFlags.contains(LoadFlag.CACHE_BEFORE)) {
                 for (final String geocode : geocodes) {
-                    final Geocache cacheCasesensitive = cacheCache.getCacheFromCache(geocode);
-                    if (cacheCasesensitive != null) {
-                        result.add(cacheCasesensitive);
-                        remaining.removeIf(s -> s.equalsIgnoreCase(geocode));
-                    } else {
-                        final Geocache cacheUppercase = cacheCache.getCacheFromCache(geocode.toUpperCase());
-                        if (cacheUppercase != null) {
-                            result.add(cacheUppercase);
-                            remaining.removeIf(s -> s.equalsIgnoreCase(geocode));
-                        }
+                    final Geocache cache = cacheCache.getCacheFromCache(geocode);
+                    if (cache != null) {
+                        result.add(cache);
+                        remaining.remove(cache.getGeocode());
                     }
                 }
             }
@@ -3046,14 +3039,7 @@ public class DataStore {
                 final Set<Geocache> cachesFromDB = loadCachesFromGeocodes(remaining, loadFlags);
                 result.addAll(cachesFromDB);
                 for (final Geocache cache : cachesFromDB) {
-                    remaining.removeIf(s -> s.equalsIgnoreCase(cache.getGeocode()));
-                }
-
-                final Set<String> remainingUppercase = remaining.stream().map(String::toUpperCase).collect(Collectors.toSet());
-                final Set<Geocache> cachesUppercaseFromDB = loadCachesFromGeocodes(remainingUppercase, loadFlags);
-                result.addAll(cachesUppercaseFromDB);
-                for (final Geocache cache : cachesUppercaseFromDB) {
-                    remaining.removeIf(s -> s.equalsIgnoreCase(cache.getGeocode()));
+                    remaining.remove(cache.getGeocode());
                 }
             }
 
@@ -3062,7 +3048,7 @@ public class DataStore {
                     final Geocache cache = cacheCache.getCacheFromCache(geocode);
                     if (cache != null) {
                         result.add(cache);
-                        remaining.removeIf(s -> s.equalsIgnoreCase(cache.getGeocode()));
+                        remaining.remove(cache.getGeocode());
                     }
                 }
             }
