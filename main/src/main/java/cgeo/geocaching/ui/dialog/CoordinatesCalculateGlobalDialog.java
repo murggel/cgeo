@@ -2,6 +2,7 @@ package cgeo.geocaching.ui.dialog;
 
 import cgeo.geocaching.R;
 import cgeo.geocaching.activity.ActivityMixin;
+import cgeo.geocaching.connector.internal.InternalConnector;
 import cgeo.geocaching.databinding.CoordinatescalculateglobalDialogBinding;
 import cgeo.geocaching.enumerations.LoadFlags;
 import cgeo.geocaching.enumerations.WaypointType;
@@ -404,7 +405,7 @@ public class CoordinatesCalculateGlobalDialog extends DialogFragment {
                         return;
                     }
                     //generate a new fake cache in-memory (without a coordinate) to enable showing the waypoints on a map
-                    final String dummyGeocode = "TEMP-SHOWWPS-" + System.currentTimeMillis();
+                    final String dummyGeocode = InternalConnector.PREFIX + "-SHOWWPS-" + System.currentTimeMillis();
                     final Geocache dummyCache = new Geocache();
                     dummyCache.setGeocode(dummyGeocode);
                     DataStore.saveCache(dummyCache, EnumSet.of(LoadFlags.SaveFlag.CACHE));
