@@ -418,22 +418,38 @@ public class UnifiedMapActivity extends AbstractNavigationBarMapActivity impleme
                                 onReceiveTargetUpdate(new AbstractDialogFragment.TargetInfo(waypoint.getCoords(), waypoint.getName()));
                             }
                         }
-                    } else if (cache.getCoords() != null) { // geocache mode: display ONLY geocache and its waypoints
+                    } else { // geocache mode: display ONLY geocache and its waypoints
                         viewModel.caches.write(false, c -> {
                             c.clear();
                             c.add(cache);
                         });
-                        if (setDefaultCenterAndZoom) {
-                            mapFragment.setCenter(cache.getCoords());
-                        }
+
                         viewModel.waypoints.write(wps -> {
                             wps.clear();
                             final Set<Waypoint> waypoints = new HashSet<>(cache.getWaypoints());
                             MapUtils.filter(waypoints, getFilterContext());
                             wps.addAll(waypoints);
                         });
+
+                        AtomicReference<Geopoint> cacheCoordinates = new AtomicReference<>(cache.getCoords());
+                        if (cache.getCoords() == null) {
+                            viewModel.waypoints.read(wps -> {
+                                for (Waypoint waypoint : wps) {
+                                    final Geopoint wpCoord = waypoint.getCoords();
+                                    if (wpCoord != null) {
+                                        cacheCoordinates.set(wpCoord);
+                                        break;
+                                    }
+                                }
+                            });
+                        }
+
+                        if (setDefaultCenterAndZoom) {
+                            mapFragment.setCenter(cacheCoordinates.get());
+                        }
+
                         if (!isTargetSet()) {
-                            onReceiveTargetUpdate(new AbstractDialogFragment.TargetInfo(cache.getCoords(), cache.getGeocode()));
+                            onReceiveTargetUpdate(new AbstractDialogFragment.TargetInfo(cacheCoordinates.get(), cache.getGeocode()));
                         }
                     }
                     viewModel.waypoints.notifyDataChanged();
@@ -568,8 +584,8 @@ public class UnifiedMapActivity extends AbstractNavigationBarMapActivity impleme
 
         //hide status if we are live
         if (!TRUE.equals(viewModel.transientIsLiveEnabled.getValue())) {
-            spinner.setVisibility(View.GONE);
-            liveMapStatus.setVisibility(View.GONE);
+            spinner.setVisibility(GONE);
+            liveMapStatus.setVisibility(GONE);
             return;
         }
         //set live map status
@@ -578,7 +594,7 @@ public class UnifiedMapActivity extends AbstractNavigationBarMapActivity impleme
             liveMapStatus.getBackground().setTint(getResources().getColor(status.isError() ? R.color.cacheMarker_archived : R.color.osm_zoomcontrol));
             liveMapStatus.setVisibility(View.VISIBLE);
         } else {
-            liveMapStatus.setVisibility(View.GONE);
+            liveMapStatus.setVisibility(GONE);
         }
         //set spinner
         switch (status.loadState) {
@@ -587,7 +603,7 @@ public class UnifiedMapActivity extends AbstractNavigationBarMapActivity impleme
                 spinner.setIndeterminate(true);
                 break;
             case STOPPED:
-                spinner.setVisibility(View.GONE);
+                spinner.setVisibility(GONE);
                 break;
             case REQUESTED:
                 spinner.setVisibility(View.VISIBLE);
@@ -1044,7 +1060,7 @@ public class UnifiedMapActivity extends AbstractNavigationBarMapActivity impleme
         Settings.setMapRotation(mapRotation);
         mapFragment.setMapRotation(mapRotation);
         invalidateOptionsMenu();
-        ViewUtils.setVisibility(findViewById(R.id.map_compassrose), mapRotation == MAPROTATION_OFF ? View.GONE : View.VISIBLE);
+        ViewUtils.setVisibility(findViewById(R.id.map_compassrose), mapRotation == MAPROTATION_OFF ? GONE : View.VISIBLE);
         checkDrivingMode();
     }
 
