@@ -374,141 +374,143 @@ public class UnifiedMapActivity extends AbstractNavigationBarMapActivity impleme
     }
 
     private void reloadCachesAndWaypoints() {
-        final boolean setDefaultCenterAndZoom = this.cacheReloadState == CacheReloadState.INITIALIZE;
+        AndroidRxUtils.runOnUi(() -> {
+            final boolean setDefaultCenterAndZoom = this.cacheReloadState == CacheReloadState.INITIALIZE;
 
-        final UnifiedMapType mapType = viewModel.mapType;
-        switch (mapType.type) {
-            case UMTT_PlainMap:
-                // restore last saved position and zoom
-                if (setDefaultCenterAndZoom) {
-                    mapFragment.setZoom(Settings.getMapZoom(viewModel.mapType.type.compatibilityMapMode));
-                    mapFragment.setCenter(Settings.getUMMapCenter());
-                }
-                break;
-            case UMTT_Viewport:
-                // set bounds to given viewport
-                if (setDefaultCenterAndZoom && mapType.viewport != null) {
-                    mapFragment.setCenter(mapType.viewport.getCenter());
-                    mapFragment.zoomToBounds(mapType.viewport);
-                }
-                if (!isTargetSet() && mapType.coords != null && mapType.viewport.contains(mapType.coords)) {
-                    onReceiveTargetUpdate(new AbstractDialogFragment.TargetInfo(mapType.coords,
-                            StringUtils.isNotBlank(mapType.title) ? mapType.title : "---"));
-                }
-                break;
-            case UMTT_TargetGeocode: // can be either a cache or a waypoint
-                // load cache/waypoint, focus map on it, and set it as target
-                final Geocache cache = DataStore.loadCache(mapType.target, LoadFlags.LOAD_WAYPOINTS);
-                if (cache != null) {
-                    if (mapType.waypointId > 0) { // single waypoint mode: display waypoint only
-                        viewModel.caches.write(false, Set::clear);
-                        final Waypoint waypoint = cache.getWaypointById(mapType.waypointId);
-                        if (waypoint != null) {
-                            if (setDefaultCenterAndZoom) {
-                                mapFragment.setCenter(waypoint.getCoords());
-                                mapFragment.zoomToBounds(DataStore.getBounds(mapType.target, true));
+            final UnifiedMapType mapType = viewModel.mapType;
+            switch (mapType.type) {
+                case UMTT_PlainMap:
+                    // restore last saved position and zoom
+                    if (setDefaultCenterAndZoom) {
+                        mapFragment.setZoom(Settings.getMapZoom(viewModel.mapType.type.compatibilityMapMode));
+                        mapFragment.setCenter(Settings.getUMMapCenter());
+                    }
+                    break;
+                case UMTT_Viewport:
+                    // set bounds to given viewport
+                    if (setDefaultCenterAndZoom && mapType.viewport != null) {
+                        mapFragment.setCenter(mapType.viewport.getCenter());
+                        mapFragment.zoomToBounds(mapType.viewport);
+                    }
+                    if (!isTargetSet() && mapType.coords != null && mapType.viewport.contains(mapType.coords)) {
+                        onReceiveTargetUpdate(new AbstractDialogFragment.TargetInfo(mapType.coords,
+                                StringUtils.isNotBlank(mapType.title) ? mapType.title : "---"));
+                    }
+                    break;
+                case UMTT_TargetGeocode: // can be either a cache or a waypoint
+                    // load cache/waypoint, focus map on it, and set it as target
+                    final Geocache cache = DataStore.loadCache(mapType.target, LoadFlags.LOAD_WAYPOINTS);
+                    if (cache != null) {
+                        if (mapType.waypointId > 0) { // single waypoint mode: display waypoint only
+                            viewModel.caches.write(false, Set::clear);
+                            final Waypoint waypoint = cache.getWaypointById(mapType.waypointId);
+                            if (waypoint != null) {
+                                if (setDefaultCenterAndZoom) {
+                                    mapFragment.setCenter(waypoint.getCoords());
+                                    mapFragment.zoomToBounds(DataStore.getBounds(mapType.target, true));
+                                }
+                                viewModel.waypoints.write(wps -> {
+                                    wps.clear();
+                                    wps.add(waypoint);
+                                });
+                                if (!isTargetSet()) {
+                                    onReceiveTargetUpdate(new AbstractDialogFragment.TargetInfo(waypoint.getCoords(), waypoint.getName()));
+                                }
                             }
+                        } else { // geocache mode: display ONLY geocache and its waypoints
+                            viewModel.caches.write(false, c -> {
+                                c.clear();
+                                c.add(cache);
+                            });
+
                             viewModel.waypoints.write(wps -> {
                                 wps.clear();
-                                wps.add(waypoint);
+                                final Set<Waypoint> waypoints = new HashSet<>(cache.getWaypoints());
+                                MapUtils.filter(waypoints, getFilterContext());
+                                wps.addAll(waypoints);
                             });
-                            if (!isTargetSet()) {
-                                onReceiveTargetUpdate(new AbstractDialogFragment.TargetInfo(waypoint.getCoords(), waypoint.getName()));
-                            }
-                        }
-                    } else { // geocache mode: display ONLY geocache and its waypoints
-                        viewModel.caches.write(false, c -> {
-                            c.clear();
-                            c.add(cache);
-                        });
 
-                        viewModel.waypoints.write(wps -> {
-                            wps.clear();
-                            final Set<Waypoint> waypoints = new HashSet<>(cache.getWaypoints());
-                            MapUtils.filter(waypoints, getFilterContext());
-                            wps.addAll(waypoints);
-                        });
+                            final Geopoint cacheCoordinates = cache.getCoords();
+                            final Geopoint currentCoordinates = null == cacheCoordinates ? getFirstCoordinatesOfWaypoints() : cacheCoordinates;
 
-                        final Geopoint cacheCoordinates = cache.getCoords();
-                        final Geopoint currentCoordinates = null == cacheCoordinates ? getFirstCoordinatesOfWaypoints() : cacheCoordinates;
-
-                        if (setDefaultCenterAndZoom) {
-                            mapFragment.setCenter(currentCoordinates);
-                            mapFragment.zoomToBounds(DataStore.getBounds(mapType.target, null == cacheCoordinates || Settings.getZoomIncludingWaypoints()));
-                        }
-
-                        if (!isTargetSet()) {
-                            onReceiveTargetUpdate(new AbstractDialogFragment.TargetInfo(currentCoordinates, cache.getGeocode()));
-                        }
-                    }
-                    viewModel.waypoints.notifyDataChanged();
-                }
-                break;
-            case UMTT_TargetCoords:
-                // set given coords as map center
-                if (setDefaultCenterAndZoom) {
-                    mapFragment.setCenter(mapType.coords);
-                }
-                viewModel.coordsIndicator.setValue(mapType.coords);
-                break;
-            case UMTT_List:
-                // load list of caches belonging to list and scale map to see them all
-                final AtomicReference<Viewport> viewport3 = new AtomicReference<>();
-                AndroidRxUtils.andThenOnUi(Schedulers.io(), () -> {
-                    final SearchResult searchResult = DataStore.getBatchOfStoredCaches(null, mapType.fromList, mapType.filterContext.get(), null, false, -1);
-                    viewport3.set(DataStore.getBounds(searchResult.getGeocodes(), Settings.getZoomIncludingWaypoints()));
-                    replaceSearchResultByGeocaches(searchResult);
-                }, () -> {
-                    if (viewport3.get() != null) {
-                        if (setDefaultCenterAndZoom) {
-                            restoreOrSetViewport(viewport3.get());
-                        }
-                        refreshMapData(true);
-                    }
-                });
-                break;
-            case UMTT_SearchResult:
-                // load list of caches and scale map to see them all
-                final AtomicReference<Viewport> viewport2 = new AtomicReference<>();
-                AndroidRxUtils.andThenOnUi(Schedulers.io(), () -> {
-                    viewport2.set(DataStore.getBounds(mapType.searchResult.getGeocodes(), Settings.getZoomIncludingWaypoints()));
-                    replaceSearchResultByGeocaches(mapType.searchResult);
-                }, () -> {
-                    if (viewport2.get() != null) {
-                        if (setDefaultCenterAndZoom) {
-                            restoreOrSetViewport(viewport2.get());
-                        }
-
-                        if (mapType.coords != null) {
                             if (setDefaultCenterAndZoom) {
-                                mapFragment.setCenter(mapType.coords);
+                                mapFragment.setCenter(currentCoordinates);
+                                mapFragment.zoomToBounds(DataStore.getBounds(mapType.target, null == cacheCoordinates || Settings.getZoomIncludingWaypoints()));
                             }
-                            viewModel.coordsIndicator.setValue(mapType.coords);
+
+                            if (!isTargetSet()) {
+                                onReceiveTargetUpdate(new AbstractDialogFragment.TargetInfo(currentCoordinates, cache.getGeocode()));
+                            }
                         }
-                        refreshMapData(true);
+                        viewModel.waypoints.notifyDataChanged();
                     }
-                });
-                break;
-            default:
-                // nothing to do
-                break;
-        }
+                    break;
+                case UMTT_TargetCoords:
+                    // set given coords as map center
+                    if (setDefaultCenterAndZoom) {
+                        mapFragment.setCenter(mapType.coords);
+                    }
+                    viewModel.coordsIndicator.setValue(mapType.coords);
+                    break;
+                case UMTT_List:
+                    // load list of caches belonging to list and scale map to see them all
+                    final AtomicReference<Viewport> viewport3 = new AtomicReference<>();
+                    AndroidRxUtils.andThenOnUi(Schedulers.io(), () -> {
+                        final SearchResult searchResult = DataStore.getBatchOfStoredCaches(null, mapType.fromList, mapType.filterContext.get(), null, false, -1);
+                        viewport3.set(DataStore.getBounds(searchResult.getGeocodes(), Settings.getZoomIncludingWaypoints()));
+                        replaceSearchResultByGeocaches(searchResult);
+                    }, () -> {
+                        if (viewport3.get() != null) {
+                            if (setDefaultCenterAndZoom) {
+                                restoreOrSetViewport(viewport3.get());
+                            }
+                            refreshMapData(true);
+                        }
+                    });
+                    break;
+                case UMTT_SearchResult:
+                    // load list of caches and scale map to see them all
+                    final AtomicReference<Viewport> viewport2 = new AtomicReference<>();
+                    AndroidRxUtils.andThenOnUi(Schedulers.io(), () -> {
+                        viewport2.set(DataStore.getBounds(mapType.searchResult.getGeocodes(), Settings.getZoomIncludingWaypoints()));
+                        replaceSearchResultByGeocaches(mapType.searchResult);
+                    }, () -> {
+                        if (viewport2.get() != null) {
+                            if (setDefaultCenterAndZoom) {
+                                restoreOrSetViewport(viewport2.get());
+                            }
+
+                            if (mapType.coords != null) {
+                                if (setDefaultCenterAndZoom) {
+                                    mapFragment.setCenter(mapType.coords);
+                                }
+                                viewModel.coordsIndicator.setValue(mapType.coords);
+                            }
+                            refreshMapData(true);
+                        }
+                    });
+                    break;
+                default:
+                    // nothing to do
+                    break;
+            }
 
 
-        if (this.cacheReloadState == CacheReloadState.RESUME) {
-            mapFragment.setZoom(Settings.getMapZoom(viewModel.mapType.type.compatibilityMapMode));
-            mapFragment.setCenter(Settings.getUMMapCenter());
-        }
-        //reset cacheReloadState
-        this.cacheReloadState = CacheReloadState.REFRESH;
+            if (this.cacheReloadState == CacheReloadState.RESUME) {
+                mapFragment.setZoom(Settings.getMapZoom(viewModel.mapType.type.compatibilityMapMode));
+                mapFragment.setCenter(Settings.getUMMapCenter());
+            }
+            //reset cacheReloadState
+            this.cacheReloadState = CacheReloadState.REFRESH;
 
-        refreshListChooser();
+            refreshListChooser();
 
-        // only initialize loadInBackgroundHandler if caches should actually be loaded
-        viewModel.liveMapHandler.setEnabled(mapType.enableLiveMap());
-        if (mapType.enableLiveMap()) {
-            refreshMapData(true);
-        }
+            // only initialize loadInBackgroundHandler if caches should actually be loaded
+            viewModel.liveMapHandler.setEnabled(mapType.enableLiveMap());
+            if (mapType.enableLiveMap()) {
+                refreshMapData(true);
+            }
+        });
     }
 
     private Geopoint getFirstCoordinatesOfWaypoints() {
