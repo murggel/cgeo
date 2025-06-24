@@ -400,15 +400,13 @@ public class UnifiedMapActivity extends AbstractNavigationBarMapActivity impleme
                 // load cache/waypoint, focus map on it, and set it as target
                 final Geocache cache = DataStore.loadCache(mapType.target, LoadFlags.LOAD_WAYPOINTS);
                 if (cache != null) {
-                    if (setDefaultCenterAndZoom) {
-                        mapFragment.zoomToBounds(DataStore.getBounds(mapType.target, Settings.getZoomIncludingWaypoints()));
-                    }
                     if (mapType.waypointId > 0) { // single waypoint mode: display waypoint only
                         viewModel.caches.write(false, Set::clear);
                         final Waypoint waypoint = cache.getWaypointById(mapType.waypointId);
                         if (waypoint != null) {
                             if (setDefaultCenterAndZoom) {
                                 mapFragment.setCenter(waypoint.getCoords());
+                                mapFragment.zoomToBounds(DataStore.getBounds(mapType.target, true));
                             }
                             viewModel.waypoints.write(wps -> {
                                 wps.clear();
@@ -436,6 +434,7 @@ public class UnifiedMapActivity extends AbstractNavigationBarMapActivity impleme
 
                         if (setDefaultCenterAndZoom) {
                             mapFragment.setCenter(currentCoordinates);
+                            mapFragment.zoomToBounds(DataStore.getBounds(mapType.target, null == cacheCoordinates || Settings.getZoomIncludingWaypoints()));
                         }
 
                         if (!isTargetSet()) {
