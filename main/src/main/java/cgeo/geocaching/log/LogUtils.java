@@ -344,7 +344,8 @@ public final class LogUtils {
 
         progress.accept(LocalizationUtils.getString(R.string.log_posting_deletelog));
 
-        final LogResult result = cache.getLoggingManager().deleteLog(logEntry, reason);
+        final ILoggingManager loggingManager = cache.getLoggingManager();
+        final LogResult result = loggingManager.deleteLog(logEntry, reason);
         if (!result.isOk()) {
             return result;
         }
@@ -359,6 +360,22 @@ public final class LogUtils {
                 }
             }
         });
+
+        final IConnector cacheConnector = loggingManager.getConnector();
+
+        //update "found" counter
+        final boolean isFoundLog = logEntry.logType.isFoundLog();
+        if (isFoundLog) {
+            if (cacheConnector instanceof ILogin) {
+                ((ILogin) cacheConnector).increaseCachesFound(-1);
+            }
+            cache.setFound(false);
+            DataStore.saveChangedCache(cache);
+        } else if (LogType.DIDNT_FIND_IT == logEntry.logType) {
+            cache.setDNF(false);
+            DataStore.saveChangedCache(cache);
+        }
+
         cache.notifyChange();
         return result;
     }
