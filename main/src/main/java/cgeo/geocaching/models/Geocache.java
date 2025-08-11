@@ -32,6 +32,7 @@ import cgeo.geocaching.log.LogEntry;
 import cgeo.geocaching.log.LogTemplateProvider;
 import cgeo.geocaching.log.LogTemplateProvider.LogContext;
 import cgeo.geocaching.log.LogType;
+import cgeo.geocaching.log.LogUtils;
 import cgeo.geocaching.log.OfflineLogEntry;
 import cgeo.geocaching.log.ReportProblemType;
 import cgeo.geocaching.maps.mapsforge.v6.caches.GeoitemRef;
@@ -102,6 +103,7 @@ import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.DateUtils;
 
 
 /**
@@ -1403,7 +1405,19 @@ public class Geocache implements INamedGeoCoordinate {
     @NonNull
     public List<LogEntry> getLogs() {
         //if a cache was freshly loaded from server, it may not have the "logs" flag although logs exist in local db.
-        return DataStore.loadLogs(geocode);
+        List<LogEntry> logsFromDb = DataStore.loadLogs(geocode);
+        logsFromDb.sort((l1, l2) -> {
+            final Date date1 = l1.getDate();
+            final Date date2 = l2.getDate();
+            if (DateUtils.isSameDay(date1, date2)) {
+                final long id1 = GCUtils.logCodeToLogId(l1.serviceLogId);
+                final long id2 = GCUtils.logCodeToLogId(l2.serviceLogId);
+                return Long.compare(id1, id2);
+            }
+            return date1.compareTo(date2);
+        });
+
+        return logsFromDb;
         //return inDatabase() ? DataStore.loadLogs(geocode) : Collections.emptyList();
     }
 
