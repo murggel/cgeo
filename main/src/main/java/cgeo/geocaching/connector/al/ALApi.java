@@ -331,8 +331,10 @@ final class ALApi {
             final JsonNode location = response.at(LOCATION);
             final String deepLink = response.get("DeepLink").asText();
             final String[] segments = deepLink.split("/");
-            final String geocode = ALConnector.GEOCODE_PREFIX + response.get("Id").asText();
+            final String guid = response.get("Id").asText();
+            final String geocode = ALConnector.GEOCODE_PREFIX + guid;
             cache.setGeocode(geocode);
+            cache.setGuid(guid);
             cache.setCacheId(segments[segments.length - 1]);
             cache.setName(response.get(TITLE).asText());
             cache.setCoords(new Geopoint(location.get(LATITUDE).asText(), location.get(LONGITUDE).asText()));
@@ -366,10 +368,12 @@ final class ALApi {
             final JsonNode location = response.at(LOCATION);
             final String deepLink = response.get("DeepLink").asText();
             final String[] segments = deepLink.split("/");
-            final String geocode = ALConnector.GEOCODE_PREFIX + response.get("Id").asText();
+            final String guid = response.get("Id").asText();
+            final String geocode = ALConnector.GEOCODE_PREFIX + guid;
             final String ilink = response.get("KeyImageUrl").asText();
             final String desc = response.get("Description").asText();
             cache.setGeocode(geocode);
+            cache.setGuid(guid);
             cache.setCacheId(segments[segments.length - 1]);
             cache.setName(response.get(TITLE).asText());
             cache.setDescription((StringUtils.isNotBlank(ilink) ? "<img src=\"" + ilink + "\"></img><p><p>" : "") + desc);

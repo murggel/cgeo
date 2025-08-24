@@ -33,6 +33,8 @@ public class ALConnector extends AbstractConnector implements ISearchByGeocode, 
 
     @NonNull
     private static final String CACHE_URL = "https://labs.geocaching.com/goto/";
+    private static final String CACHE_URL_DEPRECATED = "https://adventurelab.page.link/";
+
 
     @NonNull
     protected static final String GEOCODE_PREFIX = "AL";
@@ -41,7 +43,7 @@ public class ALConnector extends AbstractConnector implements ISearchByGeocode, 
      * Pattern for AL codes
      */
     @NonNull
-    private static final Pattern PATTERN_AL_CODE = Pattern.compile("AL[-\\w]+", Pattern.CASE_INSENSITIVE);
+    private static final Pattern PATTERN_AL_CODE = Pattern.compile(GEOCODE_PREFIX + "[-\\w]+", Pattern.CASE_INSENSITIVE);
 
     private final String name;
 
@@ -79,11 +81,16 @@ public class ALConnector extends AbstractConnector implements ISearchByGeocode, 
     @NonNull
     public String getCacheUrl(@NonNull final Geocache cache) {
         final String launcher = Settings.getALCLauncher();
-        if (StringUtils.isEmpty(launcher)) {
-            return CACHE_URL + cache.getCacheId();
-        } else {
+        if (!StringUtils.isEmpty(launcher)) {
             return launcher + cache.getGeocode().substring(2);
         }
+
+        // it the guid is empty, the cache is from an old import and we have to use the deprecated URL
+        if (StringUtils.isEmpty(cache.getGuid())) {
+            return CACHE_URL_DEPRECATED + cache.getCacheId();
+        }
+
+        return getCacheUrlPrefix() + cache.getCacheId();
     }
 
     @Override
@@ -212,10 +219,16 @@ public class ALConnector extends AbstractConnector implements ISearchByGeocode, 
     @Override
     @Nullable
     public String getGeocodeFromUrl(@NonNull final String url) {
-        final String geocode = "AL" + StringUtils.substringAfter(url, "https://adventurelab.page.link/");
+        final String geocode = GEOCODE_PREFIX + StringUtils.substringAfter(url, getCacheUrlPrefix());
         if (canHandle(geocode)) {
             return geocode;
         }
+
+        final String geocodeDeprecated = GEOCODE_PREFIX + StringUtils.substringAfter(url, CACHE_URL_DEPRECATED);
+        if (canHandle(geocodeDeprecated)) {
+            return geocodeDeprecated;
+        }
+
         return super.getGeocodeFromUrl(url);
     }
 }
