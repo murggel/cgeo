@@ -15,6 +15,8 @@ import cgeo.geocaching.storage.DataStore;
 import cgeo.geocaching.storage.extension.FoundNumCounter;
 import cgeo.geocaching.utils.Formatter;
 
+import android.content.res.Resources;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
@@ -47,14 +49,16 @@ public final class LogTemplateProvider {
         private Trackable trackable;
         private boolean offline = false;
         private final LogEntry logEntry;
+        private Resources resources = null;
 
         public LogContext(final Geocache cache, final LogEntry logEntry) {
             this(cache, logEntry, false);
         }
 
-        public LogContext(final Trackable trackable, final LogEntry logEntry) {
+        public LogContext(final Trackable trackable, final LogEntry logEntry, final Resources resources) {
             this.trackable = trackable;
             this.logEntry = logEntry;
+            this.resources = resources;
         }
 
         public LogContext(final Geocache cache, final LogEntry logEntry, final boolean offline) {
@@ -77,6 +81,10 @@ public final class LogTemplateProvider {
 
         public final LogEntry getLogEntry() {
             return logEntry;
+        }
+
+        public final Resources getResources() {
+            return resources;
         }
     }
 
@@ -328,9 +336,24 @@ public final class LogTemplateProvider {
         templates.add(new LogTemplate("GEOCODE", R.string.init_signature_template_geocode) {
             @Override
             public String getValue(final LogContext context) {
+                final Trackable trackable = context.getTrackable();
+                if (trackable != null) {
+                    return trackable.getSpottedCacheGeocode();
+                }
+
                 final Geocache cache = context.getCache();
                 if (cache != null) {
                     return cache.getGeocode();
+                }
+                return StringUtils.EMPTY;
+            }
+        });
+        templates.add(new LogTemplate("TB_LOCATION", R.string.init_signature_template_tblocation) {
+            @Override
+            public String getValue(final LogContext context) {
+                final Trackable trackable = context.getTrackable();
+                if (trackable != null) {
+                    return trackable.getSpottedLocation(context.getResources());
                 }
                 return StringUtils.EMPTY;
             }

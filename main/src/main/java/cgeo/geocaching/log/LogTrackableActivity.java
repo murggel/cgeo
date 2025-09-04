@@ -395,7 +395,7 @@ public class LogTrackableActivity extends AbstractLoggingActivity implements Loa
 
     @Override
     protected LogContext getLogContext() {
-        return new LogContext(trackable, null);
+        return new LogContext(trackable, null, getResources());
     }
 
     @Override
