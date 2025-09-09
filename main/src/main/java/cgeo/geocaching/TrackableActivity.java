@@ -522,15 +522,35 @@ public class TrackableActivity extends TabbedViewPagerActivity {
             }
 
             // trackable spotted
-            final String spottedText = trackable.getSpottedLocation(activity.res);
-            if (spottedText != null) {
+            if (StringUtils.isNotBlank(trackable.getSpottedName()) ||
+                    trackable.getSpottedType() == Trackable.SPOTTED_UNKNOWN ||
+                    trackable.getSpottedType() == Trackable.SPOTTED_OWNER ||
+                    trackable.getSpottedType() == Trackable.SPOTTED_ARCHIVED) {
+
                 final StringBuilder text;
                 boolean showTimeSpan = true;
-                if (StringUtils.isBlank(spottedText)) {
-                    text = new StringBuilder("N/A");
-                    showTimeSpan = false;
-                } else {
-                    text = new StringBuilder(spottedText);
+                switch (trackable.getSpottedType()) {
+                    case Trackable.SPOTTED_CACHE:
+                        // TODO: the whole sentence fragment should not be constructed, but taken from the resources
+                        text = new StringBuilder(activity.res.getString(R.string.trackable_spotted_in_cache)).append(' ').append(HtmlCompat.fromHtml(trackable.getSpottedName(), HtmlCompat.FROM_HTML_MODE_LEGACY));
+                        break;
+                    case Trackable.SPOTTED_USER:
+                        // TODO: the whole sentence fragment should not be constructed, but taken from the resources
+                        text = new StringBuilder(activity.res.getString(R.string.trackable_spotted_at_user)).append(' ').append(HtmlCompat.fromHtml(trackable.getSpottedName(), HtmlCompat.FROM_HTML_MODE_LEGACY));
+                        break;
+                    case Trackable.SPOTTED_UNKNOWN:
+                        text = new StringBuilder(activity.res.getString(R.string.trackable_spotted_unknown_location));
+                        break;
+                    case Trackable.SPOTTED_OWNER:
+                        text = new StringBuilder(activity.res.getString(R.string.trackable_spotted_owner));
+                        break;
+                    case Trackable.SPOTTED_ARCHIVED:
+                        text = new StringBuilder(activity.res.getString(R.string.trackable_spotted_archived));
+                        break;
+                    default:
+                        text = new StringBuilder("N/A");
+                        showTimeSpan = false;
+                        break;
                 }
 
                 // days since last spotting

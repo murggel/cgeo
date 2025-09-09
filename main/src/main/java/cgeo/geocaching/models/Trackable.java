@@ -1,6 +1,5 @@
 package cgeo.geocaching.models;
 
-import cgeo.geocaching.R;
 import cgeo.geocaching.connector.ConnectorFactory;
 import cgeo.geocaching.connector.trackable.TrackableBrand;
 import cgeo.geocaching.connector.trackable.TrackableConnector;
@@ -11,12 +10,9 @@ import cgeo.geocaching.utils.ImageUtils;
 import cgeo.geocaching.utils.TextUtils;
 import cgeo.geocaching.utils.html.HtmlUtils;
 
-import android.content.res.Resources;
-
 import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.core.text.HtmlCompat;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -319,42 +315,6 @@ public class Trackable implements IGeoObject {
 
     public void setSpottedGuid(final String spottedGuid) {
         this.spottedGuid = spottedGuid;
-    }
-
-    public String getSpottedLocation(final Resources res) {
-        final int spottedType = getSpottedType();
-        if (StringUtils.isNotBlank(getSpottedName()) ||
-                spottedType == Trackable.SPOTTED_UNKNOWN ||
-                spottedType == Trackable.SPOTTED_OWNER ||
-                spottedType == Trackable.SPOTTED_ARCHIVED) {
-
-            final StringBuilder text;
-            switch (spottedType) {
-                case Trackable.SPOTTED_CACHE:
-                    // TODO: the whole sentence fragment should not be constructed, but taken from the resources
-                    text = new StringBuilder(res.getString(R.string.trackable_spotted_in_cache)).append(' ').append(HtmlCompat.fromHtml(getSpottedName(), HtmlCompat.FROM_HTML_MODE_LEGACY));
-                    break;
-                case Trackable.SPOTTED_USER:
-                    // TODO: the whole sentence fragment should not be constructed, but taken from the resources
-                    text = new StringBuilder(res.getString(R.string.trackable_spotted_at_user)).append(' ').append(HtmlCompat.fromHtml(getSpottedName(), HtmlCompat.FROM_HTML_MODE_LEGACY));
-                    break;
-                case Trackable.SPOTTED_UNKNOWN:
-                    text = new StringBuilder(res.getString(R.string.trackable_spotted_unknown_location));
-                    break;
-                case Trackable.SPOTTED_OWNER:
-                    text = new StringBuilder(res.getString(R.string.trackable_spotted_owner));
-                    break;
-                case Trackable.SPOTTED_ARCHIVED:
-                    text = new StringBuilder(res.getString(R.string.trackable_spotted_archived));
-                    break;
-                default:
-                    text = new StringBuilder();
-                    break;
-            }
-            return text.toString();
-        }
-
-        return null;
     }
 
     public String getGoal() {
