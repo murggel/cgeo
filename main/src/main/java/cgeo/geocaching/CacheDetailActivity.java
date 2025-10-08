@@ -1207,13 +1207,20 @@ public class CacheDetailActivity extends TabbedViewPagerActivity
             return;
         }
 
+        final Set<WaypointType> lastSelectedWaypointTypes = Settings.getLastSelectedWaypointTypes();
         final Set<WaypointType> sortedWpTypes = Waypoint.getWaypointTypes(waypoints);
         final SimpleDialog.ItemSelectModel<WaypointType> model = new SimpleDialog.ItemSelectModel<>();
         model.setItems(sortedWpTypes)
+                .setSelectedItems(lastSelectedWaypointTypes)
                 .setDisplayMapper((wpType) -> TextParam.text(wpType.getL10n()));
 
         SimpleDialog.of(this).setTitle(R.string.cache_select_waypoint_types)
                 .selectMultiple(model, selectedWpTypeSet -> {
+                    // consider not available waypoint types
+                    lastSelectedWaypointTypes.removeAll(sortedWpTypes);
+                    lastSelectedWaypointTypes.addAll(selectedWpTypeSet);
+                    Settings.setLastSelectedWaypointTypes(lastSelectedWaypointTypes);
+
                     int wpCount = 0;
                     for (Waypoint waypoint : new LinkedList<>(cache.getWaypoints())) {
                         final WaypointType wpType = waypoint.getWaypointType();
