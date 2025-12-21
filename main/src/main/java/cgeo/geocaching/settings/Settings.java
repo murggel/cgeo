@@ -2033,6 +2033,23 @@ public class Settings {
         return getBoolean(R.string.pref_hideVisitedWaypoints, false);
     }
 
+
+    public static Set<WaypointType> getHiddenWaypointTypes() {
+        final Set<WaypointType> hiddenWaypointTypes = new HashSet<>();
+        for (final String hiddenWaypointTypeAsString : getStringList(R.string.pref_hidden_waypointtypes, StringUtils.EMPTY)) {
+            hiddenWaypointTypes.add(WaypointType.findById(hiddenWaypointTypeAsString));
+        }
+        return hiddenWaypointTypes;
+    }
+
+    public static void setHiddenWaypointTypes(final Set<WaypointType> lastSelectedVisitedWaypointTypes) {
+        final Set<String> hiddenWaypointTypes = new HashSet<>();
+        for (final WaypointType wpType : lastSelectedVisitedWaypointTypes) {
+            hiddenWaypointTypes.add(wpType.id);
+        }
+        putStringList(R.string.pref_hidden_waypointtypes, hiddenWaypointTypes);
+    }
+
     public static void setHideCompletedVariables(final boolean hideCompletedVariables) {
         putBoolean(R.string.pref_hideCompletedVariables, hideCompletedVariables);
     }

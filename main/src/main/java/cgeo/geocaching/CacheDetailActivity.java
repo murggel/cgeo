@@ -183,6 +183,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.chip.Chip;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.functions.Function;
@@ -2236,7 +2237,9 @@ public class CacheDetailActivity extends TabbedViewPagerActivity
 
         private static List<Waypoint> createWaypointList(final Geocache cache, final boolean sorted) {
             final List<Waypoint> waypointList = new ArrayList<>(sorted ? cache.getSortedWaypointList() : cache.getWaypoints());
-            if (!Settings.getHideVisitedWaypoints()) {
+            final boolean hideVisitedWaypoint = Settings.getHideVisitedWaypoints();
+            final Set<WaypointType> hiddenWaypointTypes = Settings.getHiddenWaypointTypes();
+            if (!hideVisitedWaypoint && hiddenWaypointTypes.isEmpty()) {
                 return waypointList;
             }
 
@@ -2244,7 +2247,8 @@ public class CacheDetailActivity extends TabbedViewPagerActivity
             final Iterator<Waypoint> waypointIterator = filteredWaypointList.iterator();
             while (waypointIterator.hasNext()) {
                 final Waypoint waypointInIterator = waypointIterator.next();
-                if (waypointInIterator.isVisited()) {
+                if ((waypointInIterator.isVisited() && hideVisitedWaypoint) ||
+                        (hiddenWaypointTypes.contains(waypointInIterator.getWaypointType()))) {
                     waypointIterator.remove();
                 }
             }
@@ -2346,9 +2350,9 @@ public class CacheDetailActivity extends TabbedViewPagerActivity
             });
 
             final boolean hasVisitedWaypoints = null != cache.getFirstMatchingWaypoint(Waypoint::isVisited);
-            binding.chipVisitedWaypoints.setChecked(!Settings.getHideVisitedWaypoints());
-            binding.chipVisitedWaypoints.setVisibility(hasVisitedWaypoints ? View.VISIBLE : View.GONE);
-            binding.chipVisitedWaypoints.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            binding.chipWaypointsVisited.setChecked(!Settings.getHideVisitedWaypoints());
+            binding.chipWaypointsVisited.setVisibility(hasVisitedWaypoints ? View.VISIBLE : View.GONE);
+            binding.chipWaypointsVisited.setOnCheckedChangeListener((buttonView, isChecked) -> {
                 Settings.setHideVisitedWaypoints(!isChecked);
                 final List<Waypoint> sortedWaypoints2 = createWaypointList(cache, true);
                     adapter.clear();
@@ -2357,8 +2361,11 @@ public class CacheDetailActivity extends TabbedViewPagerActivity
                     activity.reinitializePage(Page.WAYPOINTS.id);
                 });
 
+            initializeWaypointTypeChip(binding.chipWaypointsParking, WaypointType.PARKING, adapter, activity);
+            initializeWaypointTypeChip(binding.chipWaypointsOriginal, WaypointType.ORIGINAL, adapter, activity);
+            initializeWaypointTypeChip(binding.chipWaypointsGenerated, WaypointType.GENERATED, adapter, activity);
 
-                // read waypoint from clipboard
+            // read waypoint from clipboard
             setClipboardButtonVisibility(binding.addWaypointFromclipboard);
             binding.addWaypointFromclipboard.setOnClickListener(v2 -> {
                     final Waypoint oldWaypoint = DataStore.loadWaypoint(Waypoint.hasClipboardWaypoint());
@@ -2384,6 +2391,33 @@ public class CacheDetailActivity extends TabbedViewPagerActivity
                 final ClipboardManager cliboardManager = (ClipboardManager) activity.getSystemService(CLIPBOARD_SERVICE);
             cliboardManager.addPrimaryClipChangedListener(() -> setClipboardButtonVisibility(binding.addWaypointFromclipboard));
         }
+
+        private void updateWaypointAdapter(final ArrayAdapter<Waypoint> adapter) {
+            final List<Waypoint> sortedWaypoints2 = createWaypointList(cache, true);
+            adapter.clear();
+            adapter.addAll(sortedWaypoints2);
+            adapter.notifyDataSetChanged();
+        }
+
+        private void initializeWaypointTypeChip(final Chip wpChip, final WaypointType wpType, final ArrayAdapter<Waypoint> adapter, final CacheDetailActivity activity) {
+            final Set<WaypointType> hiddenWaypointTypes = Settings.getHiddenWaypointTypes();
+            final boolean hasWaypointTypeParking = null != cache.getFirstMatchingWaypoint(wp -> wpType == wp.getWaypointType());
+            wpChip.setChecked(!hiddenWaypointTypes.contains(wpType));
+            wpChip.setVisibility(hasWaypointTypeParking ? View.VISIBLE : View.GONE);
+            wpChip.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                final Set<WaypointType> saveHiddenWaypointTypes = Settings.getHiddenWaypointTypes();
+                if (isChecked) {
+                    saveHiddenWaypointTypes.remove(wpType);
+                } else {
+                    saveHiddenWaypointTypes.add(wpType);
+                }
+                Settings.setHiddenWaypointTypes(saveHiddenWaypointTypes);
+                updateWaypointAdapter(adapter);
+                activity.reinitializePage(Page.WAYPOINTS.id);
+            });
+
+        }
+
 
         @Override
         public void onDestroy() {

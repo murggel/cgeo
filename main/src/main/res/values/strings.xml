@@ -1961,6 +1961,9 @@
     <string name="waypoint_added_current_location">Waypoint (%1$s) added (±%2$s)</string>
     <string name="waypoint_note">Note</string>
     <string name="waypoint_user_note">User note</string>
+    <string name="waypoint_parking">Parking</string>
+    <string name="waypoint_original">Original</string>
+    <string name="waypoint_generated">Generated</string>
     <string name="waypoint_visited">Visited</string>
     <string name="waypoint_set_visited">Waypoint set to visited</string>
     <string name="waypoint_set_visited_types">Set waypoints to visited</string>
