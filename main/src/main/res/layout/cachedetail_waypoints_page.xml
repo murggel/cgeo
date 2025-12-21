@@ -48,6 +48,12 @@
 
         </LinearLayout>
 
+        <LinearLayout
+            android:id="@+id/hidden_waypoint_types"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="4sp"
+            android:orientation="horizontal">
         <com.google.android.material.chip.Chip
             android:id="@+id/chip_waypoints_visited"
             android:layout_width="wrap_content"
@@ -55,30 +61,7 @@
             style="@style/chip_choice"
             android:text="@string/waypoint_visited"
             tools:context=".CacheDetailActivity$WaypointsViewCreator" />
-
-        <com.google.android.material.chip.Chip
-            android:id="@+id/chip_waypoints_parking"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            style="@style/chip_choice"
-            android:text="@string/waypoint_parking"
-            tools:context=".CacheDetailActivity$WaypointsViewCreator" />
-
-        <com.google.android.material.chip.Chip
-            android:id="@+id/chip_waypoints_original"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            style="@style/chip_choice"
-            android:text="@string/waypoint_original"
-            tools:context=".CacheDetailActivity$WaypointsViewCreator" />
-
-        <com.google.android.material.chip.Chip
-            android:id="@+id/chip_waypoints_generated"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            style="@style/chip_choice"
-            android:text="@string/waypoint_generated"
-            tools:context=".CacheDetailActivity$WaypointsViewCreator" />
+    </LinearLayout>
     </LinearLayout>
 
     <View

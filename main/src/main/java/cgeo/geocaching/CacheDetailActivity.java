@@ -70,6 +70,7 @@ import cgeo.geocaching.storage.DataStore;
 import cgeo.geocaching.storage.extension.OneTimeDialogs;
 import cgeo.geocaching.ui.AnchorAwareLinkMovementMethod;
 import cgeo.geocaching.ui.CacheDetailsCreator;
+import cgeo.geocaching.ui.ChipChoiceGroup;
 import cgeo.geocaching.ui.CompassMiniView;
 import cgeo.geocaching.ui.CoordinatesFormatSwitcher;
 import cgeo.geocaching.ui.DecryptTextClickListener;
@@ -2503,9 +2504,20 @@ public class CacheDetailActivity extends TabbedViewPagerActivity
                     activity.reinitializePage(Page.WAYPOINTS.id);
                 });
 
-            initializeWaypointTypeChip(binding.chipWaypointsParking, WaypointType.PARKING, adapter, activity);
-            initializeWaypointTypeChip(binding.chipWaypointsOriginal, WaypointType.ORIGINAL, adapter, activity);
-            initializeWaypointTypeChip(binding.chipWaypointsGenerated, WaypointType.GENERATED, adapter, activity);
+            // initializeWaypointTypeChip(binding.chipWaypointsParking, WaypointType.PARKING, adapter, activity);
+            // initializeWaypointTypeChip(binding.chipWaypointsOriginal, WaypointType.ORIGINAL, adapter, activity);
+            // initializeWaypointTypeChip(binding.chipWaypointsGenerated, WaypointType.GENERATED, adapter, activity);
+
+
+            ChipChoiceGroup waypointTypeGroup = new ChipChoiceGroup(getActivity());
+            waypointTypeGroup.setChipSpacing(ViewUtils.dpToPixel(10));
+            waypointTypeGroup.setWithSelectAllChip(false);
+
+            waypointTypeGroup.addChips(Arrays.asList(TextParam.id(R.string.waypoint_visited), TextParam.id(R.string.waypoint_parking),
+                    TextParam.id(R.string.waypoint_generated), TextParam.id(R.string.waypoint_original)));
+            waypointTypeGroup.setCheckedButtonByIndex(true, 0, 1, 2);
+            binding.hiddenWaypointTypes.addView(waypointTypeGroup, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+
 
             // read waypoint from clipboard
             setClipboardButtonVisibility(binding.addWaypointFromclipboard);
