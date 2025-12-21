@@ -49,12 +49,35 @@
         </LinearLayout>
 
         <com.google.android.material.chip.Chip
-            android:id="@+id/chip_visited_waypoints"
+            android:id="@+id/chip_waypoints_visited"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             style="@style/chip_choice"
-            android:layout_marginHorizontal="7sp"
             android:text="@string/waypoint_visited"
+            tools:context=".CacheDetailActivity$WaypointsViewCreator" />
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chip_waypoints_parking"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            style="@style/chip_choice"
+            android:text="@string/waypoint_parking"
+            tools:context=".CacheDetailActivity$WaypointsViewCreator" />
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chip_waypoints_original"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            style="@style/chip_choice"
+            android:text="@string/waypoint_original"
+            tools:context=".CacheDetailActivity$WaypointsViewCreator" />
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chip_waypoints_generated"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            style="@style/chip_choice"
+            android:text="@string/waypoint_generated"
             tools:context=".CacheDetailActivity$WaypointsViewCreator" />
     </LinearLayout>
 
