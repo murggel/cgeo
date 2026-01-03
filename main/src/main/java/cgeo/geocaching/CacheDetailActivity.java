@@ -10,6 +10,7 @@ import cgeo.geocaching.apps.cachelist.MapsMeCacheListApp;
 import cgeo.geocaching.apps.navi.NavigationAppFactory;
 import cgeo.geocaching.calendar.CalendarAdder;
 import cgeo.geocaching.command.AbstractCommand;
+import cgeo.geocaching.command.DeleteCachesCommand;
 import cgeo.geocaching.command.MoveToListAndRemoveFromOthersCommand;
 import cgeo.geocaching.connector.ConnectorFactory;
 import cgeo.geocaching.connector.IConnector;
@@ -1145,7 +1146,7 @@ public class CacheDetailActivity extends TabbedViewPagerActivity
         }
         final ChangeNotificationHandler handler = new ChangeNotificationHandler(this);
         handler.showProgress();
-        cache.drop(handler);
+        new DeleteCachesCommand(this, Collections.singleton(cache), handler).execute();
     }
 
     private void dropUserdefinedWaypoints() {

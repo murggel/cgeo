@@ -95,7 +95,6 @@ import java.util.regex.Pattern;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.reactivex.rxjava3.core.Scheduler;
 import io.reactivex.rxjava3.disposables.Disposable;
-import io.reactivex.rxjava3.schedulers.Schedulers;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
@@ -2053,23 +2052,6 @@ public class Geocache implements INamedGeoCoordinate {
     @NonNull
     public CoordinateType getCoordType() {
         return CoordinateType.CACHE;
-    }
-
-    @NonNull
-    public Disposable drop(final Handler handler) {
-        return Schedulers.io().scheduleDirect(() -> {
-            try {
-                dropSynchronous();
-                handler.sendMessage(Message.obtain());
-            } catch (final Exception e) {
-                Log.e("cache.drop: ", e);
-            }
-        });
-    }
-
-    public void dropSynchronous() {
-        DataStore.markDropped(Collections.singletonList(this));
-        DataStore.removeCache(getGeocode(), EnumSet.of(RemoveFlag.CACHE));
     }
 
     private void warnIncorrectParsingIf(final boolean incorrect, final String field) {

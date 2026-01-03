@@ -3,6 +3,7 @@ package cgeo.geocaching;
 import cgeo.geocaching.activity.AbstractNavigationBarMapActivity;
 import cgeo.geocaching.activity.Progress;
 import cgeo.geocaching.apps.navi.NavigationAppFactory;
+import cgeo.geocaching.command.DeleteCachesCommand;
 import cgeo.geocaching.databinding.PopupBinding;
 import cgeo.geocaching.enumerations.CacheListType;
 import cgeo.geocaching.enumerations.LoadFlags;
@@ -337,7 +338,7 @@ public class CachePopupFragment extends AbstractDialogFragmentWithProximityNotif
 
             final DropCacheHandler dropCacheHandler = new DropCacheHandler(CachePopupFragment.this);
             progress.show(getActivity(), res.getString(R.string.cache_dialog_offline_drop_title), res.getString(R.string.cache_dialog_offline_drop_message), true, null);
-            cache.drop(dropCacheHandler);
+            new DeleteCachesCommand(getActivity(), Collections.singleton(cache), dropCacheHandler).execute();
         }
     }
 
