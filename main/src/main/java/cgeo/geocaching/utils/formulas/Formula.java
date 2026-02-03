@@ -110,6 +110,7 @@ public final class Formula {
         private Func4<ValueList, Function<String, Value>, Integer, Set<Integer>, CharSequence> functionToErrorString;
         private FormulaNode[] children;
 
+        public final Value constantValue;
         public final Set<String> neededVars;
 
         FormulaNode(final String id, final FormulaNode[] children,
@@ -136,10 +137,14 @@ public final class Formula {
 
             if (this.neededVars.isEmpty() && !hasRanges(this)) {
                 //this means that function is constant!
-                this.function = createConstantFunction();
+                final Pair<Value, Func3<ValueList, Function<String, Value>, Integer, Value>> constantPair = createConstantFunction();
+                this.function = constantPair.second;
+                this.constantValue = constantPair.first;
                 final CharSequence csResult = evalToCharSequenceInternal(y -> null, -1).getAsCharSequence();
                 this.functionToErrorString = (objs, vars, rangeIdx, b) -> csResult;
                 this.children = FORMULA_NODE_EMPTY_ARRAY;
+            } else {
+                this.constantValue = null;
             }
         }
 
@@ -177,7 +182,7 @@ public final class Formula {
             return false;
         }
 
-        private Func3<ValueList, Function<String, Value>, Integer, Value> createConstantFunction() {
+        private Pair<Value, Func3<ValueList, Function<String, Value>, Integer, Value>> createConstantFunction() {
             Value result = null;
             FormulaException resultException = null;
             try {
@@ -187,12 +192,12 @@ public final class Formula {
             }
             final Value finalResult = result;
             final FormulaException finalResultException = resultException;
-            return (objs, vars, idx) -> {
+            return new Pair<>(result, (objs, vars, idx) -> {
                 if (finalResultException != null) {
                     throw finalResultException;
                 }
                 return finalResult;
-            };
+            });
         }
 
         private Value eval(final Function<String, Value> variables, final int rangeIdx) throws FormulaException {
@@ -858,11 +863,22 @@ public final class Formula {
         }
 
         final FormulaFunction formulaFunction = Objects.requireNonNull(FormulaFunction.findByName(functionName));
+        final FormulaNode[] paramNodes = params.toArray(new FormulaNode[0]);
+        final List<Value> constantValues = new ArrayList<>();
+        for (FormulaNode paramNode : paramNodes) {
+            if (paramNode.constantValue != null) {
+                constantValues.add(paramNode.constantValue);
+            }
+        }
 
-        return new FormulaNode("f:" + functionName, params.toArray(new FormulaNode[0]),
+        final Set<String> explicitelyNeededVars = formulaFunction.getExplicitelyNeededVars(constantValues);
+
+        return new FormulaNode("f:" + functionName, paramNodes,
                 (n, v, ri) -> {
+                    final Function<String, Value> neededVars =
+                        varName -> explicitelyNeededVars.contains(varName) ? v.apply(varName) : null;
                     try {
-                        return formulaFunction.execute(n);
+                        return formulaFunction.execute(neededVars, n);
                     } catch (FormulaException ce) {
                         ce.setExpression(expression);
                         ce.setFunction(functionName);
@@ -871,7 +887,8 @@ public final class Formula {
                 },
                 (valueList, vars, rangeIdx, paramsInError) -> optionalError(TextUtils.concat(functionName + "(",
                     valueListToCharSequence(valueList, "; ", paramsInError, true),
-                    ")"), paramsInError));
+                    ")"), paramsInError),
+                neededVars -> neededVars.addAll(explicitelyNeededVars));
 
     }
 
