@@ -10,15 +10,17 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 
-import java.math.BigInteger;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
+import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -65,46 +67,10 @@ public enum FormulaFunction {
     VANITY(new String[]{"vanity", "vanitycode", "vc"}, FunctionGroup.COMPLEX_STRING, R.string.formula_function_vanity, "Vanity", "''", 1,
             singleValueStringFunction(FormulaUtils::vanity)),
 
-    //TESTSUM EXAMPLE START
-    //TODO: delete this example code before merging
-
     //1. define the function. Place two functions: one to calculate needed vars, one to calculate the sum
-    TESTSUM(new String[]{"testsum"}, FunctionGroup.COMPLEX_NUMERIC, 0, "Test", "'';1;2", 1,
-            FormulaFunction::testSumCalculate,
-            FormulaFunction::testSumNeededVars);
-
-    //2. define a function which returns needed variable values from constant parameter values
-    //   -> this function is called at COMPILE time (-> variable values known only for constant/literal parameters)
-    //   -> output is needed to control cyclic var dependencies
-    private static Set<String> testSumNeededVars(final List<Value> constantParamValues) {
-        //this dummy implementation adds all one-char-parameters as needed variables
-        return constantParamValues.stream().map(Value::getAsString)
-                .filter(s -> s.length() == 1 && Character.isLetter(s.charAt(0))).collect(Collectors.toSet());
-    }
-
-    //3. define the function implementing the summing.
-    //   -> this function is called at RUNTIME (-> variable values are known)
-    //   -> it provides access ONLY to var values defined in "testSumNeededVars" above!
-    //   -> it does NOT auto-check whether ALL of the needed vars are provided. It allows for "gaps"
-    private static Object testSumCalculate(final Function<String, Value> vars, final ValueList params) {
-        //this implementation sums up all integer values plus variable values of all one-char-strings
-        BigInteger sum = BigInteger.ZERO;
-        for (Value v : params) {
-            if (v.isInteger()) {
-                sum = sum.add(v.getAsInteger());
-            } else if (v.getAsString().length() == 1 && Character.isLetter(v.getAsString().charAt(0))) {
-                final Value singleV = vars.apply(v.getAsString());
-                //following check enforces that needed vars are all there. This can be omitted if not wanted
-                if (singleV == null) {
-                    throw new FormulaException(MISSING_VARIABLE_VALUE, v.getAsString());
-                }
-                sum = sum.add(singleV.getAsInteger());
-            }
-        }
-        return sum;
-    }
-
-    //TESTSUM EXAMPLE END
+    SUM(new String[]{"sum"}, FunctionGroup.COMPLEX_NUMERIC, 0, "Test", "'';1;2", 1,
+            rangeOperationFunction(BigDecimal.ZERO, BigDecimal::add),
+            FormulaFunction::getNeededVariablesForRange);
 
     public enum FunctionGroup {
         SIMPLE_NUMERIC(R.string.formula_function_group_simplenumeric, "Simple Numeric"),
@@ -199,6 +165,14 @@ public enum FormulaFunction {
         return result == null ? Collections.emptySet() : result;
     }
 
+
+    public Value execute(final ValueList params) throws FormulaException {
+        return execute(varName -> {
+            return null;
+        }, params);
+
+    }
+
     public Value execute(final Function<String, Value> vars, final ValueList params) throws FormulaException {
         try {
             final Object result = function.apply(vars, params);
@@ -250,5 +224,49 @@ public enum FormulaFunction {
             params.assertCheckCount(1, 1, false);
             return Value.of(stringFunction.apply(params.get(0).getAsString()));
         };
+    }
+
+    private static BiFunction<Function<String, Value>, ValueList, Object> rangeOperationFunction(final BigDecimal startValue, final BinaryOperator<BigDecimal> rangeOperator) {
+        return (vars, params) -> {
+            //this implementation sums up all integer values plus variable values of all one-char-strings
+            final List<BigDecimal> valueList = new ArrayList<>();
+            final List<Value> rangeValues = new ArrayList<>();
+            for (Value v : params) {
+                rangeValues.addAll(RangeOperationUtils.getValueRange(v.getAsString()));
+            }
+
+            for (Value v : rangeValues) {
+                if (v.isNumeric()) {
+                    valueList.add(v.getAsDecimal());
+                } else {
+                    final String varNane = v.getAsString();
+                    final Value singleV = vars.apply(varNane);
+                    //following check enforces that needed vars are all there. This can be omitted if not wanted
+                    if (singleV == null) {
+                        throw new FormulaException(MISSING_VARIABLE_VALUE, varNane);
+                    }
+                    Value.assertType(singleV, Value::isNumeric, "Numeric");
+
+                    valueList.add(singleV.getAsDecimal());
+                }
+            }
+
+            return valueList.stream().reduce(startValue, rangeOperator);
+        };
+    }
+
+
+    //2. define a function which returns needed variable values from constant parameter values
+    //   -> this function is called at COMPILE time (-> variable values known only for constant/literal parameters)
+    //   -> output is needed to control cyclic var dependencies
+    private static Set<String> getNeededVariablesForRange(final List<Value> constantParamValues) {
+        final Set<String> neededVars = new HashSet<>();
+
+        final Set<String> stringParams = constantParamValues.stream().map(Value::getAsString).collect(Collectors.toSet());
+        for (final String rangeString : stringParams) {
+            neededVars.addAll(RangeOperationUtils.getVariableRange(rangeString));
+        }
+
+        return neededVars;
     }
 }

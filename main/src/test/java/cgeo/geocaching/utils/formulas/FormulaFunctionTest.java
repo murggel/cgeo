@@ -14,6 +14,7 @@ public class FormulaFunctionTest {
         assertThat(FormulaFunction.findByName("tan")).isEqualTo(FormulaFunction.TAN);
         assertThat(FormulaFunction.findByName("abs")).isEqualTo(FormulaFunction.ABS);
         assertThat(FormulaFunction.findByName("rd")).isEqualTo(FormulaFunction.ROUND);
+        assertThat(FormulaFunction.findByName("sum")).isEqualTo(FormulaFunction.SUM);
         assertThat(FormulaFunction.findByName("doesnotexist")).isNull();
     }
 
@@ -90,5 +91,4 @@ public class FormulaFunctionTest {
         assertThat(length.execute(new ValueList().add(Value.of("   "))).getAsInteger()).isEqualTo(3);
         assertThat(length.execute(new ValueList().add(Value.of("a\nb\tc!"))).getAsInteger()).isEqualTo(6);
     }
-
 }
