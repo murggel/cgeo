@@ -15,6 +15,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.CheckBox;
+import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
 
 import androidx.annotation.NonNull;
@@ -60,7 +61,10 @@ public class DifficultyTerrainMatrixFilterViewHolder extends BaseFilterViewHolde
 
         final LinearLayout.LayoutParams matrixLp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         matrixLp.gravity = Gravity.CENTER;
-        ll.addView(matrix, matrixLp);
+
+        final HorizontalScrollView scrollView = new HorizontalScrollView(getActivity());
+        scrollView.addView(matrix, matrixLp);
+        ll.addView(scrollView, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
         return ll;
     }
