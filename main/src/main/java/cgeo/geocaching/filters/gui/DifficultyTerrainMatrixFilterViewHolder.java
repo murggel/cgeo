@@ -10,7 +10,6 @@ import cgeo.geocaching.ui.ViewUtils;
 import cgeo.geocaching.utils.AndroidRxUtils;
 import cgeo.geocaching.utils.LocalizationUtils;
 
-import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -58,8 +57,7 @@ public class DifficultyTerrainMatrixFilterViewHolder extends BaseFilterViewHolde
         matrix.setRowsColumns(labels, labels);
         matrix.setLabels(LocalizationUtils.getString(R.string.cache_difficulty), LocalizationUtils.getString(R.string.cache_terrain));
 
-        final LinearLayout.LayoutParams matrixLp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        matrixLp.gravity = Gravity.CENTER;
+        final LinearLayout.LayoutParams matrixLp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         ll.addView(matrix, matrixLp);
 
         return ll;
