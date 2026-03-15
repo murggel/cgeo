@@ -10,10 +10,9 @@ import android.content.Context;
 import android.util.AttributeSet;
 import android.view.ContextThemeWrapper;
 import android.view.Gravity;
-import android.view.View;
 import android.widget.CheckBox;
+import android.widget.GridLayout;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.Nullable;
@@ -22,7 +21,7 @@ import androidx.annotation.Nullable;
 public class CheckboxMatrixView extends androidx.constraintlayout.widget.ConstraintLayout {
 
     private CheckboxmatrixViewBinding binding;
-    private LinearLayout matrixContainer;
+    private GridLayout matrixGrid;
     private String[] rows = null;
     private String[] cols = null;
 
@@ -35,9 +34,6 @@ public class CheckboxMatrixView extends androidx.constraintlayout.widget.Constra
     private int[] cntRow = null;
     private int[] cntCol = null;
     private int cntAll;
-
-    // current row being built
-    private LinearLayout currentRow = null;
 
     public CheckboxMatrixView(final Context context) {
         super(context);
@@ -63,7 +59,7 @@ public class CheckboxMatrixView extends androidx.constraintlayout.widget.Constra
         final ContextThemeWrapper ctw = new ContextThemeWrapper(getContext(), R.style.cgeo);
         inflate(ctw, R.layout.checkboxmatrix_view, this);
         binding = CheckboxmatrixViewBinding.bind(this);
-        matrixContainer = binding.matrix;
+        matrixGrid = binding.matrix;
     }
 
     /**
@@ -119,10 +115,13 @@ public class CheckboxMatrixView extends androidx.constraintlayout.widget.Constra
     /** (re-)initializes the matrix with given data. Matrix data is deleted in the process */
     public void setRowsColumns(final String[] rows, final String[] cols) {
 
+        final int addCells = 3;
         this.rows = rows;
         this.cols = cols;
 
         //initialize the data fields
+        matrixGrid.setRowCount(rows.length + addCells);
+        matrixGrid.setColumnCount(cols.length + addCells);
         this.data = new boolean[rows.length][cols.length];
         this.cbData = new CheckBox[rows.length][cols.length];
         this.cbRowAll = new CheckBox[rows.length];
@@ -133,91 +132,74 @@ public class CheckboxMatrixView extends androidx.constraintlayout.widget.Constra
         this.cntAll = 0;
 
         //initialize the matrix view
-        matrixContainer.removeAllViews();
-
+        matrixGrid.removeAllViews();
         //top row: column labels
-        startRow();
-        addTextView("");
-        addIconView(R.drawable.ic_menu_selectall);
-        addVerticalSeparatorView();
-        for (final String c : cols) {
-            addTextView(c);
+        this.addTextView("");
+        this.addIconView(R.drawable.ic_menu_selectall);
+        this.addVerticalSeparatorView();
+        for (String c : cols) {
+            this.addTextView(c);
         }
-        finishRow();
-
         //second row: selects for whole cols
-        startRow();
-        addIconView(R.drawable.ic_menu_selectall);
-        this.cbAllAll = addCheckbox();
+        this.addIconView(R.drawable.ic_menu_selectall);
+        this.cbAllAll = this.addCheckbox();
         this.cbAllAll.setOnCheckedChangeListener((v, ch) -> changeDataInternal(changer -> executeFor(-1, -1, (r, c) -> changer.call(r, c, ch))));
-        addVerticalSeparatorView();
+        this.addVerticalSeparatorView();
         for (int c = 0; c < cols.length; c++) {
             final int fC = c;
-            this.cbColAll[c] = addCheckbox();
+            this.cbColAll[c] = this.addCheckbox();
             this.cbColAll[c].setOnCheckedChangeListener((v, ch) -> changeDataInternal(changer -> executeFor(-1, fC, (rr, cc) -> changer.call(rr, fC, ch))));
         }
-        finishRow();
-
-        //third row: horizontal separator
-        matrixContainer.addView(ViewUtils.createExpandableSeparatorPixelView(getContext()),
-                new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+        //third row: separators
+        for (int c = 0; c < cols.length + addCells; c++) {
+            this.addHorizontalSeparatorView();
+        }
 
         //fourth and more rows: data rows
         for (int r = 0; r < rows.length; r++) {
             final int fR = r;
-            startRow();
-            addTextView(rows[r]);
-            this.cbRowAll[r] = addCheckbox();
+            this.addTextView(rows[r]);
+            this.cbRowAll[r] = this.addCheckbox();
             this.cbRowAll[r].setOnCheckedChangeListener((v, ch) -> changeDataInternal(changer -> executeFor(fR, -1, (rr, cc) -> changer.call(fR, cc, ch))));
-            addVerticalSeparatorView();
+            this.addVerticalSeparatorView();
             for (int c = 0; c < cols.length; c++) {
                 final int fC = c;
-                this.cbData[r][c] = addCheckbox();
+                this.cbData[r][c] = this.addCheckbox();
                 this.cbData[r][c].setOnCheckedChangeListener((v, ch) -> changeDataInternal(changer -> changer.call(fR, fC, ch)));
             }
-            finishRow();
         }
-    }
-
-    private void startRow() {
-        currentRow = new LinearLayout(getContext());
-        currentRow.setOrientation(LinearLayout.HORIZONTAL);
-        currentRow.setBaselineAligned(false);
-    }
-
-    private void finishRow() {
-        matrixContainer.addView(currentRow,
-                new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
-        currentRow = null;
-    }
-
-    private LinearLayout.LayoutParams createCellLayoutParams() {
-        return new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
     }
 
     private void addTextView(final String text) {
         final TextView tv = ViewUtils.createTextItem(getContext(), R.style.text_label, TextParam.text(text));
         tv.setGravity(Gravity.CENTER);
-        currentRow.addView(tv, createCellLayoutParams());
+        matrixGrid.addView(tv, createLayoutParams());
     }
 
     private void addIconView(final int iconId) {
         final ImageView iv = ViewUtils.createIconView(getContext(), iconId);
         iv.setMaxWidth(ViewUtils.spToPixel(12));
         iv.setMaxHeight(ViewUtils.spToPixel(12));
-        currentRow.addView(iv, createCellLayoutParams());
+        matrixGrid.addView(iv, createLayoutParams());
     }
 
     private CheckBox addCheckbox() {
         final CheckBox cb = new CheckBox(getContext());
-        currentRow.addView(cb, createCellLayoutParams());
+        matrixGrid.addView(cb, createLayoutParams());
         return cb;
     }
 
     private void addVerticalSeparatorView() {
-        final View sep = new View(getContext(), null, 0, R.style.separator_vertical);
-        final LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewUtils.dpToPixel(1), LinearLayout.LayoutParams.MATCH_PARENT);
-        currentRow.addView(sep, lp);
+        addHorizontalSeparatorView();
+    }
+
+    private void addHorizontalSeparatorView() {
+        matrixGrid.addView(ViewUtils.createExpandableSeparatorPixelView(getContext()), createLayoutParams());
+    }
+
+    private GridLayout.LayoutParams createLayoutParams() {
+        return new GridLayout.LayoutParams(
+                GridLayout.spec(GridLayout.UNDEFINED, 1, GridLayout.FILL), GridLayout.spec(GridLayout.UNDEFINED, 1, GridLayout.FILL));
     }
 
 
