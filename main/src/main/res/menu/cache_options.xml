@@ -125,8 +125,10 @@
                 app:showAsAction="ifRoom|withText"
                 android:visible="false" />
             <item
-                android:id="@+id/menu_toggleWaypointsFromNote"
+                android:id="@+id/menu_preventWaypointsFromNote"
                 android:title="@string/cache_menu_preventWaypointsFromNote"
+                android:checkable="true"
+                android:checked="false"
                 app:showAsAction="ifRoom"
                 android:visible="false"/>
             <item

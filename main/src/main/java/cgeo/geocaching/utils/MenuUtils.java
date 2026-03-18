@@ -42,6 +42,17 @@ public class MenuUtils {
         menuItem.setEnabled(enabled);
     }
 
+    /**
+     * Sets checked state for given menu item (without crashing on null item)
+     */
+    public static void setChecked(final MenuItem menuItem, final boolean checked) {
+        if (menuItem == null) {
+            return;
+        }
+        menuItem.setCheckable(true);
+        menuItem.setChecked(checked);
+    }
+
     public static void setVisible(final Menu menu, final int itemId, final boolean visible) {
         setVisible(menu.findItem(itemId), visible);
     }
@@ -54,6 +65,10 @@ public class MenuUtils {
         final MenuItem item = menu.findItem(itemId);
         setVisible(item, visible);
         setEnabled(item, enabled);
+    }
+
+    public static void setChecked(final Menu menu, final int itemId, final boolean checked) {
+        setChecked(menu.findItem(itemId), checked);
     }
 
     @SuppressLint("RestrictedApi") // workaround to make icons visible in overflow menu of toolbar
