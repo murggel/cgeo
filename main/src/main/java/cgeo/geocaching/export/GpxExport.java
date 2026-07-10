@@ -85,6 +85,9 @@ public class GpxExport extends AbstractExport {
         final CheckBox includeFoundStatus = layout.findViewById(R.id.include_found_status);
         includeFoundStatus.setChecked(Settings.getIncludeFoundStatus());
 
+        final CheckBox includePersonalNotes = layout.findViewById(R.id.include_personalnotes);
+        includePersonalNotes.setChecked(Settings.getIncludePersonalNotes());
+
         final CheckBox includeLogs = layout.findViewById(R.id.include_logs);
         includeLogs.setChecked(Settings.getIncludeLogs());
 
@@ -93,6 +96,7 @@ public class GpxExport extends AbstractExport {
 
         builder.setPositiveButton(R.string.export, (dialog, which) -> {
             Settings.setIncludeFoundStatus(includeFoundStatus.isChecked());
+            Settings.setIncludePersonalNotes(includePersonalNotes.isChecked());
             Settings.setIncludeLogs(includeLogs.isChecked());
             Settings.setIncludeTravelBugs(includeTravelBugs.isChecked());
             dialog.dismiss();

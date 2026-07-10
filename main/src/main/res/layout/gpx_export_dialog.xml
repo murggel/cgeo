@@ -15,6 +15,11 @@
         android:text="@string/init_include_found_status" />
 
     <CheckBox
+        android:id="@+id/include_personalnotes"
+        style="@style/checkbox_full"
+        android:text="@string/init_include_personalnotes" />
+
+    <CheckBox
         android:id="@+id/include_logs"
         style="@style/checkbox_full"
         android:text="@string/init_include_logs" />

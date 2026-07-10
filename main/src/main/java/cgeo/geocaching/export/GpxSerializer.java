@@ -189,8 +189,12 @@ public final class GpxSerializer {
 
     private void writeGsakExtensions(@NonNull final Geocache cache) throws IOException {
         gpx.startTag(NS_GSAK, "wptExtension");
-        XmlUtils.multipleTexts(gpx, NS_GSAK, "Watch", gpxBoolean(cache.isOnWatchlist()), "IsPremium", gpxBoolean(cache.isPremiumMembersOnly()), "FavPoints", Integer.toString(cache.getFavoritePoints()),
-                "GcNote", StringUtils.trimToEmpty(cache.getPersonalNote()));
+        XmlUtils.multipleTexts(gpx, NS_GSAK, "IsPremium", gpxBoolean(cache.isPremiumMembersOnly()), "FavPoints", Integer.toString(cache.getFavoritePoints())
+        );
+
+        if (Settings.getIncludePersonalNotes()) {
+            XmlUtils.multipleTexts(gpx, NS_GSAK, "Watch", gpxBoolean(cache.isOnWatchlist()), "GcNote", StringUtils.trimToEmpty(cache.getPersonalNote()));
+        }
 
         if (Settings.getIncludeFoundStatus()) {
             final long visited = cache.getVisitedDate();
@@ -329,9 +333,14 @@ public final class GpxSerializer {
         }
 
         final String waypointTypeGpx = wp.getWaypointType().gpx;
-        // combine note and user note with SEPARATOR "\n--\n"
-        final WaypointUserNoteCombiner wpCombiner = new WaypointUserNoteCombiner(wp);
-        final String waypointNote = wpCombiner.getCombinedNoteAndUserNote();
+        final String waypointNote;
+        if (Settings.getIncludePersonalNotes()) {
+            // combine note and user note with SEPARATOR "\n--\n"
+            final WaypointUserNoteCombiner wpCombiner = new WaypointUserNoteCombiner(wp);
+            waypointNote = wpCombiner.getCombinedNoteAndUserNote();
+        } else {
+            waypointNote = wp.getNote();
+        }
         XmlUtils.multipleTexts(gpx, NS_GPX, "name", wp.getGpxId(), "cmt", waypointNote, "desc", wp.getName(), "sym", waypointTypeGpx, "type", "Waypoint|" + waypointTypeGpx);
 
         // add parent reference the GSAK-way

@@ -625,6 +625,7 @@
     <string translatable="false" name="pref_includefoundstatus">includefoundstatus</string>
     <string translatable="false" name="pref_includelogs">includelogs</string>
     <string translatable="false" name="pref_includetravelbugs">includetravelbugs</string>
+    <string translatable="false" name="pref_includeperonalnotes">includepersonalnotes</string>
     <string translatable="false" name="pref_cleartrailafterexportstatus">cleartrailafterexportstatus</string>
     <string translatable="false" name="pref_logImageScale">logImageScale</string>
     <string translatable="false" name="pref_fieldNoteExportDate">fieldnoteExportDate</string>

@@ -1338,6 +1338,7 @@
     <string name="init_include_found_status">Include \"Found\" status</string>
     <string name="init_include_logs">Include Logs</string>
     <string name="init_include_travelbugs">Include Travel Bugs</string>
+    <string name="init_include_personalnotes">Include Personal Notes</string>
     <string name="init_trackautovisit">Visit TBs</string>
     <string name="init_summary_trackautovisit">Set trackables to \"Visited\" by default</string>
     <string name="init_sigautoinsert">Insert automatically</string>

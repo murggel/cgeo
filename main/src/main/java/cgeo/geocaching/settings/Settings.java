@@ -1741,6 +1741,14 @@ public class Settings {
         putBoolean(R.string.pref_includetravelbugs, includeTravelBugs);
     }
 
+    public static boolean getIncludePersonalNotes() {
+        return getBoolean(R.string.pref_includeperonalnotes, true);
+    }
+
+    public static void setIncludePersonalNotes(final boolean includePersonalNotes) {
+        putBoolean(R.string.pref_includeperonalnotes, includePersonalNotes);
+    }
+
     public static boolean getClearTrailAfterExportStatus() {
         return getBoolean(R.string.pref_cleartrailafterexportstatus, false);
     }
