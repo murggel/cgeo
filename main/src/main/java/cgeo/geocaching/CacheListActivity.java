@@ -508,6 +508,7 @@ public class CacheListActivity extends AbstractListActivity implements FilteredA
     @Override
     public void onResume() {
         super.onResume();
+        setAppIconAsUpIndicator(true);
 
         // save current position
         final LastPositionHelper lastPosition = new LastPositionHelper(this);
@@ -629,6 +630,8 @@ public class CacheListActivity extends AbstractListActivity implements FilteredA
             setMenuItemLabel(menu, R.id.menu_drop_caches, R.string.caches_remove_selected, R.string.caches_remove_all, checkedCount);
             MenuUtils.setVisibleEnabled(menu, R.id.menu_drop_caches_all_lists, isHistory || containsStoredCaches, !isEmpty);
             setMenuItemLabel(menu, R.id.menu_drop_caches_all_lists, R.string.caches_remove_selected_completely, R.string.caches_remove_all_completely, checkedCount);
+            MenuUtils.setVisibleEnabled(menu, R.id.menu_remove_from_other_lists, isOffline && listId != PseudoList.ALL_LIST.id, !isEmpty);
+            setMenuItemLabel(menu, R.id.menu_remove_from_other_lists, R.string.caches_remove_from_other_lists_selected, R.string.caches_remove_from_other_lists_all, checkedCount);
 
             //MenuUtils.setVisibleEnabled(menu, R.id.menu_upload_bookmarklist, isGcPremiumMember, !isEmpty);
             MenuUtils.setVisibleEnabled(menu, R.id.menu_upload_bookmarklist, true, !isEmpty);
@@ -645,16 +648,15 @@ public class CacheListActivity extends AbstractListActivity implements FilteredA
             MenuUtils.setEnabled(menu, R.id.menu_set_cache_icon, !isEmpty);
             setMenuItemLabel(menu, R.id.menu_set_cache_icon, R.string.caches_set_cache_icon_selected, R.string.caches_set_cache_icon_all, checkedCount);
             MenuUtils.setVisibleEnabled(menu, R.id.menu_recalculate_health_score, true, !isEmpty);
-            MenuUtils.setVisibleEnabled(menu, R.id.menu_remove_from_other_lists, isOffline && listId != PseudoList.ALL_LIST.id, !isEmpty);
-            setMenuItemLabel(menu, R.id.menu_remove_from_other_lists, R.string.caches_remove_from_other_lists_selected, R.string.caches_remove_from_other_lists_all, checkedCount);
 
             // Manage Lists submenu
             MenuUtils.setVisibleEnabled(menu, R.id.menu_lists, isOffline, !isSelectMode);
             MenuUtils.setVisible(menu, R.id.menu_drop_list, isNonDefaultList);
             MenuUtils.setVisible(menu, R.id.menu_rename_list, isNonDefaultList);
-            MenuUtils.setVisible(menu, R.id.menu_rename_list_prefix, isNonDefaultList && DataStore.getListHierarchy().size() > 1);
             MenuUtils.setVisibleEnabled(menu, R.id.menu_make_list_unique, listId != PseudoList.ALL_LIST.id, !isEmpty);
             MenuUtils.setVisible(menu, R.id.menu_set_listmarker, isNonDefaultList);
+            final List<String> hierarchies = DataStore.getListHierarchy();
+            MenuUtils.setVisible(menu, R.id.menu_rename_parent_lists, !hierarchies.isEmpty());
             MenuUtils.setVisibleEnabled(menu, R.id.menu_set_askfordeletion, isNonDefaultList, preventAskForDeletion);
 
             // Import submenu
@@ -756,7 +758,9 @@ public class CacheListActivity extends AbstractListActivity implements FilteredA
     @Override
     public boolean onOptionsItemSelected(final MenuItem item) {
         final int menuItem = item.getItemId();
-        if (menuItem == R.id.menu_show_on_map) {
+        if (menuItem == android.R.id.home) {
+            startActivity(new Intent(this, AboutActivity.class));
+        } else if (menuItem == R.id.menu_show_on_map) {
             goMap();
         } else if (menuItem == R.id.menu_switch_select_mode) {
             adapter.switchSelectMode();
@@ -794,8 +798,8 @@ public class CacheListActivity extends AbstractListActivity implements FilteredA
             invalidateOptionsMenuCompatible();
         } else if (menuItem == R.id.menu_rename_list) {
             renameList();
-        } else if (menuItem == R.id.menu_rename_list_prefix) {
-            new StoredList.UserInterface(this).promptForListPrefixRename(() -> {
+        } else if (menuItem == R.id.menu_rename_parent_lists) {
+            new StoredList.UserInterface(this).promptForParentListRename(listId, () -> {
                 refreshCurrentList();
                 invalidateOptionsMenuCompatible();
             });
