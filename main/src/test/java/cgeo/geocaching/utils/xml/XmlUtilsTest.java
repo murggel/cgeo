@@ -50,6 +50,15 @@ public class XmlUtilsTest {
         assertXmlEquals("<tag>Vom Gasthaus zur Pyramide\u0020aus Glas\u0009</tag>");
     }
 
+    @Test
+    public void testEmojiPassesThrough() throws Exception {
+        // 🦆 DUCK emoji (U+1F986) — the original bug report
+        final String name = "\uD83E\uDD86Alles f\u00FCr den Cache\uD83E\uDD86 Lab Bonus";
+        final String htmlName = "&#129414;Alles für den Cache&#129414; Lab Bonus";
+        XmlUtils.simpleText(xml, "", "name", name);
+        assertXmlContains(htmlName);
+    }
+
     private void assertXmlContains(final String fragment) throws IOException {
         xml.endDocument();
         xml.flush();

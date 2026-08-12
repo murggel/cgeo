@@ -30,4 +30,14 @@ public class InvalidXMLCharacterFilterReaderTest {
         Xml.parse(new InvalidXMLCharacterFilterReader(reader), root.getContentHandler());
         assertThat(description.get()).isEqualTo("V‹¥IR‡U½S© by Master-Chief, Unknown Cache (5/2)");
     }
+
+    @Test
+    public void testGCBN0MZ() throws Exception {
+        final RootElement root = new RootElement("desc");
+        final AtomicReference<String> description = new AtomicReference<>();
+        root.setEndTextElementListener(description::set);
+        final StringReader reader = new StringReader("<?xml version=\"1.0\" encoding=\"utf-8\"?><desc>\uD83E\uDD86Alles f\u00FCr den Cache\uD83E\uDD86 Lab Bonus</desc>");
+        Xml.parse(new InvalidXMLCharacterFilterReader(reader), root.getContentHandler());
+        assertThat(description.get()).isEqualTo("\uD83E\uDD86Alles f\u00FCr den Cache\uD83E\uDD86 Lab Bonus");
+    }
 }
