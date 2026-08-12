@@ -20,6 +20,25 @@ public final class XmlUtils {
         // Do not instantiate
     }
 
+    public static boolean isValidXmlChar(final char c) {
+        return c == 0x9 || c == 0xA || c == 0xD
+                || (c >= 0x20 && c <= 0xD7FF)
+                || (c >= 0xE000 && c <= 0xFFFD);
+    }
+
+    /**
+     * Write text content to an XML serializer, stripping XML-1.0-illegal characters and
+     * converting surrogate pairs (e.g. emoji) to numeric character references (e.g. {@code &#129414;})
+     * so that any {@link XmlSerializer} implementation — including the kxml2 {@code KXmlSerializer}
+     * used in unit tests — can handle the output without throwing.
+     *
+     * @param serializer an XML serializer that is currently in text-content position
+     * @param text       the text to write, or {@code null} to write nothing
+     */
+    public static void writeText(final XmlSerializer serializer, final String text) throws IOException {
+        writeContent(serializer, text);
+    }
+
     /**
      * Insert an attribute-less tag with enclosed text in a XML serializer output.
      *
@@ -31,7 +50,7 @@ public final class XmlUtils {
     public static void simpleText(final XmlSerializer serializer, final String prefix, final String tag, final String text) throws IOException {
         if (text != null) {
             serializer.startTag(prefix, tag);
-            serializer.text(text);
+            writeContent(serializer, text);
             serializer.endTag(prefix, tag);
         }
     }
@@ -74,5 +93,43 @@ public final class XmlUtils {
             Log.e("XmlUtils: could not create a XmlPullParserFactory, e");
         }
         return null;
+    }
+
+    /**
+     * Write text to the serializer chunk by chunk, converting surrogate pairs to numeric
+     * character references (&#CODEPOINT;) via {@link XmlSerializer#entityRef(String)} and
+     * stripping lone surrogates and other XML-1.0-illegal characters.
+     * This avoids passing raw surrogate chars to {@link XmlSerializer#text(String)}, which
+     * would throw on implementations like kxml2's KXmlSerializer.
+     */
+    private static void writeContent(final XmlSerializer serializer, final String text) throws IOException {
+        if (text == null) {
+            return;
+        }
+        final StringBuilder chunk = new StringBuilder();
+        for (int i = 0; i < text.length(); i++) {
+            final char c = text.charAt(i);
+            if (Character.isHighSurrogate(c)) {
+                if (i + 1 < text.length() && Character.isLowSurrogate(text.charAt(i + 1))) {
+                    // Valid surrogate pair: flush accumulated chunk, then emit numeric char ref
+                    if (chunk.length() > 0) {
+                        serializer.text(chunk.toString());
+                        chunk.setLength(0);
+                    }
+                    final int codePoint = Character.toCodePoint(c, text.charAt(i + 1));
+                    serializer.entityRef("#" + codePoint);
+                    i++; // skip the low surrogate
+                }
+                // else: lone high surrogate — skip
+            } else if (Character.isLowSurrogate(c)) {
+                // Lone low surrogate — skip
+            } else if (isValidXmlChar(c)) {
+                chunk.append(c);
+            }
+            // else: invalid XML 1.0 character — skip
+        }
+        if (chunk.length() > 0) {
+            serializer.text(chunk.toString());
+        }
     }
 }
