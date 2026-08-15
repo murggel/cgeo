@@ -128,7 +128,13 @@
                 app:showAsAction="never"/>
             <item
                 android:id="@+id/menu_recalculate_health_score"
-                android:title="@string/caches_recalculate_health_score"
+                android:title="@string/caches_recalculate_health_score_all"
+                android:enabled="false"
+                app:showAsAction="never|withText"/>
+            <item
+                android:id="@+id/menu_personal_note_storewaypoints"
+                android:title="@string/caches_personal_note_storewaypoints_all"
+                android:icon="@drawable/ic_menu_waypoint_sync"
                 android:enabled="false"
                 app:showAsAction="never|withText"/>
             <item

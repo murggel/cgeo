@@ -520,6 +520,7 @@
     <string name="caches_remove_from_other_lists_all">Remove all from other lists</string>
     <string name="caches_append_to_route_selected">Append selected to individual route</string>
     <string name="caches_append_to_route_all">Append all to individual route</string>
+    <string name="caches_append_to_route_">Append to individual route</string>
     <string name="caches_appended_to_route">Caches appended to route</string>
     <string name="waypoints_appended_to_route">Waypoints appended to route</string>
     <string name="caches_delete_events">Delete past events</string>
@@ -573,7 +574,10 @@
     <string name="caches_reset_cache_icons_title">Reset cache icon</string>
     <string name="caches_make_list_unique">Make list unique</string>
     <string name="caches_set_listmarker">Set list marker</string>
-    <string name="caches_recalculate_health_score">Recalculate cache health scores</string>
+    <string name="caches_recalculate_health_score_all">Recalculate cache health scores for all caches</string>
+    <string name="caches_recalculate_health_score_selected">Recalculate cache health scores for selected caches</string>
+    <string name="caches_personal_note_storewaypoints_all">Add/Update waypoints for all caches</string>
+    <string name="caches_personal_note_storewaypoints_selected">Add/Update waypoints for selected caches</string>
     <string name="caches_askdeletion">Ask for deletion if empty</string>
     <string name="select_icon">Select icon</string>
     <string name="onetime_missing_unicode_info">Your Android version does not support automatic detection of icons supported - some characters may be missing</string>
@@ -1682,6 +1686,7 @@
     <string name="cache_set_coordinates">Set coordinates</string>
     <string name="cache_personal_note">Personal note</string>
     <string name="cache_personal_note_edit_pn">Edit personal note</string>
+    <string name="cache_menu_personal_note_storewaypoints">Add/Update waypoints to personal note</string>
     <string name="cache_menu_preventWaypointsFromNote">Prevent waypoints from note</string>
     <string name="cache_menu_allowWaypointExtraction">Allow waypoints from note</string>
     <string name="cache_personal_note_edit">Edit</string>
@@ -2756,6 +2761,9 @@
     <string name="command_recalculate_health_score_result">Cache health scores recalculated: %d</string>
     <string name="log_health_score_explanation_title">Cache health Score</string>
     <string name="log_health_score_explanation">The cache health score is calculated from at most last %1$s log entries or until one of the following log types is found:  \n%2$s  \n\nIt is calculated as:  \n`(sum of weights of good logs) / (sum of weights of good and bad logs)`\n\n**Good Logs** are:  \n%3$s  \n\n**Bad logs** are:  \n%4$s  \n\nLogs are weighted by their age (newer logs have higher weight).</string>
+
+    <string name="command_personal_note_store_waypoints_progress">Storing waypoints in personal notes…</string>
+    <string name="command_personal_note_store_waypoints_result">Personal notes updated: %d</string>
 
     <string name="caches_refresh_all_warning">This action may lead to high network traffic. Are you sure you want to batch refresh all caches?</string>
     <string name="live_map_status_http429">Please slow down, too many requests to %s</string>

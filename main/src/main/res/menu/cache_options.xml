@@ -125,8 +125,16 @@
                 app:showAsAction="ifRoom|withText"
                 android:visible="false" />
             <item
-                android:id="@+id/menu_toggleWaypointsFromNote"
+                android:id="@+id/menu_personal_note_storewaypoints"
+                android:title="@string/cache_menu_personal_note_storewaypoints"
+                android:icon="@drawable/ic_menu_waypoint_sync"
+                android:enabled="true"
+                app:showAsAction="never|withText"/>
+            <item
+                android:id="@+id/menu_preventWaypointsFromNote"
                 android:title="@string/cache_menu_preventWaypointsFromNote"
+                android:checkable="true"
+                android:checked="false"
                 app:showAsAction="ifRoom"
                 android:visible="false"/>
             <item
@@ -135,7 +143,7 @@
                 android:visible="false"/>
             <item
                 android:id="@+id/menu_add_to_route"
-                android:title="@string/caches_append_to_route_all"
+                android:title="@string/caches_append_to_route_"
                 app:showAsAction="ifRoom|withText"/>
         </menu>
     </item>

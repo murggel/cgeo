@@ -219,8 +219,6 @@ public class CacheDetailActivity extends TabbedViewPagerActivity
 
     private GeoDirHandler locationUpdater;
 
-    private MenuItem menuItemToggleWaypointsFromNote = null;
-
     private CompassMiniView compassMiniView;
 
     /**
@@ -712,10 +710,6 @@ public class CacheDetailActivity extends TabbedViewPagerActivity
         return true;
     }
 
-    private void setMenuPreventWaypointsFromNote(final boolean preventWaypointsFromNote) {
-        ToggleItemType.WAYPOINTS_FROM_NOTE.toggleMenuItem(menuItemToggleWaypointsFromNote, preventWaypointsFromNote);
-    }
-
     @Override
     public boolean onPrepareOptionsMenu(final Menu menu) {
         final IConnector connector = null != cache ? ConnectorFactory.getConnector(cache) : null;
@@ -749,9 +743,9 @@ public class CacheDetailActivity extends TabbedViewPagerActivity
             menu.findItem(R.id.menu_extract_waypoints).setVisible(!isUDC);
             menu.findItem(R.id.menu_scan_calculated_waypoints).setVisible(!isUDC);
             menu.findItem(R.id.menu_clear_goto_history).setVisible(cache.isGotoHistoryUDC());
-            menuItemToggleWaypointsFromNote = menu.findItem(R.id.menu_toggleWaypointsFromNote);
-            setMenuPreventWaypointsFromNote(cache.isPreventWaypointsFromNote());
-            menuItemToggleWaypointsFromNote.setVisible(!cache.isGotoHistoryUDC());
+            menu.findItem(R.id.menu_personal_note_storewaypoints).setVisible(cache.isOffline());
+            MenuUtils.setVisible(menu, R.id.menu_preventWaypointsFromNote, !cache.isGotoHistoryUDC());
+            MenuUtils.setChecked(menu, R.id.menu_preventWaypointsFromNote, cache.isPreventWaypointsFromNote());
             menu.findItem(R.id.menu_waypoints).setVisible(true);
 
             // submenu share / export
@@ -798,9 +792,10 @@ public class CacheDetailActivity extends TabbedViewPagerActivity
             extractWaypoints(searchText, cache);
         } else if (menuItem == R.id.menu_scan_calculated_waypoints) {
             scanForCalculatedWaypoints(cache);
-        } else if (menuItem == R.id.menu_toggleWaypointsFromNote) {
+        } else if (menuItem == R.id.menu_personal_note_storewaypoints) {
+            storeWaypointsInPersonalNote(cache);
+        } else if (menuItem == R.id.menu_preventWaypointsFromNote) {
             cache.setPreventWaypointsFromNote(!cache.isPreventWaypointsFromNote());
-            setMenuPreventWaypointsFromNote(cache.isPreventWaypointsFromNote());
             AndroidRxUtils.andThenOnUi(AndroidRxUtils.computationScheduler, this::saveAndNotify, this::notifyDataSetChanged);
         } else if (menuItem == R.id.menu_clear_goto_history) {
             SimpleDialog.of(this).setTitle(R.string.clear_goto_history_title).setMessage(R.string.clear_goto_history).confirm(() -> AndroidRxUtils.andThenOnUi(Schedulers.io(), DataStore::clearGotoHistory, () -> {
@@ -1771,12 +1766,10 @@ public class CacheDetailActivity extends TabbedViewPagerActivity
             binding.personalnote.setOnClickListener(v -> editPersonalNote(cache, activity));
             TooltipCompat.setTooltipText(binding.storewaypointsPersonalnote, LocalizationUtils.getString(R.string.cache_personal_note_storewaypoints));
             binding.storewaypointsPersonalnote.setOnClickListener(v -> {
-                activity.ensureSaved();
                 activity.storeWaypointsInPersonalNote(cache);
             });
             TooltipCompat.setTooltipText(binding.deleteewaypointsPersonalnote, LocalizationUtils.getString(R.string.cache_personal_note_removewaypoints));
             binding.deleteewaypointsPersonalnote.setOnClickListener(v -> {
-                activity.ensureSaved();
                 activity.removeWaypointsFromPersonalNote(cache);
             });
             binding.personalnoteVarsOutOfSync.setOnClickListener(v -> handleVariableOutOfSync());
@@ -2367,8 +2360,8 @@ public class CacheDetailActivity extends TabbedViewPagerActivity
                     }
                 });
 
-                final ClipboardManager cliboardManager = (ClipboardManager) activity.getSystemService(CLIPBOARD_SERVICE);
-            cliboardManager.addPrimaryClipChangedListener(() -> setClipboardButtonVisibility(binding.addWaypointFromclipboard));
+            final ClipboardManager clipboardManager = (ClipboardManager) activity.getSystemService(CLIPBOARD_SERVICE);
+            clipboardManager.addPrimaryClipChangedListener(() -> setClipboardButtonVisibility(binding.addWaypointFromclipboard));
         }
 
         @Override
@@ -2897,6 +2890,8 @@ public class CacheDetailActivity extends TabbedViewPagerActivity
     }
 
     public void removeWaypointsFromPersonalNote(final Geocache cache) {
+        ensureSaved();
+
         final String note = cache.getPersonalNote() == null ? "" : cache.getPersonalNote();
         final String newNote = CacheArtefactParser.removeParseableWaypointsFromText(note);
         if (newNote != null) {
@@ -2906,6 +2901,8 @@ public class CacheDetailActivity extends TabbedViewPagerActivity
     }
 
     public void storeWaypointsInPersonalNote(final Geocache cache) {
+        ensureSaved();
+
         final String note = cache.getPersonalNote() == null ? "" : cache.getPersonalNote();
 
         //only user modified waypoints
@@ -2953,7 +2950,6 @@ public class CacheDetailActivity extends TabbedViewPagerActivity
             }
             */
         }
-        setMenuPreventWaypointsFromNote(cache.isPreventWaypointsFromNote());
 
         final TextView personalNoteView = findViewById(R.id.personalnote);
         final View separator = findViewById(R.id.personalnote_button_separator);
