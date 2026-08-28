@@ -1,0 +1,40 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "🔨 Build Basic Debug",
+            "type": "shell",
+            "command": "./gradlew assembleBasicDebug",
+            "group": "build",
+            "problemMatcher": []
+        },
+        {
+            "label": "✓ Checkstyle",
+            "type": "shell",
+            "command": "./gradlew checkstyle",
+            "group": "test",
+            "problemMatcher": []
+        },
+        {
+            "label": "🔍 Android Lint",
+            "type": "shell",
+            "command": "./gradlew lint",
+            "group": "test",
+            "problemMatcher": []
+        },
+        {
+            "label": "🧪 Unit Tests (Debug)",
+            "type": "shell",
+            "command": "./gradlew testBasicDebugUnitTest",
+            "group": "test",
+            "problemMatcher": []
+        },
+        {
+            "label": "🚦 Alles prüfen",
+            "type": "shell",
+            "command": "./gradlew assembleBasicDebug checkstyle lint testBasicDebugUnitTest",
+            "group": "test",
+            "problemMatcher": []
+        }
+    ]
+}
