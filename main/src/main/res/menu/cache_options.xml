@@ -104,10 +104,12 @@
             <item
                 android:id="@+id/menu_delete_userdefined_waypoints"
                 android:title="@string/cache_delete_userdefined_waypoints"
+                app:icon="@drawable/ic_menu_delete"
                 android:visible="false"/>
             <item
                 android:id="@+id/menu_delete_generated_waypoints"
                 android:title="@string/cache_delete_generated_waypoints"
+                app:icon="@drawable/ic_menu_delete"
                 android:visible="false"/>
             <item
                 android:id="@+id/menu_extract_waypoints"
@@ -117,6 +119,7 @@
             <item
                 android:id="@+id/menu_scan_calculated_waypoints"
                 android:title="@string/cache_menu_scan_calculated_waypoints"
+                app:icon="@drawable/ic_menu_scan"
                 app:showAsAction="ifRoom"
                 android:visible="false"/>
             <item
@@ -144,6 +147,7 @@
             <item
                 android:id="@+id/menu_add_to_route"
                 android:title="@string/caches_append_to_route_all"
+                android:icon="@drawable/ic_menu_route"
                 app:showAsAction="ifRoom|withText"/>
         </menu>
     </item>
