@@ -21,6 +21,7 @@ import androidx.core.text.HtmlCompat;
 
 import java.nio.charset.StandardCharsets;
 import java.text.Collator;
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -566,6 +567,17 @@ public final class TextUtils {
             }
         }
         return defaultEnum;
+    }
+
+    public static boolean isEqualNormalized(final @Nullable String s1, final String s2) {
+        return Objects.equals(
+                Normalizer.normalize(s1, Normalizer.Form.NFC),
+                Normalizer.normalize(s2, Normalizer.Form.NFC)
+        );
+    }
+
+    public static String normalize(final @Nullable String s) {
+        return s == null ? null : Normalizer.normalize(s, Normalizer.Form.NFC);
     }
 
     private static Pattern getTokenSearchPattern(final String startToken, final String endToken) {
