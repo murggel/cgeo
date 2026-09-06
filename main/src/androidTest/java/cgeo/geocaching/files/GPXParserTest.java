@@ -694,8 +694,8 @@ public class GPXParserTest  {
         assertThat(caches).hasSize(1);
 
         final Geocache cache = caches.get(0);
-        assertThat(cache.getName()).isEqualTo("Alles für den Cache Lab Bonus");
-        assertThat(cache.getDescription()).isEqualTo("<p>\u00A0Alles für den Cache *Lab Bonus*<p>");
+        assertThat(cache.getName()).isEqualTo("\uD83E\uDD86Alles für den Cache\uD83E\uDD86 Lab Bonus");
+        assertThat(cache.getDescription()).isEqualTo("<p>\u00A0\uD83E\uDD86Alles für den Cache\uD83E\uDD86 *Lab Bonus*<p>");
         assertThat(cache.getShortDescription()).isEqualTo("InvalidDescription: V‹¥IR‡U½S©");
     }
 }

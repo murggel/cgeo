@@ -23,6 +23,7 @@ public final class XmlUtils {
     public static boolean isValidXmlChar(final char c) {
         return c == 0x9 || c == 0xA || c == 0xD
                 || (c >= 0x20 && c <= 0xD7FF)
+                || (c >= 0xD800 && c <= 0xDFFF)   // surrogate pairs (emoji etc.)
                 || (c >= 0xE000 && c <= 0xFFFD);
     }
 

@@ -32,7 +32,7 @@ public class InvalidXMLCharacterFilterReaderTest {
     @Test
     public void testSurrogatePairPassesThrough() throws IOException {
         final String emojis = "\uD83E\uDD86\uD83D\uDE80\uD83C\uDF0D";
-        assertThat(filter("before" + emojis + "after")).isEqualTo("beforeafter");
+        assertThat(filter("before" + emojis + "after")).isEqualTo("before" + emojis + "after");
     }
 }
 
