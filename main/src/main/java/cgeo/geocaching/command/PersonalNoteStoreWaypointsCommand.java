@@ -8,6 +8,7 @@ import cgeo.geocaching.models.Waypoint;
 import cgeo.geocaching.utils.LocalizationUtils;
 
 import android.app.Activity;
+import android.util.Pair;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -38,10 +39,10 @@ public class PersonalNoteStoreWaypointsCommand extends AbstractCommand {
         updatedCount = 0;
         for (final Geocache cache : caches) {
             final String oldPersonalNote = cache.getPersonalNote();
-            final List<Waypoint> userModifiedWaypoints = cache.getWaypoints().stream().filter(Waypoint::isUserModified).toList();
-            final CacheVariableList variablesList = cache.getVariables();
-            if (!userModifiedWaypoints.isEmpty() || !variablesList.isEmpty()) {
-                final String newNote = CacheArtefactParser.putParseableWaypointsInText(oldPersonalNote, userModifiedWaypoints, variablesList);
+            final Pair<List<Waypoint>, CacheVariableList> artefactToStore = CacheArtefactParser.getArtefactToStore(cache);
+            if (artefactToStore != null) {
+                final String newNote = CacheArtefactParser.putParseableWaypointsInText(oldPersonalNote,
+                        artefactToStore.first, artefactToStore.second);
                 final String updatedPersonalNote = StringUtils.trimToEmpty(newNote);
                 if (!Strings.CI.equals(StringUtils.trimToEmpty(oldPersonalNote), updatedPersonalNote)) {
                     personalNotes.put(cache.getGeocode(), oldPersonalNote);
