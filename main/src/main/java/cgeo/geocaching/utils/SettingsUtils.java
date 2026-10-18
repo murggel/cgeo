@@ -157,7 +157,7 @@ public class SettingsUtils {
 
     public static void updateOAuthPreference(final PreferenceFragmentCompat preferenceFragment, final int prefKeyId, final boolean authorized) {
         setAuthTitle(preferenceFragment, prefKeyId, authorized);
-        setPrefSummary(preferenceFragment, prefKeyId, LocalizationUtils.getString(authorized ? R.string.auth_connected : R.string.auth_unconnected));
+        setPrefSummary(preferenceFragment, prefKeyId, LocalizationUtils.getString(authorized ? R.string.auth_connected_longtap : R.string.auth_unconnected_tap_here));
     }
 
     public static void updateOpenCachingAuthPreference(final PreferenceFragmentCompat preferenceFragment, final int prefKeyId) {

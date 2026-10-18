@@ -24,7 +24,7 @@
         <cgeo.geocaching.settings.CredentialsPreference
             android:dependency="@string/pref_connectorGCActive"
             android:key="@string/pref_fakekey_gc_authorization"
-            app:summary="@string/auth_unconnected"
+            app:summary="@string/auth_unconnected_tap_here"
             app:iconSpaceReserved="false" />
 
         <CheckBoxPreference

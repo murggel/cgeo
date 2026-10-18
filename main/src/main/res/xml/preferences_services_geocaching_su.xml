@@ -20,7 +20,7 @@
             app:iconSpaceReserved="false" />
         <cgeo.geocaching.settings.OAuthPreference
             android:dependency="@string/pref_connectorSUActive"
-            app:summary="@string/auth_unconnected"
+            app:summary="@string/auth_unconnected_tap_here"
             android:key="@string/pref_fakekey_su_authorization"
             app:iconSpaceReserved="false" />
     </PreferenceCategory>
