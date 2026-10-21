@@ -327,7 +327,7 @@ public class SearchActivity extends AbstractNavigationBarActivity {
             final Drawable drw = AppCompatResources.getDrawable(this, suggestionIcon);
             drw.setTint(getResources().getColor(R.color.colorTextActionBar));
             drw.setBounds(0, 0, (int) searchView.getTextSize(), (int) searchView.getTextSize());
-            searchView.setCompoundDrawables(drw, null, null, null);
+            searchView.setCompoundDrawablesRelative(drw, null, null, null);
             searchView.setCompoundDrawablePadding(16);
             searchView.setHint(title);
 

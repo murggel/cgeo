@@ -10,7 +10,7 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:paddingLeft="6dp"
+            android:paddingStart="6dp"
             android:orientation="horizontal">
 
             <Button
@@ -46,7 +46,7 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:paddingLeft="6dp"
+            android:paddingStart="6dp"
             android:orientation="horizontal">
 
             <TextView

@@ -14,12 +14,12 @@
         android:id="@+id/map_attribution"
         android:layout_width="20dp"
         android:layout_height="20dp"
-        android:layout_marginLeft="6dp"
+        android:layout_marginStart="6dp"
         android:layout_marginBottom="11dp"
         android:scaleType="centerInside"
-        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
         android:layout_alignParentBottom="true"
-        android:layout_gravity="left"
+        android:layout_gravity="start"
         android:src="@drawable/copyright"
         tools:src="@drawable/copyright"/>
 

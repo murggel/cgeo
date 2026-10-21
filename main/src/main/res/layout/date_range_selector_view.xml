@@ -22,8 +22,8 @@
             android:id="@+id/date_from"
             style="@style/button_full"
             android:layout_centerVertical="true"
-            android:layout_toRightOf="@+id/date_from_label"
-            android:layout_toLeftOf="@id/date_from_reset"
+            android:layout_toEndOf="@+id/date_from_label"
+            android:layout_toStartOf="@id/date_from_reset"
             tools:text="5/3/2021" />
 
         <ImageButton
@@ -33,7 +33,7 @@
             android:src="@drawable/ic_menu_reset"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:layout_centerVertical="true"
-            android:layout_alignParentRight="true"/>
+            android:layout_alignParentEnd="true"/>
     </RelativeLayout>
 
     <RelativeLayout
@@ -45,15 +45,15 @@
             style="@style/text_label"
             android:layout_width="50dp"
             android:textAlignment="textEnd"
-            android:layout_alignParentLeft="true"
+            android:layout_alignParentStart="true"
             android:text="@string/cache_filter_datefilter_label_to"/>
 
         <Button
             android:id="@+id/date_to"
             style="@style/button_full"
             android:layout_centerVertical="true"
-            android:layout_toRightOf="@+id/date_to_label"
-            android:layout_toLeftOf="@id/date_to_reset"
+            android:layout_toEndOf="@+id/date_to_label"
+            android:layout_toStartOf="@id/date_to_reset"
             tools:text="5/3/2021" />
 
         <ImageButton
@@ -63,7 +63,7 @@
             android:src="@drawable/ic_menu_reset"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:layout_centerVertical="true"
-            android:layout_alignParentRight="true"/>
+            android:layout_alignParentEnd="true"/>
     </RelativeLayout>
 
 

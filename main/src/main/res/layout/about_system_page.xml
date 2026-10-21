@@ -32,7 +32,7 @@
                 android:layout_height="wrap_content"
                 android:layout_margin="7dip"
                 android:linksClickable="true"
-                android:paddingLeft="3dip"
+                android:paddingStart="3dip"
                 android:text="@string/about_system_include"
                 style="@style/about_base" />
 
@@ -42,7 +42,7 @@
                 android:layout_height="wrap_content"
                 android:layout_margin="7dip"
                 android:linksClickable="true"
-                android:paddingLeft="3dip"
+                android:paddingStart="3dip"
                 android:textIsSelectable="true"
                 style="@style/about_base"
                 android:textColor="@color/colorTextHint"

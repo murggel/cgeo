@@ -12,10 +12,10 @@
         android:id="@+id/name"
         android:layout_width="100sp"
         android:layout_height="wrap_content"
-        android:layout_gravity="left|top"
-        android:layout_marginRight="8dip"
+        android:layout_gravity="start|top"
+        android:layout_marginEnd="8dip"
         android:ellipsize="end"
-        android:gravity="right"
+        android:gravity="end"
         android:lines="1"
         android:scrollHorizontally="false"
         android:text="@null"
@@ -68,7 +68,7 @@
             android:id="@+id/linearlayout"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:gravity="bottom|left"
+            android:gravity="bottom|start"
             android:paddingTop="3dp"
             android:orientation="horizontal" />
 

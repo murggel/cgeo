@@ -44,7 +44,7 @@
                 android:id="@+id/translation_external"
                 style="@style/button_icon_with_text"
                 app:icon="@drawable/ic_menu_translate"
-                android:layout_gravity="right"
+                android:layout_gravity="end"
                 android:visibility="gone"
                 />
 
@@ -108,8 +108,8 @@
         android:layout_alignParentBottom="true"
         android:orientation="horizontal"
         android:paddingBottom="4dip"
-        android:paddingLeft="4dip"
-        android:paddingRight="4dip"
+        android:paddingStart="4dip"
+        android:paddingEnd="4dip"
         android:paddingTop="6dip"/>
 
 

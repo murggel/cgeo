@@ -30,15 +30,15 @@
         <TextView
             android:id="@+id/target"
             android:layout_alignParentTop="true"
-            android:layout_alignParentLeft="true"
-            android:layout_marginLeft="-2dp"
-            android:layout_marginRight="-2dp"
-            android:paddingLeft="8dp"
-            android:paddingRight="8dp"
+            android:layout_alignParentStart="true"
+            android:layout_marginStart="-2dp"
+            android:layout_marginEnd="-2dp"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
             android:layout_width="match_parent"
             android:ellipsize="end"
             style="@style/map_distanceinfo"
-            android:gravity="left" />
+            android:gravity="start" />
 
     </RelativeLayout>
 
@@ -46,7 +46,7 @@
         android:id="@+id/distancesFrame2"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true"
         android:layout_below="@id/distancesFrame1"
         android:orientation="vertical">
 
@@ -90,9 +90,9 @@
     <LinearLayout
         android:id="@+id/map_compassrosecontainer"
         android:layout_below="@id/distancesFrame1"
-        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
         android:layout_marginTop="13dp"
-        android:layout_marginLeft="13dp"
+        android:layout_marginStart="13dp"
         style="@style/map_shadowcontainer"
         android:layout_centerHorizontal="true">
         <ImageView
@@ -106,7 +106,7 @@
 
     <LinearLayout
         style="@style/map_shadowcontainer"
-        android:layout_marginLeft="13dp"
+        android:layout_marginStart="13dp"
         android:layout_below="@+id/map_compassrosecontainer">
         <ImageView
             android:id="@+id/live_map_status"
@@ -120,10 +120,10 @@
         android:id="@+id/container_rotationmenu"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_toRightOf="@id/map_compassrosecontainer"
+        android:layout_toEndOf="@id/map_compassrosecontainer"
         android:layout_alignTop="@id/map_compassrosecontainer"
-        android:layout_marginLeft="5dp"
-        android:gravity="left"
+        android:layout_marginStart="5dp"
+        android:gravity="start"
         android:visibility="gone"
         android:orientation="horizontal">
 
@@ -133,8 +133,8 @@
             android:layout_height="wrap_content"
             android:background="@color/colorBackgroundDialog"
             android:paddingTop="3dp"
-            android:paddingLeft="3dp"
-            android:paddingRight="3dp"
+            android:paddingStart="3dp"
+            android:paddingEnd="3dp"
             app:selectionRequired="true"
             app:singleSelection="true">
 

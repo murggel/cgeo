@@ -17,14 +17,14 @@
             android:id="@+id/detail_box"
             android:layout_width="@dimen/logItemLeftColumnOuterWidth"
             android:layout_height="wrap_content"
-            android:layout_alignParentLeft="true"
-            android:layout_gravity="left|top"
+            android:layout_alignParentStart="true"
+            android:layout_gravity="start|top"
             android:orientation="horizontal" >
 
             <LinearLayout
                 android:layout_width="@dimen/logItemLeftColumnInnerWidth"
                 android:layout_height="wrap_content"
-                android:layout_gravity="right|top"
+                android:layout_gravity="end|top"
                 android:orientation="vertical"
                 android:padding="3dip" >
 
@@ -52,25 +52,25 @@
             android:id="@+id/log_layout"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:layout_toRightOf="@id/detail_box"
+            android:layout_toEndOf="@id/detail_box"
             android:orientation="vertical"
             android:paddingTop="3dip"
-            android:paddingLeft="3dip">
+            android:paddingStart="3dip">
 
             <TextView
                 android:id="@+id/gcinfo"
                 style="@style/logitem_property"
                 android:visibility="gone"
-                android:gravity="left"
-                android:layout_gravity="left"
+                android:gravity="start"
+                android:layout_gravity="start"
                 android:textSize="@dimen/textSize_detailsPrimary" />
 
             <cgeo.geocaching.ui.ExpandableTextView
                 android:id="@+id/log"
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
-                android:layout_gravity="left"
-                android:gravity="left"
+                android:layout_gravity="start"
+                android:gravity="start"
                 android:textIsSelectable="true"
                 android:textSize="@dimen/textSize_detailsPrimary"
                 android:textColor="@color/colorText"/>
@@ -79,11 +79,11 @@
                 android:id="@+id/log_images"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="left|top"
+                android:layout_gravity="start|top"
                 android:layout_marginTop="3dip"
                 android:drawablePadding="3dip"
                 android:textSize="@dimen/textSize_detailsPrimary"
-                app:drawableLeftCompat="@drawable/log_img_icon" />
+                app:drawableStartCompat="@drawable/log_img_icon" />
 
             <RelativeLayout
                 android:layout_width="match_parent"
@@ -96,11 +96,11 @@
                     android:tooltipText="@string/translator_tooltip"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_alignParentLeft="true"
+                    android:layout_alignParentStart="true"
                     android:layout_centerVertical="true"
-                    android:layout_gravity="left"
-                    android:layout_marginRight="60dip"
-                    android:paddingRight="3dip"
+                    android:layout_gravity="start"
+                    android:layout_marginEnd="60dip"
+                    android:paddingEnd="3dip"
                     android:textSize="@dimen/textSize_detailsSecondary"
                     android:textColor="@color/colorTextHint"
                     android:textIsSelectable="false" />
@@ -108,7 +108,7 @@
                 <Button
                     android:id="@+id/log_translate_button"
                     style="@style/button_icon"
-                    android:layout_alignParentRight="true"
+                    android:layout_alignParentEnd="true"
                     app:icon="@drawable/ic_menu_translate" />
             </RelativeLayout>
         </LinearLayout>

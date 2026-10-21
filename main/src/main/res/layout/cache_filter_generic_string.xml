@@ -40,14 +40,14 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_centerVertical="true"
-                android:layout_toLeftOf="@id/item_info"/>
+                android:layout_toStartOf="@id/item_info"/>
 
             <ImageView
                 android:id="@+id/item_info"
                 android:layout_width="18dp"
                 android:layout_height="18dp"
                 app:srcCompat="@drawable/settings_info"
-                android:layout_alignParentRight="true"
+                android:layout_alignParentEnd="true"
                 android:layout_centerVertical="true"
                 android:contentDescription="@string/tap_icon_more_info"/>
 
@@ -58,8 +58,8 @@
         android:id="@+id/searchtext"
         style="@style/textinput_autocompletetextview"
         android:layout_below="@+id/filter_options"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentRight="true"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentEnd="true"
         android:hint="@string/cache_filter_stringfilter_searchtext_hint" android:labelFor="@id/generic_autocomplete_single">
 
         <AutoCompleteTextView

@@ -58,19 +58,19 @@
                     android:layout_height="wrap_content"
                     android:layout_width="wrap_content"
                     android:gravity="center_vertical"
-                    android:layout_alignParentLeft="true"
-                    android:layout_toLeftOf="@id/edit"
+                    android:layout_alignParentStart="true"
+                    android:layout_toStartOf="@id/edit"
                     android:layout_alignBaseline="@id/edit"
                     android:text="@string/waypoint_visited" />
                 <Button
                     android:id="@+id/edit"
                     style="@style/button_small_popups"
-                    android:layout_toLeftOf="@id/edit_personalnote"
+                    android:layout_toStartOf="@id/edit_personalnote"
                     android:text="@string/waypoint_edit" />
                 <Button
                     android:id="@+id/edit_personalnote"
                     style="@style/button_icon"
-                    android:layout_alignParentRight="true"
+                    android:layout_alignParentEnd="true"
                     android:tooltipText="@string/cache_personal_note_edit_pn"
                     app:icon="@drawable/ic_menu_note_edit" />
 

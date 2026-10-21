@@ -302,11 +302,11 @@ public class TextParam {
                 imageWidthInPixel = ViewUtils.dpToPixel(imageWidthInDp);
             }
             imageDrawable.setBounds(0, 0, imageWidthInPixel, imageHeightInPixel);
-            view.setCompoundDrawables(imageDrawable, null, null, null);
+            view.setCompoundDrawablesRelative(imageDrawable, null, null, null);
 
             // set image tint (if given)
             if (imageTintColor != 1) {
-                final Drawable[] d = view.getCompoundDrawables();
+                final Drawable[] d = view.getCompoundDrawablesRelative();
                 if (d.length > 0) {
                     d[0].setTint(imageTintColor);
                 }
@@ -314,7 +314,7 @@ public class TextParam {
             //Add margin between image and text (support various screen densities)
             view.setCompoundDrawablePadding(ViewUtils.dpToPixel(10));
         } else {
-            view.setCompoundDrawables(null, null, null, null);
+            view.setCompoundDrawablesRelative(null, null, null, null);
         }
 
     }

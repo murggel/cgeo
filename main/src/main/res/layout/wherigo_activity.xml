@@ -75,15 +75,15 @@
                 <Button
                     android:id="@+id/cache_context_gotocache"
                     style="@style/button_full"
-                    android:layout_alignParentLeft="true"
-                    android:layout_toLeftOf="@id/cache_context_remove"
+                    android:layout_alignParentStart="true"
+                    android:layout_toStartOf="@id/cache_context_remove"
                     android:layout_margin="3dp"
                     android:minWidth="2dp"
                     android:text="@string/wherigo_controls_cache_link"/>
                 <Button
                     android:id="@+id/cache_context_remove"
                     style="@style/button_icon"
-                    android:layout_alignParentRight="true"
+                    android:layout_alignParentEnd="true"
                     app:icon="@drawable/ic_menu_delete" />
             </RelativeLayout>
         </LinearLayout>
@@ -223,7 +223,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:textSize="@dimen/textSize_headingSecondary"
-                    android:paddingLeft="10dp"
+                    android:paddingStart="10dp"
                     android:layout_gravity="center"
                     />
 

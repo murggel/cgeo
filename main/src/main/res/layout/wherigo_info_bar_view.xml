@@ -5,16 +5,16 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:id="@+id/root"
-    android:layout_alignParentLeft="true"
-    android:layout_alignParentRight="true">
+    android:layout_alignParentStart="true"
+    android:layout_alignParentEnd="true">
 
     <LinearLayout
         android:id="@+id/wherigo_info_box"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
         android:orientation="horizontal"
-        android:layout_toLeftOf="@id/wherigo_additional_info_box"
+        android:layout_toStartOf="@id/wherigo_additional_info_box"
         android:colorPrimary="@color/colorTextActionBar"
         android:background="@color/colorBackgroundActionBar"
         tools:ignore="UseCompoundDrawables"
@@ -42,7 +42,7 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:visibility="gone"
-        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true"
         android:background="@color/colorBackgroundActionBar"
         tools:ignore="UseCompoundDrawables"
         tools:visibility="visible"> <!-- This cannot be done with a compound drawable as there is no easy way to set the size of the image in XML -->
@@ -58,7 +58,7 @@
             android:id="@+id/wherigo_resume_dialog_text"
             style="@style/text_label"
             android:layout_gravity="center_vertical"
-            android:paddingRight="6dp"
+            android:paddingEnd="6dp"
             android:text="@string/wherigo_bar_resume_dialog"
             android:textColor="@color/colorTextActionBar"
             android:textSize="@dimen/textSize_detailsSecondary"
@@ -75,7 +75,7 @@
             android:id="@+id/wherigo_song_info_text"
             style="@style/text_label"
             android:layout_gravity="center_vertical"
-            android:paddingRight="6dp"
+            android:paddingEnd="6dp"
             android:textColor="@color/colorTextActionBar"
             android:textSize="@dimen/textSize_detailsSecondary"
             tools:text="0:45/3:23" />

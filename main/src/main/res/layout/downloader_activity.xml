@@ -20,7 +20,7 @@
         android:id="@+id/downloader_selector"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:paddingRight="8dip"
+        android:paddingEnd="8dip"
         >
 
         <Spinner
@@ -28,13 +28,13 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:paddingTop="4dp"
-            android:layout_toLeftOf="@id/like_it"/>
+            android:layout_toStartOf="@id/like_it"/>
 
         <Button
             android:id="@+id/like_it"
 	        style="@style/button_icon"
             app:icon="@drawable/downloader_favorite"
-            android:layout_alignParentRight="true"
+            android:layout_alignParentEnd="true"
             android:text="@null"/>
 
         <TextView
@@ -42,7 +42,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_below="@id/downloader_type"
-            android:paddingLeft="8dp"
+            android:paddingStart="8dp"
             android:paddingBottom="4dp" />
     </RelativeLayout>
 

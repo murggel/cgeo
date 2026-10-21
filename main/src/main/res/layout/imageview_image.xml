@@ -60,11 +60,11 @@
             android:textSize="@dimen/textSize_buttonsDouble"
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
-            android:paddingRight="5dp"
-            android:paddingLeft="55dp"
+            android:paddingEnd="5dp"
+            android:paddingStart="55dp"
             android:gravity="center_vertical"
             tools:text="4/25"
-            android:layout_alignParentLeft="true"/>
+            android:layout_alignParentStart="true"/>
 
         <TextView android:id="@+id/imageview_category"
             style="@style/text_label"
@@ -74,7 +74,7 @@
             android:layout_height="match_parent"
             android:paddingHorizontal="5dp"
             tools:text="Listing"
-            android:layout_alignParentRight="true"/>
+            android:layout_alignParentEnd="true"/>
     </RelativeLayout>
 
 
@@ -90,20 +90,20 @@
             tools:ignore="UselessParent">
             <TextView android:id="@+id/imageview_information_text"
                 style="@style/text_default"
-                android:layout_toLeftOf="@+id/imageview_information_icon_less"
+                android:layout_toStartOf="@+id/imageview_information_icon_less"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textIsSelectable="true"
                 android:focusable="true"
                 android:maxLines="7"/>
             <ImageView android:id="@+id/imageview_information_icon_less"
-                android:layout_alignParentRight="true"
+                android:layout_alignParentEnd="true"
                 android:layout_alignParentTop="true"
                 android:src="@drawable/expand_more"
                 android:layout_width="24dp"
                 android:layout_height="24dp" />
             <ImageView android:id="@+id/imageview_information_icon_more"
-                android:layout_alignParentRight="true"
+                android:layout_alignParentEnd="true"
                 android:layout_alignParentTop="true"
                 android:src="@drawable/expand_less"
                 android:layout_width="24dp"

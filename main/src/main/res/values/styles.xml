@@ -96,7 +96,7 @@
         <item name="android:layout_width">0dip</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:layout_weight">1</item>
-        <item name="android:paddingLeft">6dip</item>
+        <item name="android:paddingStart">6dip</item>
         <item name="android:singleLine">true</item>
         <item name="android:scrollHorizontally">true</item>
         <item name="android:ellipsize">marquee</item>
@@ -126,8 +126,8 @@
     <style name="button_full_base" parent="button_base">
         <item name="android:layout_width">fill_parent</item>
         <item name="android:layout_height">wrap_content</item>
-        <item name="android:layout_marginLeft">6dip</item>
-        <item name="android:layout_marginRight">6dip</item>
+        <item name="android:layout_marginStart">6dip</item>
+        <item name="android:layout_marginEnd">6dip</item>
         <item name="android:layout_marginBottom">5dip</item>
     </style>
 
@@ -170,17 +170,17 @@
         <item name="android:layout_width">wrap_content</item>
         <item name="android:minWidth">40sp</item>
         <item name="android:layout_height">wrap_content</item>
-        <item name="android:layout_marginLeft">5dip</item>
-        <item name="android:layout_marginRight">5dip</item>
+        <item name="android:layout_marginStart">5dip</item>
+        <item name="android:layout_marginEnd">5dip</item>
         <item name="android:layout_marginBottom">5dip</item>
     </style>
 
     <style name="button_small" parent="button">
         <item name="android:layout_width">125dip</item>
         <item name="android:layout_height">wrap_content</item>
-        <item name="android:layout_gravity">right</item>
-        <item name="android:layout_marginLeft">6dip</item>
-        <item name="android:layout_marginRight">6dip</item>
+        <item name="android:layout_gravity">end</item>
+        <item name="android:layout_marginStart">6dip</item>
+        <item name="android:layout_marginEnd">6dip</item>
         <item name="android:layout_marginTop">3dip</item>
         <item name="android:layout_marginBottom">3dip</item>
         <item name="android:padding">3dip</item>
@@ -199,8 +199,8 @@
         <item name="android:layout_margin">3dp</item>
         <item name="android:insetTop">0dp</item>
         <item name="android:insetBottom">0dp</item>
-        <item name="android:paddingLeft">12dp</item>
-        <item name="android:paddingRight">12dp</item>
+        <item name="android:paddingStart">12dp</item>
+        <item name="android:paddingEnd">12dp</item>
         <item name="iconGravity">textStart</item>
         <item name="iconPadding">0dp</item>
         <item name="iconSize">30dp</item>
@@ -285,7 +285,7 @@
         <item name="android:padding">6dip</item>
         <item name="android:singleLine">true</item>
         <item name="android:autoText">true</item>
-        <item name="android:gravity">top|left</item>
+        <item name="android:gravity">top|start</item>
         <item name="android:capitalize">none</item>
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>
@@ -298,7 +298,7 @@
     <style name="textinput_edittext" parent="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
         <item name="android:padding">6dip</item>
         <item name="android:autoText">true</item>
-        <item name="android:gravity">top|left</item>
+        <item name="android:gravity">top|start</item>
         <item name="android:capitalize">none</item>
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>
@@ -326,7 +326,7 @@
         <item name="android:inputType">text</item>
         <item name="android:textColor">@color/colorText</item>
         <item name="colorOnSurface">@color/colorText</item>
-        <item name="android:gravity">top|left</item>
+        <item name="android:gravity">top|start</item>
         <item name="android:textSize">@dimen/textSize_textinputPrimary</item>
     </style>
 
@@ -340,7 +340,7 @@
         <item name="android:padding">6dip</item>
         <item name="android:singleLine">true</item>
         <item name="android:autoText">true</item>
-        <item name="android:gravity">top|left</item>
+        <item name="android:gravity">top|start</item>
         <item name="android:capitalize">none</item>
         <item name="android:textColor">@color/colorText</item>
     </style>
@@ -348,8 +348,8 @@
     <style name="edittext_dialog" parent="edittext">
         <item name="android:layout_width">fill_parent</item>
         <item name="android:layout_height">wrap_content</item>
-        <item name="android:layout_marginLeft">10dip</item>
-        <item name="android:layout_marginRight">10dip</item>
+        <item name="android:layout_marginStart">10dip</item>
+        <item name="android:layout_marginEnd">10dip</item>
         <item name="android:layout_marginBottom">5dip</item>
     </style>
 
@@ -359,8 +359,8 @@
         <item name="android:layout_width">fill_parent</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:gravity">center_horizontal</item>
-        <item name="android:paddingLeft">5dip</item>
-        <item name="android:paddingRight">5dip</item>
+        <item name="android:paddingStart">5dip</item>
+        <item name="android:paddingEnd">5dip</item>
         <item name="android:lines">1</item>
         <item name="android:singleLine">true</item>
         <item name="android:scrollHorizontally">true</item>
@@ -372,9 +372,9 @@
     <style name="location_current_style">
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
-        <item name="android:layout_gravity">right</item>
-        <item name="android:paddingLeft">3dip</item>
-        <item name="android:paddingRight">3dip</item>
+        <item name="android:layout_gravity">end</item>
+        <item name="android:paddingStart">3dip</item>
+        <item name="android:paddingEnd">3dip</item>
         <item name="android:lines">1</item>
         <item name="android:singleLine">true</item>
         <item name="android:scrollHorizontally">true</item>
@@ -384,7 +384,7 @@
     </style>
 
     <style name="location_current_type" parent="location_current_style">
-        <item name="android:layout_alignParentRight">true</item>
+        <item name="android:layout_alignParentEnd">true</item>
     </style>
 
     <style name="location_current_accuracy" parent="location_current_style">
@@ -392,8 +392,8 @@
     </style>
 
     <style name="location_current_satellites" parent="location_current_style">
-        <item name="android:layout_alignParentLeft">true</item>
-        <item name="android:layout_gravity">left</item>
+        <item name="android:layout_alignParentStart">true</item>
+        <item name="android:layout_gravity">start</item>
     </style>
 
     <!-- single degree -->
@@ -401,8 +401,8 @@
         <item name="android:textAlignment">viewEnd</item>
         <item name="android:width">40dip</item>
         <item name="android:textIsSelectable">false</item>
-        <item name="android:paddingLeft">0dip</item>
-        <item name="android:paddingRight">0dip</item>
+        <item name="android:paddingStart">0dip</item>
+        <item name="android:paddingEnd">0dip</item>
         <item name="android:ellipsize">none</item>
     </style>
 
@@ -446,8 +446,8 @@
     <style name="separator_horizontal_heading_text">
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
-        <item name="android:layout_alignParentLeft">true</item>
-        <item name="android:layout_marginLeft">15dip</item>
+        <item name="android:layout_alignParentStart">true</item>
+        <item name="android:layout_marginStart">15dip</item>
         <item name="android:padding">3dip</item>
         <item name="android:lines">1</item>
         <item name="android:singleLine">true</item>
@@ -464,8 +464,8 @@
         <item name="android:layout_height">wrap_content</item>
         <item name="android:textColor">@color/colorAccent</item>
         <item name="android:textSize">18sp</item>
-        <item name="android:paddingLeft">16dp</item>
-        <item name="android:paddingRight">16dp</item>
+        <item name="android:paddingStart">16dp</item>
+        <item name="android:paddingEnd">16dp</item>
         <item name="android:layout_marginTop">8dp</item>
         <item name="android:layout_marginBottom">6dp</item>
     </style>
@@ -493,9 +493,9 @@
         <item name="android:id">@id/author</item>
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
-        <item name="android:layout_alignParentLeft">true</item>
+        <item name="android:layout_alignParentStart">true</item>
         <item name="android:layout_alignParentTop">true</item>
-        <item name="android:layout_gravity">left|top</item>
+        <item name="android:layout_gravity">start|top</item>
         <item name="android:ellipsize">marquee</item>
         <item name="android:lines">1</item>
         <item name="android:scrollHorizontally">true</item>
@@ -508,9 +508,9 @@
     <style name="logitem_property">
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
-        <item name="android:layout_gravity">right</item>
+        <item name="android:layout_gravity">end</item>
         <item name="android:ellipsize">end</item>
-        <item name="android:gravity">left</item>
+        <item name="android:gravity">start</item>
         <item name="android:maxLines">1</item>
         <item name="android:scrollHorizontally">true</item>
         <item name="android:textAlignment">3</item>
@@ -541,10 +541,10 @@
     <!-- map distance info styles -->
     <style name="map_distanceinfo_no_background">
         <item name="android:paddingTop">0dp</item>
-        <item name="android:paddingLeft">4dp</item>
-        <item name="android:paddingRight">4dp</item>
+        <item name="android:paddingStart">4dp</item>
+        <item name="android:paddingEnd">4dp</item>
         <item name="android:layout_height">28dp</item>
-        <item name="android:gravity">right</item>
+        <item name="android:gravity">end</item>
         <item name="android:lines">1</item>
         <item name="android:textColor">@color/text_icon</item>
         <item name="android:textStyle">bold</item>
@@ -556,7 +556,7 @@
         <item name="android:background">@drawable/icon_bcg</item>
     </style>
     <style name="map_distanceinfo_supersize" parent="map_distanceinfo">
-        <item name="android:layout_marginLeft">-2dp</item>
+        <item name="android:layout_marginStart">-2dp</item>
         <item name="android:textSize">72sp</item>
         <item name="android:paddingTop">15dp</item>
         <item name="android:layout_marginBottom">-10dp</item>
@@ -567,7 +567,7 @@
         <item name="android:layout_height">wrap_content</item>
         <item name="android:paddingTop">14dip</item>
         <item name="android:paddingBottom">6dip</item>
-        <item name="android:paddingLeft">14dip</item>
+        <item name="android:paddingStart">14dip</item>
         <item name="android:textSize">@dimen/textSize_headingSecondary</item>
         <item name="android:textColor">@color/colorTextHeadline</item>
     </style>
@@ -591,8 +591,8 @@
         <item name="android:layout_height">wrap_content</item>
         <item name="android:paddingBottom">6dp</item>
         <item name="android:paddingTop">2dp</item>
-        <item name="android:paddingLeft">2dp</item>
-        <item name="android:paddingRight">2dp</item>
+        <item name="android:paddingStart">2dp</item>
+        <item name="android:paddingEnd">2dp</item>
         <item name="android:clipToPadding">false</item>
     </style>
 
@@ -600,22 +600,22 @@
     <style name="authorization_text">
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>
-        <item name="android:layout_gravity">left|center_vertical</item>
-        <item name="android:layout_marginLeft">10dip</item>
-        <item name="android:layout_marginRight">10dip</item>
-        <item name="android:gravity">left|center_vertical</item>
+        <item name="android:layout_gravity">start|center_vertical</item>
+        <item name="android:layout_marginStart">10dip</item>
+        <item name="android:layout_marginEnd">10dip</item>
+        <item name="android:gravity">start|center_vertical</item>
         <item name="android:textSize">@dimen/textSize_detailsPrimary</item>
     </style>
 
     <!-- installation wizard styles -->
     <style name="InstallationWizardMarginsLR">
-        <item name="android:layout_marginLeft">16dp</item>
-        <item name="android:layout_marginRight">16dp</item>
+        <item name="android:layout_marginStart">16dp</item>
+        <item name="android:layout_marginEnd">16dp</item>
     </style>
     <style name="InstallationWizardButtonOutlined" parent="@style/Widget.MaterialComponents.Button.OutlinedButton">
         <item name="android:layout_height">wrap_content</item>
-        <item name="android:layout_marginLeft">16dp</item>
-        <item name="android:layout_marginRight">16dp</item>
+        <item name="android:layout_marginStart">16dp</item>
+        <item name="android:layout_marginEnd">16dp</item>
     </style>
     <style name="InstallationWizardButtonFull" parent="InstallationWizardButtonOutlined">
         <item name="android:layout_width">match_parent</item>
@@ -635,8 +635,8 @@
         <item name="android:layout_alignParentBottom">true</item>
         <item name="android:gravity">center</item>
         <item name="android:padding">12dp</item>
-        <item name="android:layout_marginLeft">16dp</item>
-        <item name="android:layout_marginRight">16dp</item>
+        <item name="android:layout_marginStart">16dp</item>
+        <item name="android:layout_marginEnd">16dp</item>
         <item name="android:layout_marginBottom">12dp</item>
     </style>
     <style name="InstallationWizardTextViewBase" parent="InstallationWizardMarginsLR">
@@ -654,12 +654,12 @@
     <style name="about_base">
         <item name="android:textSize">@dimen/textSize_detailsPrimary</item>
         <item name="android:textColor">@color/colorText</item>
-        <item name="android:layout_gravity">left</item>
+        <item name="android:layout_gravity">start</item>
     </style>
     <style name="about_contributors" parent="@style/about_base">
         <item name="android:layout_margin">7dip</item>
         <item name="android:linksClickable">true</item>
-        <item name="android:paddingLeft">3dip</item>
+        <item name="android:paddingStart">3dip</item>
     </style>
     <style name="about_info_title" parent="@style/about_base">
         <item name="android:layout_width">wrap_content</item>
@@ -667,8 +667,8 @@
     </style>
     <style name="about_info_content" parent="about_info_title">
         <item name="android:layout_marginBottom">5dip</item>
-        <item name="android:layout_marginLeft">10dip</item>
-        <item name="android:layout_marginRight">10dip</item>
+        <item name="android:layout_marginStart">10dip</item>
+        <item name="android:layout_marginEnd">10dip</item>
         <item name="android:clickable">true</item>
         <item name="android:focusable">true</item>
         <item name="android:linksClickable">false</item>
@@ -676,7 +676,7 @@
     <style name="about_changes" parent="about_info_title">
         <item name="android:layout_margin">7dip</item>
         <item name="android:linksClickable">true</item>
-        <item name="android:paddingLeft">3dip</item>
+        <item name="android:paddingStart">3dip</item>
     </style>
 
     <!-- elevation chart styles -->

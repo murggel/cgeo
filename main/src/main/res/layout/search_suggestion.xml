@@ -21,9 +21,9 @@
         android:layout_height="wrap_content"
         android:textSize="@dimen/textSize_listsPrimary"
         android:textColor="@color/colorText_listsPrimary"
-        android:layout_toRightOf="@id/icon"
+        android:layout_toEndOf="@id/icon"
         android:gravity="center_vertical"
-        android:layout_toLeftOf="@id/delete"
+        android:layout_toStartOf="@id/delete"
         android:minHeight="?android:attr/listPreferredItemHeightSmall"/>
 
     <ImageView
@@ -32,7 +32,7 @@
         android:layout_height="wrap_content"
         android:layout_margin="5dp"
         android:minHeight="0dip"
-        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true"
         android:layout_centerVertical="true"
         android:src="@drawable/ic_menu_delete"
         app:tint="@color/colorText" />

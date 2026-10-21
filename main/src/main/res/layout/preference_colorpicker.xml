@@ -15,13 +15,13 @@
             android:layout_height="wrap_content"
             android:text="@string/preference_colorpicker_select_color_scheme"
             android:paddingTop="10dp"
-            android:paddingLeft="24dp"
-            android:paddingRight="24dp"/>
+            android:paddingStart="24dp"
+            android:paddingEnd="24dp"/>
         <GridLayout
             android:id="@+id/colorpicker_basegrid"
             android:paddingTop="10dp"
-            android:paddingLeft="22dp"
-            android:paddingRight="22dp"
+            android:paddingStart="22dp"
+            android:paddingEnd="22dp"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal" />
@@ -32,13 +32,13 @@
             android:layout_height="wrap_content"
             android:text="@string/preference_colorpicker_select_color"
             android:paddingTop="10dp"
-            android:paddingLeft="24dp"
-            android:paddingRight="24dp" />
+            android:paddingStart="24dp"
+            android:paddingEnd="24dp" />
         <GridLayout
             android:id="@+id/colorpicker_colorgrid"
             android:paddingTop="10dp"
-            android:paddingLeft="22dp"
-            android:paddingRight="22dp"
+            android:paddingStart="22dp"
+            android:paddingEnd="22dp"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
@@ -59,18 +59,18 @@
                 android:layout_height="wrap_content"
                 android:text="@string/preference_colorpicker_select_opaqueness"
                 android:paddingTop="10dp"
-                android:paddingLeft="24dp"
-                android:paddingRight="24dp" />
+                android:paddingStart="24dp"
+                android:paddingEnd="24dp" />
 
             <LinearLayout
                 android:id="@+id/colorpicker_opaqueness_slider_box"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:paddingLeft="0dp"
-                android:paddingRight="0dp"
+                android:paddingStart="0dp"
+                android:paddingEnd="0dp"
                 android:paddingTop="10dp"
-                android:layout_marginLeft="10dp"
-                android:layout_marginRight="10dp"
+                android:layout_marginStart="10dp"
+                android:layout_marginEnd="10dp"
                 android:paddingBottom="10dp"
                 android:orientation="horizontal">
 
@@ -80,10 +80,10 @@
                     android:layout_height="wrap_content"
                     android:min="0"
                     android:max="255"
-                    android:layout_gravity="left"
+                    android:layout_gravity="start"
                     android:layout_weight="1"
-                    android:paddingLeft="0dp"
-                    android:paddingRight="4dp" />
+                    android:paddingStart="0dp"
+                    android:paddingEnd="4dp" />
 
                 <TextView
                     android:id="@+id/colorpicker_opaqueness_value"
@@ -91,9 +91,9 @@
                     android:layout_height="wrap_content"
                     android:text="@string/preference_colorpicker_select_opaqueness"
                     android:layout_weight="5"
-                    android:gravity="right"
-                    android:layout_gravity="right"
-                    android:paddingRight="16dp"/>
+                    android:gravity="end"
+                    android:layout_gravity="end"
+                    android:paddingEnd="16dp"/>
 
             </LinearLayout>
         </LinearLayout>
@@ -111,18 +111,18 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/preference_colorpicker_select_width"
-                android:paddingLeft="24dp"
-                android:paddingRight="24dp" />
+                android:paddingStart="24dp"
+                android:paddingEnd="24dp" />
 
             <LinearLayout
                 android:id="@+id/colorpicker_width_slider_box"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:paddingLeft="0dp"
-                android:paddingRight="0dp"
+                android:paddingStart="0dp"
+                android:paddingEnd="0dp"
                 android:paddingTop="10dp"
-                android:layout_marginLeft="10dp"
-                android:layout_marginRight="10dp"
+                android:layout_marginStart="10dp"
+                android:layout_marginEnd="10dp"
                 android:paddingBottom="10dp"
                 android:orientation="horizontal">
 
@@ -132,10 +132,10 @@
                     android:layout_height="wrap_content"
                     android:min="0"
                     android:max="@integer/max_width"
-                    android:layout_gravity="left"
+                    android:layout_gravity="start"
                     android:layout_weight="1"
-                    android:paddingLeft="0dp"
-                    android:paddingRight="4dp" />
+                    android:paddingStart="0dp"
+                    android:paddingEnd="4dp" />
 
                 <TextView
                     android:id="@+id/colorpicker_width_value"
@@ -143,9 +143,9 @@
                     android:layout_height="wrap_content"
                     android:text="@string/preference_colorpicker_select_width"
                     android:layout_weight="5"
-                    android:gravity="right"
-                    android:layout_gravity="right"
-                    android:paddingRight="16dp"/>
+                    android:gravity="end"
+                    android:layout_gravity="end"
+                    android:paddingEnd="16dp"/>
 
             </LinearLayout>
         </LinearLayout>

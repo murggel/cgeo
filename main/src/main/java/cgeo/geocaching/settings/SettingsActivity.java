@@ -506,7 +506,7 @@ public class SettingsActivity extends CustomMenuEntryActivity implements Prefere
         public void bindView(final View view, final Context context, final Cursor cursor) {
             final TextView tv = view.findViewById(R.id.text);
             tv.setText(prepareDisplayString(context, cursor.getString(1), searchTerm));
-            tv.setCompoundDrawablesWithIntrinsicBounds(cursor.getInt(5), 0, 0, 0);
+            tv.setCompoundDrawablesRelativeWithIntrinsicBounds(cursor.getInt(5), 0, 0, 0);
             ((TextView) view.findViewById(R.id.info)).setText(prepareDisplayString(context, cursor.getString(2), searchTerm));
         }
 

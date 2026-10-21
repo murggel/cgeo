@@ -32,7 +32,7 @@ public class GeocacheSuggestionsAdapter extends BaseSuggestionsAdapter {
         } else {
             final TextView tv = view.findViewById(R.id.text);
             tv.setText(cursor.getString(1));
-            tv.setCompoundDrawablesWithIntrinsicBounds(cursor.getInt(5), 0, 0, 0);
+            tv.setCompoundDrawablesRelativeWithIntrinsicBounds(cursor.getInt(5), 0, 0, 0);
             ((TextView) view.findViewById(R.id.info)).setText(cursor.getString(2));
         }
         view.setBackgroundColor(context.getResources().getColor(R.color.colorBackgroundDialog));

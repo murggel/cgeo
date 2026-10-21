@@ -136,7 +136,7 @@ public abstract class LogsViewCreator extends TabbedViewPagerFragment<LogsPageBi
         } else {
             logTypeMarker = log.logType.getLogOverlay();
         }
-        holder.binding.type.setCompoundDrawablesWithIntrinsicBounds(logTypeMarker, 0, 0, 0);
+        holder.binding.type.setCompoundDrawablesRelativeWithIntrinsicBounds(logTypeMarker, 0, 0, 0);
         holder.binding.type.setCompoundDrawablePadding(4);
 
         holder.binding.author.setText(StringEscapeUtils.unescapeHtml4(log.author));

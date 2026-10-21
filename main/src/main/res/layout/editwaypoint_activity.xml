@@ -54,13 +54,13 @@
                     custom:hint="@string/projection_type_bearing_hint_distance"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_toLeftOf="@+id/projection_bearing_unit"/>
+                    android:layout_toStartOf="@+id/projection_bearing_unit"/>
 
                 <Spinner
                     android:id="@+id/projection_bearing_unit"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_alignParentRight="true"
+                    android:layout_alignParentEnd="true"
                     android:layout_marginTop="25dp"
                     android:enabled="false"
                     android:entries="@array/distance_units"

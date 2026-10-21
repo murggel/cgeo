@@ -28,7 +28,7 @@
             style="@style/text_label"
             android:layout_width="150dp"
             android:layout_height="wrap_content"
-            android:layout_gravity="left"
+            android:layout_gravity="start"
             android:padding="3dip"
             android:visibility="visible"
             android:textStyle="bold"

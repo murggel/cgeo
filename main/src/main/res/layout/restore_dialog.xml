@@ -3,8 +3,8 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:paddingLeft="25dp"
-    android:paddingRight="25dp" >
+    android:paddingStart="25dp"
+    android:paddingEnd="25dp" >
 
     <TextView
         android:id="@+id/info_message"

@@ -11,10 +11,10 @@
         android:id="@+id/title"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
         android:layout_centerVertical="true"
-        android:gravity="left|center_horizontal"
-        android:layout_toLeftOf="@id/switchAB"
+        android:gravity="start|center_horizontal"
+        android:layout_toStartOf="@id/switchAB"
         android:maxLines="1"
         android:ellipsize="end"
         android:textSize="@dimen/textSize_toolbarPrimary"
@@ -28,7 +28,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_centerVertical="true"
-        android:layout_alignParentRight="true">
+        android:layout_alignParentEnd="true">
 
         <Button
             android:id="@+id/download_selected"
@@ -57,9 +57,9 @@
         android:id="@+id/switchAB"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true"
         android:layout_centerVertical="true"
-        android:gravity="right|center_vertical"
+        android:gravity="end|center_vertical"
         android:textSize="@dimen/textSize_toolbarSecondary"
         android:textColor="@color/colorTextActionBar"
         android:text="@string/show_all"

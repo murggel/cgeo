@@ -36,23 +36,23 @@
             <Button
                 android:id="@+id/image_rotate"
                 style="@style/button_icon"
-                android:layout_gravity="left"
-                android:layout_marginLeft="50dp"
+                android:layout_gravity="start"
+                android:layout_marginStart="50dp"
                 app:icon="@drawable/ic_menu_rotate_right" />
 
             <Button
                 android:id="@+id/image_flip"
                 style="@style/button_icon"
-                android:layout_gravity="left"
-                android:layout_toRightOf="@+id/image_rotate"
+                android:layout_gravity="start"
+                android:layout_toEndOf="@+id/image_rotate"
                 app:icon="@drawable/ic_menu_flip" />
 
             <Button
                 android:id="@+id/image_edit_external"
                 style="@style/button_icon"
-                android:layout_gravity="left"
-                android:layout_marginLeft="50dp"
-                android:layout_toRightOf="@+id/image_flip"
+                android:layout_gravity="start"
+                android:layout_marginStart="50dp"
+                android:layout_toEndOf="@+id/image_flip"
                 app:icon="@drawable/ic_menu_edit" />
 
         </RelativeLayout>

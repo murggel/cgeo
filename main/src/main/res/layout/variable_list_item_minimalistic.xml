@@ -6,9 +6,9 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="horizontal"
-    android:paddingLeft="0dip"
+    android:paddingStart="0dip"
     android:paddingTop="1dip"
-    android:paddingRight="0dip"
+    android:paddingEnd="0dip"
     android:paddingBottom="0dip"
     tools:context=".VariablesViewPageFragment">
 
@@ -16,7 +16,7 @@
         android:id="@+id/variable_name"
         android:layout_height="wrap_content"
         android:layout_width="@dimen/equation_name_width"
-        android:gravity="right"
+        android:gravity="end"
         android:hint=""
         android:textSize="22dp"
         tools:ignore="SpUsage"

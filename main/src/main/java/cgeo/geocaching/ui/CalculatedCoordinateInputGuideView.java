@@ -342,7 +342,7 @@ public class CalculatedCoordinateInputGuideView extends LinearLayout {
             final Button hem = ViewUtils.createButton(getContext(), this, TextParam.text("N"));
             hem.setOnClickListener(v -> changeHemisphereButtonValue(hem));
             final GridLayout.LayoutParams hlp = createGridLayoutParams(0);
-            hlp.setMargins(0, 0, ViewUtils.dpToPixel(3), 0);
+            hlp.setMarginEnd(ViewUtils.dpToPixel(3));
             this.grid.addView(hem, hlp);
 
             for (char c : viewPattern.toCharArray()) {

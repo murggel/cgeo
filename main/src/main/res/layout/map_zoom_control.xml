@@ -8,8 +8,8 @@
         android:id="@+id/container_followmylocation"
         style="@style/map_shadowcontainer"
         android:layout_above="@id/container_zoom"
-        android:layout_alignParentRight="true"
-        android:layout_marginRight="11dp">
+        android:layout_alignParentEnd="true"
+        android:layout_marginEnd="11dp">
         <ImageButton
             android:id="@+id/map_followmylocation_btn"
             android:src="@drawable/map_followmylocation_btn"
@@ -22,10 +22,10 @@
         android:id="@+id/container_zoom"
         android:orientation="vertical"
         style="@style/map_shadowcontainer"
-        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true"
         android:layout_alignParentBottom="true"
         android:layout_centerHorizontal="true"
-        android:layout_marginRight="11dp"
+        android:layout_marginEnd="11dp"
         android:layout_marginBottom="12dp">
         <ImageButton
             android:id="@+id/map_zoomin"

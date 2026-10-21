@@ -8,22 +8,22 @@
     <TextView
         android:id="@+id/dialog_title"
         style="?android:attr/windowTitleStyle"
-        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
         android:textIsSelectable="true"
-        android:layout_toLeftOf="@id/dialog_search_icon"
+        android:layout_toStartOf="@id/dialog_search_icon"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:paddingTop="6dp"
         android:paddingBottom="6dp"
-        android:paddingLeft="24dp"
-        android:paddingRight="12dp"/>
+        android:paddingStart="24dp"
+        android:paddingEnd="12dp"/>
     <ImageView
         android:id="@+id/dialog_search_icon"
         android:visibility="gone"
         android:layout_width="36dp"
         android:layout_height="36dp"
-        android:layout_alignParentRight="true"
-        android:paddingRight="12dp"
+        android:layout_alignParentEnd="true"
+        android:paddingEnd="12dp"
         android:tooltipText="@string/search"
         android:src="@drawable/ic_menu_search"
     />
@@ -37,9 +37,9 @@
         android:layout_height="wrap_content"
         android:layout_width="match_parent"
         android:layout_alignParentTop="true"
-        android:layout_toLeftOf="@id/dialog_search_icon"
+        android:layout_toStartOf="@id/dialog_search_icon"
         android:layout_alignParentBottom="true"
-        android:layout_marginLeft="24dp"
+        android:layout_marginStart="24dp"
         />
 
 </RelativeLayout>

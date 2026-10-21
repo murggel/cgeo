@@ -5,8 +5,8 @@
     android:id="@+id/location_status"
     android:layout_width="fill_parent"
     android:layout_height="wrap_content"
-    android:layout_marginLeft="6dip"
-    android:layout_marginRight="6dip"
+    android:layout_marginStart="6dip"
+    android:layout_marginEnd="6dip"
     android:orientation="vertical"
     tools:context=".MainActivity">
 

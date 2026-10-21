@@ -80,7 +80,7 @@
             android:id="@+id/info_notloggedin_icon"
             android:layout_width="48dp"
             android:layout_height="48dp"
-            android:layout_alignParentLeft="true"
+            android:layout_alignParentStart="true"
             android:layout_centerVertical="true"
             android:layout_margin="4dip" />
 
@@ -90,7 +90,7 @@
             android:layout_height="wrap_content"
             android:layout_centerVertical="true"
             android:layout_marginHorizontal="8dp"
-            android:layout_toRightOf="@id/info_notloggedin_icon"
+            android:layout_toEndOf="@id/info_notloggedin_icon"
             android:gravity="center"
             android:text="@string/warn_notloggedin_short"
             android:textColor="@color/colorTextMainInfo"
@@ -129,8 +129,8 @@
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
-        android:layout_marginLeft="6dip"
-        android:layout_marginRight="6dip"
+        android:layout_marginStart="6dip"
+        android:layout_marginEnd="6dip"
         android:orientation="vertical">
 
         <TextView

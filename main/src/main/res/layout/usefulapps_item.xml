@@ -19,8 +19,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="5dip"
-        android:layout_marginLeft="10dip"
-        android:layout_marginRight="10dip"
+        android:layout_marginStart="10dip"
+        android:layout_marginEnd="10dip"
         android:baselineAligned="false"
         android:orientation="horizontal" >
 
@@ -37,7 +37,7 @@
             android:id="@+id/description"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="left"
+            android:layout_gravity="start"
             android:linksClickable="true"
             android:padding="3dip"
             android:textIsSelectable="false"

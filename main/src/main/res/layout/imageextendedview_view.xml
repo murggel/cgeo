@@ -34,7 +34,7 @@
         android:layout_height="wrap_content"
         android:visibility="invisible"
         android:layout_alignParentBottom="true"
-        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
         tools:visibility="visible"/>
 
     <ImageView
@@ -44,7 +44,7 @@
         android:layout_height="wrap_content"
         android:visibility="invisible"
         android:layout_alignParentTop="true"
-        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
         tools:visibility="visible"/>
 </merge>
 

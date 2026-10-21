@@ -24,8 +24,8 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:layout_marginLeft="6dip"
-            android:paddingRight="3dip"
+            android:layout_marginStart="6dip"
+            android:paddingEnd="3dip"
             android:textIsSelectable="false"
             android:textSize="@dimen/textSize_detailsSecondary"
             android:textColor="@color/colorText"
@@ -35,7 +35,7 @@
             android:id="@+id/marker_button"
             style="@style/button_icon"
             app:icon="@drawable/ic_menu_marker"
-            android:layout_marginLeft="0dp"
+            android:layout_marginStart="0dp"
             android:tooltipText="@string/named_filter_markers" />
     </LinearLayout>
 </LinearLayout>

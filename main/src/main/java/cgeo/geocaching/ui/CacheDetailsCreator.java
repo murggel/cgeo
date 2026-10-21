@@ -287,7 +287,7 @@ public final class CacheDetailsCreator {
 
             if (!cache.getCategories().isEmpty()) {
                 final LinearLayout.LayoutParams lpCategory = new LinearLayout.LayoutParams(iconHeight, iconHeight);
-                lpCategory.setMargins(8, 0, 0, 0);
+                lpCategory.setMarginStart(8);
                 for (Category category : cache.getCategories()) {
                     final ImageView catIcon = new ImageView(context);
                     catIcon.setLayoutParams(lpCategory);
@@ -404,7 +404,7 @@ public final class CacheDetailsCreator {
 
         final int smileySize = (int) (context.getResources().getDimensionPixelSize(R.dimen.textSize_detailsPrimary) * 1.2);
         final LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(smileySize, smileySize);
-        lp.setMargins(0, 0, 5, 0);
+        lp.setMarginEnd(5);
 
         int i = 0;
         while (i < logs.size() && markers.getChildCount() < 8) {
@@ -418,7 +418,8 @@ public final class CacheDetailsCreator {
         final Integer healthScore = cache.getHealthScore();
         if (healthScore != null && healthScore != Geocache.HEALTH_SCORE_UNKNOWN) {
             final LinearLayout.LayoutParams lpp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, smileySize);
-            lpp.setMargins(ViewUtils.dpToPixel(10), 0, 5, 0);
+            lpp.setMarginStart(ViewUtils.dpToPixel(10));
+            lpp.setMarginEnd(5);
             final TextView tv = ViewUtils.createTextItem(context, R.style.text_label, TextParam.text("(" + healthScore + " %)"));
             tv.setLayoutParams(lpp);
             tv.setOnClickListener(v -> SimpleDialog.ofContext(context)

@@ -12,7 +12,7 @@
         android:id="@+id/dialog_back"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
         android:paddingTop="8dp"
         android:paddingStart="12dp"
         android:paddingEnd="5dp"
@@ -23,14 +23,14 @@
         android:id="@+id/dialog_title"
         style="?android:attr/windowTitleStyle"
         android:textColor="@color/colorTextActionBar"
-        android:layout_toRightOf="@id/dialog_back"
-        android:layout_alignParentRight="true"
+        android:layout_toEndOf="@id/dialog_back"
+        android:layout_alignParentEnd="true"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:paddingTop="6dp"
         android:paddingBottom="12dp"
-        android:paddingLeft="12dp"
-        android:paddingRight="12dp"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
         tools:text="Wherigo Test Title"/>
 
 </RelativeLayout>

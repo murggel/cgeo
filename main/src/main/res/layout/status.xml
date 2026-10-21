@@ -13,7 +13,7 @@
         android:id="@+id/status_icon"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
         android:layout_centerVertical="true"
         android:layout_margin="4dip"
         tools:src="@drawable/attribute_firstaid"/>
@@ -23,7 +23,7 @@
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:layout_centerVertical="true"
-        android:layout_toRightOf="@id/status_icon"
+        android:layout_toEndOf="@id/status_icon"
         android:gravity="center"
         android:padding="4dip"
         android:textColor="@color/colorTextMainInfo"

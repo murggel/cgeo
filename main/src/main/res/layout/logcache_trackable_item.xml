@@ -6,15 +6,15 @@
     android:layout_marginBottom="5dip"
     android:orientation="horizontal"
     android:paddingBottom="10dip"
-    android:paddingLeft="10dip"
-    android:paddingRight="10dip"
+    android:paddingStart="10dip"
+    android:paddingEnd="10dip"
     tools:context=".log.LogCacheActivity" >
 
     <ImageView
         android:id="@+id/trackable_image_brand"
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
-        android:layout_marginRight="4dip"
+        android:layout_marginEnd="4dip"
         android:scaleType="fitCenter" />
 
     <LinearLayout
@@ -27,15 +27,15 @@
             android:id="@+id/trackcode"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="left"
+            android:layout_gravity="start"
             android:ellipsize="end"
-            android:gravity="left"
+            android:gravity="start"
             android:lines="1"
             android:maxLines="1"
             android:scrollHorizontally="true"
             android:textIsSelectable="false"
             android:textSize="@dimen/textSize_detailsPrimary"
-            android:layout_marginRight="5dip"
+            android:layout_marginEnd="5dip"
             tools:ignore="SmallSp"
             tools:text="tracking code" />
 
@@ -43,9 +43,9 @@
             android:id="@+id/name"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:layout_gravity="left"
+            android:layout_gravity="start"
             android:ellipsize="end"
-            android:gravity="left"
+            android:gravity="start"
             android:lines="1"
             android:scrollHorizontally="true"
             android:textIsSelectable="false"
@@ -61,10 +61,10 @@
         android:id="@+id/action"
         android:layout_width="0dip"
         android:layout_height="wrap_content"
-        android:layout_gravity="right"
+        android:layout_gravity="end"
         android:layout_weight="1"
         android:ellipsize="end"
-        android:gravity="right"
+        android:gravity="end"
         android:lines="1"
         android:scrollHorizontally="true"
         android:textIsSelectable="false"

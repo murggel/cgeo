@@ -6,9 +6,9 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:paddingLeft="0dip"
+    android:paddingStart="0dip"
     android:paddingTop="1dip"
-    android:paddingRight="0dip"
+    android:paddingEnd="0dip"
     android:paddingBottom="0dip"
     tools:context=".VariablesViewPageFragment">
 

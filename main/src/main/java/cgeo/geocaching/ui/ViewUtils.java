@@ -840,7 +840,7 @@ public class ViewUtils {
             result[3] += len == 4 ? paddingInDp[3] : len == 2 ? paddingInDp[1] : paddingInDp[0];
         }
 
-        view.setPadding(ViewUtils.dpToPixel(result[0]), ViewUtils.dpToPixel(result[1]), ViewUtils.dpToPixel(result[2]), ViewUtils.dpToPixel(result[3]));
+        view.setPaddingRelative(ViewUtils.dpToPixel(result[0]), ViewUtils.dpToPixel(result[1]), ViewUtils.dpToPixel(result[2]), ViewUtils.dpToPixel(result[3]));
     }
 
     public static void setCoordinates(@Nullable final Geopoint gp, final TextView textView) {

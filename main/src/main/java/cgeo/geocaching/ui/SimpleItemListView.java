@@ -164,7 +164,7 @@ public class SimpleItemListView extends LinearLayout {
             }
 
             final int groupPadding = Math.max(0, data.itemGroup == null ? 0 : data.itemGroup.getLevel() - (data.type == ListItemType.GROUPHEADER ? 1 : 0));
-            binding.itemChecker.setPadding(ViewUtils.dpToPixel(34 * groupPadding), 0, 0, 0);
+            binding.itemChecker.setPaddingRelative(ViewUtils.dpToPixel(34 * groupPadding), 0, 0, 0);
 
             binding.itemCheckbox.setVisibility(data.type != ListItemType.GROUPHEADER && model.getChoiceMode() == SimpleItemListModel.ChoiceMode.MULTI_CHECKBOX ? VISIBLE : GONE);
             binding.itemRadiobutton.setVisibility(data.type == ListItemType.ITEM && model.getChoiceMode() == SimpleItemListModel.ChoiceMode.SINGLE_RADIO ? VISIBLE : GONE);

@@ -156,7 +156,7 @@ public class CacheLogsViewCreator extends LogsViewCreator {
                 for (final Entry<LogType, Integer> pair : sortedLogCounts) {
                     final TextView tv = new TextView(getActivity());
                     tv.setText(pair.getValue().toString());
-                    tv.setCompoundDrawablesWithIntrinsicBounds(pair.getKey().getLogOverlay(), 0, 0, 0);
+                    tv.setCompoundDrawablesRelativeWithIntrinsicBounds(pair.getKey().getLogOverlay(), 0, 0, 0);
                     tv.setCompoundDrawablePadding(4);
                     tv.setPadding(0, 0, 10, 0);
                     TooltipCompat.setTooltipText(tv, pair.getKey().getL10n());
