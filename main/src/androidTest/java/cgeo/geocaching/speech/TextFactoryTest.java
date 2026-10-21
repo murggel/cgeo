@@ -123,7 +123,7 @@ public class TextFactoryTest {
 
     @Test
     public void testGetTextSv() {
-        setLocale(new Locale("sv", "SE"), true);
+        setLocale(Locale.forLanguageTag("sv-SE"), true);
         assertThat(TextFactory.getText(MY_POSITION, NORTH_6100M, 330)).isEqualTo("Klockan ett. 6 kilometer");
         assertThat(TextFactory.getText(MY_POSITION, WEST_1MILE, 0)).isEqualTo("Klockan 9. 1,6 kilometer");
         assertThat(TextFactory.getText(MY_POSITION, SOUTH_1020M, 0)).isEqualTo("Klockan 6. en kilometer");
@@ -132,7 +132,7 @@ public class TextFactoryTest {
         assertThat(TextFactory.getText(MY_POSITION, EAST_1M, 180)).isEqualTo("Klockan 9. en meter");
         assertThat(TextFactory.getText(MY_POSITION, MY_POSITION, 0)).isEqualTo("Klockan 12. 0 meter");
 
-        setLocale(new Locale("sv", "SE"), false);
+        setLocale(Locale.forLanguageTag("sv-SE"), false);
         assertThat(TextFactory.getText(MY_POSITION, NORTH_6100M, 330)).isEqualTo("Klockan ett. 4 engelsk mil");
         assertThat(TextFactory.getText(MY_POSITION, WEST_1MILE, 0)).isEqualTo("Klockan 9. en engelsk mil");
         assertThat(TextFactory.getText(MY_POSITION, SOUTH_1020M, 0)).isEqualTo("Klockan 6. 0,6 engelsk mil");

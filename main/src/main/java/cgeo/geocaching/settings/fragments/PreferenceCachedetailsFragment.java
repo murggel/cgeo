@@ -90,7 +90,7 @@ public class PreferenceCachedetailsFragment extends BasePreferenceFragment {
                         LocalizationUtils.getString(R.string.translator_target_language, systemLang.getDisplayName())));
             }
         } else {
-            final Locale newLocale = new Locale(newValue);
+            final Locale newLocale = Locale.forLanguageTag(newValue);
             languagePref.setSummary(String.format("%s (%s)", newLocale.getDisplayName(appLocale), newLocale.getDisplayName(newLocale)));
         }
     }

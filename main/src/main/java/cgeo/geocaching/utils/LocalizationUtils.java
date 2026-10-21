@@ -1,5 +1,6 @@
 package cgeo.geocaching.utils;
 
+import cgeo.geocaching.BuildConfig;
 import cgeo.geocaching.CgeoApplication;
 import cgeo.geocaching.settings.Settings;
 import cgeo.geocaching.storage.ContentStorage;
@@ -17,6 +18,7 @@ import androidx.annotation.Nullable;
 import androidx.annotation.PluralsRes;
 import androidx.annotation.StringRes;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -231,7 +233,7 @@ public final class LocalizationUtils {
     @NonNull
     private static Configuration getEnglishConfiguration(final Context context) {
         final Configuration configuration = new Configuration(context.getResources().getConfiguration());
-        configuration.setLocale(new Locale("en"));
+        configuration.setLocale(Locale.forLanguageTag("en"));
         return configuration;
     }
 
@@ -259,7 +261,7 @@ public final class LocalizationUtils {
 
     @NonNull
     public static String getLocaleDisplayName(final String languageTag, final boolean doShort, final boolean addFlag) {
-        return getLocaleDisplayName(languageTag == null ? null : new Locale(languageTag), doShort, addFlag);
+        return getLocaleDisplayName(languageTag == null ? null : Locale.forLanguageTag(languageTag), doShort, addFlag);
     }
 
     @NonNull
@@ -279,11 +281,6 @@ public final class LocalizationUtils {
     }
 
     @NonNull
-    public static String getLocaleDisplayFlag(final String languageTag) {
-        return getLocaleDisplayFlag(languageTag == null ? null : Locale.forLanguageTag(languageTag));
-    }
-
-    @NonNull
     public static String getLocaleDisplayFlag(final Locale locale) {
         if (locale == null) {
             return EmojiUtils.getFlagEmojiFromCountry(null);
@@ -293,5 +290,13 @@ public final class LocalizationUtils {
             country = getMainCountryForLanguage(locale.getLanguage());
         }
         return EmojiUtils.getFlagEmojiFromCountry(country);
+    }
+
+    public static boolean isLocaleSupported(@Nullable Locale defaultLocale) {
+        if (defaultLocale == null) {
+            return false;
+        }
+        final String language = defaultLocale.getLanguage();
+        return Arrays.asList(BuildConfig.TRANSLATION_ARRAY).contains(language);
     }
 }

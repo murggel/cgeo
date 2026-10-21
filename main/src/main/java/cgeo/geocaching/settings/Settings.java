@@ -55,6 +55,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.content.res.Configuration;
+import android.content.res.Resources;
 import android.os.Build;
 
 import androidx.annotation.NonNull;
@@ -2278,7 +2279,19 @@ public class Settings {
      */
     public static Locale getApplicationLocale() {
         final String selectedLanguage = getUserLanguage();
-        return StringUtils.isNotBlank(selectedLanguage) ? new Locale(selectedLanguage, "") : Locale.getDefault();
+        if (StringUtils.isNotBlank(selectedLanguage)) {
+            return Locale.forLanguageTag(selectedLanguage);
+        } else {
+            // Use system locale if no user-defined locale is set. If language is not supported,
+            // the layout will still be in the system language, but the text will be in English.
+            final Locale defaultLocale = Resources.getSystem().getConfiguration().getLocales().get(0);
+            return defaultLocale;
+
+            // To switch completely to english if the default locale is not supported,
+            // uncomment the following lines and comment out the above two lines.
+            // final boolean defaultLocaleIsSupported = LocalizationUtils.isLocaleSupported(defaultLocale);
+            // return defaultLocaleIsSupported ? defaultLocale : Locale.forLanguageTag("en");
+        }
     }
 
     public static String getUserLanguage() {

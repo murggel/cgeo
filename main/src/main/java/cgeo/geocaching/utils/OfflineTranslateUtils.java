@@ -307,7 +307,7 @@ public class OfflineTranslateUtils {
         }
 
         public String getDisplayName() {
-            return code == null ? "--" : LocalizationUtils.getLocaleDisplayName(new Locale(code), true, true);
+            return code == null ? "--" : LocalizationUtils.getLocaleDisplayName(Locale.forLanguageTag(code), true, true);
         }
 
         @NonNull
