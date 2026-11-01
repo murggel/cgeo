@@ -20,3 +20,12 @@ Provider selection is explicit per request. There is no automatic fallback: this
 - A separate, narrowly scoped workflow step is responsible for storing the generated report.
 
 Provider adapters must preserve the same task instructions and output contract.
+
+## Directory layout
+
+- `scripts/` — request validation and tests.
+- `prompts/` and `skills/` — shared task instructions.
+- `templates/` — request YAML templates.
+- `requests/issue-<number>[-description]/` — individual request directories, each containing `request.yml` and its generated `report.md`. The directory name must start with the same issue number as the request.
+
+The `requests/` subdirectory is mandatory. Create new requests there, for example `ai/requests/issue-17573-rtl-layout/request.yml`.
