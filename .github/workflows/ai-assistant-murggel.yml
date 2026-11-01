@@ -122,14 +122,14 @@ jobs:
             echo
             echo "- Task: $TASK"
             echo "- Provider: $PROVIDER"
-            echo "- Issue: #$ISSUE"
+            if [[ -n "$ISSUE" ]]; then echo "- Issue: #$ISSUE"; fi
             echo "- Request: $REQUEST_FILE"
           } >> "$GITHUB_STEP_SUMMARY"
 
   analyze-copilot:
     name: Analyze issue with GitHub Copilot
     needs: validate
-    if: needs.validate.outputs.provider == 'copilot'
+    if: needs.validate.outputs.provider == 'copilot' && needs.validate.outputs.task == 'analyze-issue'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -311,12 +311,82 @@ jobs:
             echo "Check the failed step's log for the error details."
           } >> "$GITHUB_STEP_SUMMARY"
 
+  smoke-test-copilot:
+    name: Test GitHub Copilot connection
+    needs: validate
+    if: needs.validate.outputs.provider == 'copilot' && needs.validate.outputs.task == 'smoke-test'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Check out request branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Check Copilot authentication secret
+        env:
+          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "$COPILOT_GITHUB_TOKEN" ]]; then
+            echo "::error::Repository secret COPILOT_GITHUB_TOKEN is missing."
+            exit 1
+          fi
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install GitHub Copilot CLI
+        run: npm install --global @github/copilot
+      - name: Run short Copilot smoke test
+        env:
+          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          report_file="$RUNNER_TEMP/report.md"
+          copilot -p "Minimal connectivity test. Do not use tools or access files. Return exactly three short Markdown lines: '# Copilot smoke test', 'Status: successful', 'Model: claude-haiku-4.5'." --model=claude-haiku-4.5 --available-tools=view --no-ask-user --secret-env-vars COPILOT_GITHUB_TOKEN -s > "$report_file"
+          if [[ ! -s "$report_file" ]]; then
+            echo "::error::Copilot completed without producing a report."
+            exit 1
+          fi
+          if [[ $(wc -c < "$report_file") -gt 2048 ]]; then
+            echo "::error::Smoke-test report exceeded the 2 KiB output limit."
+            exit 1
+          fi
+      - name: Upload smoke-test report
+        uses: actions/upload-artifact@v4
+        with:
+          name: copilot-report
+          path: ${{ runner.temp }}/report.md
+          if-no-files-found: error
+          retention-days: 3
+      - name: Summarize smoke-test result
+        if: success()
+        run: |
+          {
+            echo "## Copilot smoke test completed"
+            echo
+            echo "Authentication and short prompt execution succeeded."
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Summarize smoke-test failure
+        if: failure()
+        run: |
+          {
+            echo "## Copilot smoke test failed"
+            echo
+            echo "Check the failed step's log for the error details."
+          } >> "$GITHUB_STEP_SUMMARY"
+
   publish-report:
     name: Store analysis report
     needs:
       - validate
       - analyze-copilot
-    if: needs.analyze-copilot.result == 'success'
+      - smoke-test-copilot
+    if: always() && needs.validate.result == 'success' && (needs.analyze-copilot.result == 'success' || needs.smoke-test-copilot.result == 'success')
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -355,13 +425,18 @@ jobs:
             exit 0
           fi
 
-          git commit -m "Add Copilot analysis report for issue #$ISSUE"
+          if [[ -n "$ISSUE" ]]; then
+            commit_message="Add Copilot analysis report for issue #$ISSUE"
+          else
+            commit_message="Add Copilot smoke-test report"
+          fi
+          git commit -m "$commit_message"
           git push origin HEAD:dev/ai-workflows
 
           {
             echo "## Analysis report committed"
             echo
-            echo "- Issue: #$ISSUE"
+            if [[ -n "$ISSUE" ]]; then echo "- Issue: #$ISSUE"; fi
             echo "- Report: $report_path"
           } >> "$GITHUB_STEP_SUMMARY"
 
