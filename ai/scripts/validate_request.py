@@ -99,8 +99,16 @@ def validate_request(request_file: Path) -> tuple[str, str, int]:
 
     task_id = request_file.parent.name
     task_id_match = TASK_ID_PATTERN.fullmatch(task_id)
-    if task_id_match is None or int(task_id_match.group(1)) != issue:
-        raise ValueError("request directory must start with issue-<issue-number>")
+    if task_id_match is None:
+        raise ValueError(
+            f"request directory '{task_id}' must match 'issue-{issue}[-description]'"
+        )
+    directory_issue = int(task_id_match.group(1))
+    if directory_issue != issue:
+        raise ValueError(
+            f"request directory '{task_id}' refers to issue {directory_issue}, "
+            f"but request specifies issue {issue}"
+        )
 
     return task, provider, issue
 
