@@ -59,6 +59,8 @@ UniqueKeyLoader.add_constructor(
 def validate_request(request_file: Path) -> tuple[str, str, int]:
     if request_file.name != "request.yml":
         raise ValueError("request file must be named request.yml")
+    if request_file.parent.parent.name != "requests":
+        raise ValueError("request file must be inside ai/requests/<task-id>/")
 
     try:
         if request_file.stat().st_size > 16_384:
