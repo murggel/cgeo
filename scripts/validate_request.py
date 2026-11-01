@@ -7,6 +7,7 @@ import argparse
 import re
 import sys
 from pathlib import Path
+from typing import Any
 
 import yaml
 
@@ -19,9 +20,86 @@ PROVIDERS = {"claude", "copilot"}
 TASK_ID_PATTERN = re.compile(r"^issue-[1-9][0-9]*$")
 
 
-def fail(message: str) -> None:
-    print(f"Invalid request: {message}", file=sys.stderr)
-    raise SystemExit(1)
+class UniqueKeyLoader(yaml.SafeLoader):
+    """Safe YAML loader that rejects duplicate mapping keys."""
+
+
+def _construct_unique_mapping(
+    loader: UniqueKeyLoader, node: yaml.MappingNode, deep: bool = False
+) -> dict[Any, Any]:
+    loader.flatten_mapping(node)
+    mapping: dict[Any, Any] = {}
+    for key_node, value_node in node.value:
+        key = loader.construct_object(key_node, deep=deep)
+        try:
+            duplicate = key in mapping
+        except TypeError:
+            raise yaml.constructor.ConstructorError(
+                "while constructing a mapping",
+                node.start_mark,
+                "unhashable mapping key",
+                key_node.start_mark,
+            )
+        if duplicate:
+            raise yaml.constructor.ConstructorError(
+                "while constructing a mapping",
+                node.start_mark,
+                f"duplicate key {key!r}",
+                key_node.start_mark,
+            )
+        mapping[key] = loader.construct_object(value_node, deep=deep)
+    return mapping
+
+
+UniqueKeyLoader.add_constructor(
+    yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, _construct_unique_mapping
+)
+
+
+def validate_request(request_file: Path) -> tuple[str, str, int]:
+    if request_file.name != "request.yml":
+        raise ValueError("request file must be named request.yml")
+
+    try:
+        if request_file.stat().st_size > 16_384:
+            raise ValueError("request file must not exceed 16 KiB")
+        request = yaml.load(
+            request_file.read_text(encoding="utf-8"), Loader=UniqueKeyLoader
+        )
+    except (OSError, UnicodeError, yaml.YAMLError) as exc:
+        raise ValueError(f"cannot read valid YAML ({exc})") from exc
+
+    if not isinstance(request, dict):
+        raise ValueError("top-level YAML value must be a mapping")
+    if any(not isinstance(key, str) for key in request):
+        raise ValueError("all mapping keys must be strings")
+
+    task = request.get("task")
+    if not isinstance(task, str) or task not in TASK_SCHEMAS:
+        raise ValueError(f"unsupported task {task!r}")
+
+    provider = request.get("provider")
+    if not isinstance(provider, str) or provider not in PROVIDERS:
+        raise ValueError("provider must be 'claude' or 'copilot'")
+
+    expected_keys = COMMON_KEYS | TASK_SCHEMAS[task]
+    actual_keys = set(request)
+    if actual_keys != expected_keys:
+        missing = sorted(expected_keys - actual_keys)
+        extra = sorted(actual_keys - expected_keys)
+        raise ValueError(
+            f"wrong keys (missing={missing}, unexpected={extra})"
+        )
+
+    issue = request["issue"]
+    if isinstance(issue, bool) or not isinstance(issue, int) or issue < 1:
+        raise ValueError("issue must be a positive integer")
+
+    task_id = request_file.parent.name
+    if not TASK_ID_PATTERN.fullmatch(task_id) or task_id != f"issue-{issue}":
+        raise ValueError("request directory must be named issue-<issue-number>")
+
+    return task, provider, issue
 
 
 def main() -> None:
@@ -30,35 +108,10 @@ def main() -> None:
     args = parser.parse_args()
 
     try:
-        request = yaml.safe_load(args.request_file.read_text(encoding="utf-8"))
-    except (OSError, yaml.YAMLError) as exc:
-        fail(f"cannot read valid YAML ({exc})")
-
-    if not isinstance(request, dict):
-        fail("top-level YAML value must be a mapping")
-
-    task = request.get("task")
-    if task not in TASK_SCHEMAS:
-        fail(f"unsupported task {task!r}")
-
-    provider = request.get("provider")
-    if provider not in PROVIDERS:
-        fail("provider must be 'claude' or 'copilot'")
-
-    expected_keys = COMMON_KEYS | TASK_SCHEMAS[task]
-    actual_keys = set(request)
-    if actual_keys != expected_keys:
-        missing = sorted(expected_keys - actual_keys)
-        extra = sorted(actual_keys - expected_keys)
-        fail(f"wrong keys (missing={missing}, unexpected={extra})")
-
-    issue = request["issue"]
-    if isinstance(issue, bool) or not isinstance(issue, int) or issue < 1:
-        fail("issue must be a positive integer")
-
-    task_id = args.request_file.parent.name
-    if not TASK_ID_PATTERN.fullmatch(task_id) or task_id != f"issue-{issue}":
-        fail("request directory must be named issue-<issue-number>")
+        task, provider, issue = validate_request(args.request_file)
+    except ValueError as exc:
+        print(f"Invalid request: {exc}", file=sys.stderr)
+        raise SystemExit(1) from exc
 
     print(f"Valid request: task={task}, provider={provider}, issue={issue}")
 
