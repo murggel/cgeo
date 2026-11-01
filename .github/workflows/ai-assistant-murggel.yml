@@ -104,7 +104,7 @@ jobs:
               stream.write(f"request_dir={request_file.parent.as_posix()}\n")
               stream.write(f"task={task}\n")
               stream.write(f"provider={provider}\n")
-              stream.write(f"issue={issue}\n")
+              stream.write(f"issue={issue or ''}\n")
           PY
 
       - name: Summarize validation
