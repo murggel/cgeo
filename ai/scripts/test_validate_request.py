@@ -49,6 +49,14 @@ class ValidateRequestTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "smoke-test"):
             validate_request(path)
 
+    def test_smoke_test_requires_copilot_provider(self):
+        path = self.write_request(
+            "task: smoke-test\nprovider: claude\n",
+            directory="smoke-test-claude",
+        )
+        with self.assertRaisesRegex(ValueError, "only with provider 'copilot'"):
+            validate_request(path)
+
     def test_duplicate_key_is_rejected(self):
         path = self.write_request(
             "task: analyze-issue\ntask: analyze-issue\nprovider: claude\nissue: 17573\n"
