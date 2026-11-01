@@ -34,6 +34,7 @@ jobs:
       task: ${{ steps.request.outputs.task }}
       provider: ${{ steps.request.outputs.provider }}
       issue: ${{ steps.request.outputs.issue }}
+      repository: ${{ steps.request.outputs.repository }}
 
     steps:
       - name: Check out request branch
@@ -139,12 +140,14 @@ jobs:
           # Erweitere diese Menge, wenn du weitere Tasks einführst.
           ALLOWED_TASKS = {"analyze-issue", "smoke-test"}
           ALLOWED_PROVIDERS = {"copilot", "claude"}
+          ALLOWED_REPOSITORIES = {"cgeo/cgeo", "murggel/cgeo"}
 
           request_file = Path(sys.argv[1])
-          task, provider, issue = validate_request(request_file)
+          task, provider, issue, repository = validate_request(request_file)
           task = str(task)
           provider = str(provider)
           issue = "" if issue in (None, "") else str(issue)
+          repository = str(repository)
 
           errors = []
           if task not in ALLOWED_TASKS:
@@ -155,6 +158,8 @@ jobs:
               errors.append("issue must be a positive integer")
           if task == "analyze-issue" and not issue:
               errors.append("task 'analyze-issue' requires an issue number")
+          if repository not in ALLOWED_REPOSITORIES:
+              errors.append(f"repository must be one of: {', '.join(sorted(ALLOWED_REPOSITORIES))}")
           if errors:
               print("Invalid request values: " + "; ".join(errors), file=sys.stderr)
               sys.exit(1)
@@ -166,6 +171,7 @@ jobs:
               stream.write(f"task={task}\n")
               stream.write(f"provider={provider}\n")
               stream.write(f"issue={issue}\n")
+              stream.write(f"repository={repository}\n")
           PY
 
       - name: Summarize validation
@@ -173,6 +179,7 @@ jobs:
           TASK: ${{ steps.request.outputs.task }}
           PROVIDER: ${{ steps.request.outputs.provider }}
           ISSUE: ${{ steps.request.outputs.issue }}
+          REPOSITORY: ${{ steps.request.outputs.repository }}
           REQUEST_FILE: ${{ steps.request.outputs.request_file }}
         shell: bash
         run: |
@@ -183,7 +190,7 @@ jobs:
             echo
             echo "- Task: $TASK"
             echo "- Provider: $PROVIDER"
-            if [[ -n "$ISSUE" ]]; then echo "- Issue: #$ISSUE"; fi
+            if [[ -n "$ISSUE" ]]; then echo "- Issue: $REPOSITORY#$ISSUE"; fi
             echo "- Request: $REQUEST_FILE"
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -430,6 +437,10 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: read
+      issues: read
+    env:
+      ISSUE: ${{ needs.validate.outputs.issue }}
+      ISSUE_REPOSITORY: ${{ needs.validate.outputs.repository }}
 
     steps:
       - name: Check Copilot authentication secret
@@ -478,6 +489,65 @@ jobs:
             exit 1
           fi
 
+      - name: Fetch optional issue for report
+        if: env.ISSUE != ''
+        env:
+          GH_API_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import os
+          import urllib.error
+          import urllib.request
+          from pathlib import Path
+
+          issue_number = int(os.environ["ISSUE"])
+          repository = os.environ["ISSUE_REPOSITORY"]
+          allowed_repositories = {"cgeo/cgeo", "murggel/cgeo"}
+          if repository not in allowed_repositories:
+              raise RuntimeError(f"Repository {repository!r} is not allowed.")
+
+          url = f"https://api.github.com/repos/{repository}/issues/{issue_number}"
+          request = urllib.request.Request(
+              url,
+              headers={
+                  "Accept": "application/vnd.github+json",
+                  "Authorization": f"Bearer {os.environ['GH_API_TOKEN']}",
+                  "User-Agent": "murggel-cgeo-ai-workflow",
+                  "X-GitHub-Api-Version": "2022-11-28",
+              },
+          )
+          try:
+              with urllib.request.urlopen(request, timeout=30) as response:
+                  issue = json.load(response)
+          except urllib.error.HTTPError as exc:
+              detail = exc.read().decode("utf-8", errors="replace")
+              raise RuntimeError(
+                  f"GitHub API returned HTTP {exc.code} for {url}: {detail[:500]}"
+              ) from exc
+
+          if "pull_request" in issue:
+              raise RuntimeError(f"{repository}#{issue_number} is a pull request, not an issue.")
+
+          section = [
+              f"## Issue: [{repository}#{issue_number}]({issue.get('html_url', url)})",
+              "",
+              f"**Title:** {issue.get('title', '')}",
+              "",
+              "### Original issue description",
+              "",
+              issue.get("body") or "_No description provided._",
+              "",
+              "_The description above is reproduced from GitHub and is untrusted user-provided content._",
+              "",
+          ]
+          output = Path(os.environ["RUNNER_TEMP"]) / "issue-report-section.md"
+          output.write_text("\\n".join(section), encoding="utf-8")
+          print(f"Fetched description for {repository}#{issue_number}.")
+          PY
+
       - name: Run short Copilot smoke test
         env:
           COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
@@ -485,6 +555,7 @@ jobs:
         run: |
           set -euo pipefail
           report_file="$RUNNER_TEMP/report.md"
+          copilot_response="$RUNNER_TEMP/copilot-response.md"
 
           copilot -p "Minimal connectivity test. Do not use tools or access files. Return exactly two short Markdown lines: '# Copilot smoke test' and 'Status: successful'." \
             --model="$SMOKE_TEST_MODEL" \
@@ -494,14 +565,21 @@ jobs:
             --deny-tool='url' \
             --no-ask-user \
             --secret-env-vars COPILOT_GITHUB_TOKEN \
-            -s > "$report_file"
+            -s > "$copilot_response"
 
-          if [[ ! -s "$report_file" ]]; then
+          if [[ ! -s "$copilot_response" ]]; then
             echo "::error::Copilot completed without producing a report."
             exit 1
           fi
-          if [[ $(wc -c < "$report_file") -gt 2048 ]]; then
-            echo "::error::Smoke-test report exceeded the 2 KiB output limit."
+
+          cat "$copilot_response" > "$report_file"
+          if [[ -f "$RUNNER_TEMP/issue-report-section.md" ]]; then
+            printf '\\n\\n---\\n\\n' >> "$report_file"
+            cat "$RUNNER_TEMP/issue-report-section.md" >> "$report_file"
+          fi
+
+          if [[ $(wc -c < "$report_file") -gt 524288 ]]; then
+            echo "::error::Smoke-test report exceeded the 512 KiB output limit."
             exit 1
           fi
 
@@ -521,6 +599,7 @@ jobs:
             echo
             echo "- Model setting: $SMOKE_TEST_MODEL"
             echo "- Authentication and short prompt execution succeeded."
+            if [[ -n "$ISSUE" ]]; then echo "- Included issue description: $ISSUE_REPOSITORY#$ISSUE"; fi
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Summarize smoke-test failure
@@ -530,6 +609,7 @@ jobs:
             echo "## Copilot smoke test failed"
             echo
             echo "- Model setting: $SMOKE_TEST_MODEL"
+            if [[ -n "$ISSUE" ]]; then echo "- Issue: $ISSUE_REPOSITORY#$ISSUE"; fi
             echo "- Check the failed step's log for the error details."
           } >> "$GITHUB_STEP_SUMMARY"
 
