@@ -46,12 +46,22 @@ issue: 17573
 ```
 
 ```yaml
-# smoke test
+# smoke test without issue context
 task: smoke-test
 provider: copilot
 ```
 
-The validator is strict: exactly these keys, no duplicate keys, no YAML anchors or aliases, no symbolic links, maximum file size 16 KiB, issue number between 1 and 999999999. `smoke-test` is only supported with `provider: copilot`.
+```yaml
+# smoke test including an issue description
+task: smoke-test
+provider: copilot
+issue: 18739
+repository: cgeo/cgeo
+```
+
+For a smoke test, `issue` is optional. If provided, the workflow fetches the issue description and appends it to the report; Copilot connectivity is tested independently. `repository` is optional and defaults to `cgeo/cgeo`. The currently allowed repositories are `cgeo/cgeo` and `murggel/cgeo`; a repository can only be specified together with an issue.
+
+The validator is strict: no duplicate keys, no YAML anchors or aliases, no symbolic links, maximum file size 16 KiB, issue number between 1 and 999999999. `smoke-test` is only supported with `provider: copilot`.
 
 ## Workflow configuration
 
