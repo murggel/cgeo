@@ -21,12 +21,11 @@ Provider selection is explicit per request. There is no automatic fallback: this
 
 Provider adapters must preserve the same task instructions and output contract.
 
-
 ## Directory layout
 
 - `scripts/` — request validation and tests.
 - `prompts/` and `skills/` — shared task instructions.
 - `templates/` — request YAML templates.
-- `issue-<number>[-description]/` — individual requests and their generated reports. The directory name must start with the same issue number as the request.
+- `requests/issue-<number>[-description]/` — individual request directories, each containing `request.yml` and its generated `report.md`. The directory name must start with the same issue number as the request.
 
-Create new requests directly under `ai/`, for example `ai/issue-17573-rtl-layout/request.yml`.
+The `requests/` subdirectory is mandatory. Create new requests there, for example `ai/requests/issue-17573-rtl-layout/request.yml`.
