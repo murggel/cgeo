@@ -76,7 +76,7 @@ UniqueKeyLoader.add_constructor(
 )
 
 
-def validate_request(request_file: Path) -> tuple[str, str, int | None]:
+def validate_request(request_file: Path) -> tuple[str, str, int | None, str]:
     if request_file.name != "request.yml":
         raise ValueError("request file must be named request.yml")
     requests_dir = request_file.parent.parent
@@ -120,7 +120,7 @@ def validate_request(request_file: Path) -> tuple[str, str, int | None]:
         )
 
     issue = request.get("issue")
-    if task == "analyze-issue" or issue is not None:
+    if task == "analyze-issue" or "issue" in request:
         if (
             isinstance(issue, bool)
             or not isinstance(issue, int)
