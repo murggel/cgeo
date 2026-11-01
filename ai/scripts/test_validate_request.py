@@ -6,9 +6,9 @@ from validate_request import validate_request
 
 
 class ValidateRequestTest(unittest.TestCase):
-    def write_request(self, text: str, directory: str = "issue-17573") -> Path:
-        root = Path(tempfile.mkdtemp()) / directory
-        root.mkdir()
+    def write_request(self, text: str, directory: str = "issue-17573", parent: str = "requests") -> Path:
+        root = Path(tempfile.mkdtemp()) / parent / directory
+        root.mkdir(parents=True)
         request = root / "request.yml"
         request.write_text(text, encoding="utf-8")
         return request
@@ -68,6 +68,14 @@ class ValidateRequestTest(unittest.TestCase):
             directory="issue-42",
         )
         with self.assertRaisesRegex(ValueError, "directory"):
+            validate_request(path)
+
+    def test_request_outside_requests_directory_is_rejected(self):
+        path = self.write_request(
+            "task: analyze-issue\nprovider: claude\nissue: 17573\n",
+            parent="other",
+        )
+        with self.assertRaisesRegex(ValueError, "inside ai/requests"):
             validate_request(path)
 
 
