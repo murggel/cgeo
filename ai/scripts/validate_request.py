@@ -14,10 +14,12 @@ import yaml
 
 TASK_SCHEMAS = {
     "analyze-issue": {"issue"},
+    "smoke-test": set(),
 }
 COMMON_KEYS = {"task", "provider"}
 PROVIDERS = {"claude", "copilot"}
-TASK_ID_PATTERN = re.compile(r"^issue-([1-9][0-9]*)(?:-.+)?$")
+ISSUE_TASK_ID_PATTERN = re.compile(r"^issue-([1-9][0-9]*)(?:-.+)?$")
+SMOKE_TEST_TASK_ID_PATTERN = re.compile(r"^smoke-test(?:-[a-z0-9]+)*$")
 
 
 class UniqueKeyLoader(yaml.SafeLoader):
@@ -56,7 +58,7 @@ UniqueKeyLoader.add_constructor(
 )
 
 
-def validate_request(request_file: Path) -> tuple[str, str, int]:
+def validate_request(request_file: Path) -> tuple[str, str, int | None]:
     if request_file.name != "request.yml":
         raise ValueError("request file must be named request.yml")
     if request_file.parent.parent.name != "requests":
@@ -98,19 +100,24 @@ def validate_request(request_file: Path) -> tuple[str, str, int]:
         raise ValueError("issue must be a positive integer")
 
     task_id = request_file.parent.name
-    task_id_match = TASK_ID_PATTERN.fullmatch(task_id)
-    if task_id_match is None:
+    if task == "analyze-issue":
+        task_id_match = ISSUE_TASK_ID_PATTERN.fullmatch(task_id)
+        if task_id_match is None:
+            raise ValueError(
+                f"request directory '{task_id}' must match 'issue-{issue}[-description]'"
+            )
+        directory_issue = int(task_id_match.group(1))
+        if directory_issue != issue:
+            raise ValueError(
+                f"request directory '{task_id}' refers to issue {directory_issue}, "
+                f"but request specifies issue {issue}"
+            )
+    elif SMOKE_TEST_TASK_ID_PATTERN.fullmatch(task_id) is None:
         raise ValueError(
-            f"request directory '{task_id}' must match 'issue-{issue}[-description]'"
-        )
-    directory_issue = int(task_id_match.group(1))
-    if directory_issue != issue:
-        raise ValueError(
-            f"request directory '{task_id}' refers to issue {directory_issue}, "
-            f"but request specifies issue {issue}"
+            f"request directory '{task_id}' must match 'smoke-test[-description]'"
         )
 
-    return task, provider, issue
+    return task, provider, issue if task == "analyze-issue" else None
 
 
 def main() -> None:
@@ -124,7 +131,8 @@ def main() -> None:
         print(f"Invalid request: {exc}", file=sys.stderr)
         raise SystemExit(1) from exc
 
-    print(f"Valid request: task={task}, provider={provider}, issue={issue}")
+    issue_text = str(issue) if issue is not None else "none"
+    print(f"Valid request: task={task}, provider={provider}, issue={issue_text}")
 
 
 if __name__ == "__main__":
