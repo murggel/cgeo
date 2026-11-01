@@ -7,7 +7,11 @@ This directory contains provider-neutral instructions for AI-assisted repository
 Each request selects exactly one provider:
 
 - `claude`: Claude Code, authenticated with the repository secret `CLAUDE_CODE_OAUTH_TOKEN`.
-- `copilot`: GitHub Copilot CLI, authenticated through the workflow's `GITHUB_TOKEN` and the `copilot-requests: write` permission.
+- `copilot`: GitHub Copilot CLI, authenticated with the repository secret `COPILOT_GITHUB_TOKEN`.
+
+For Copilot, create a fine-grained personal access token owned by your personal GitHub account. Grant the account permission **Copilot Requests**; select public repositories for repository access. Store the token as the Actions repository secret `COPILOT_GITHUB_TOKEN` under Settings → Secrets and variables → Actions. Do not grant repository write permissions.
+
+Copilot usage through this token is billed against the Copilot entitlements of the account that created the token.
 
 Provider selection is explicit per request. There is no automatic fallback: this keeps usage and billing predictable and avoids masking authentication or configuration errors.
 
