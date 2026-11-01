@@ -1,3 +1,5 @@
-# Minimal Copilot connectivity test. No issue number or repository analysis is required.
+# Minimal Copilot connectivity test. Add issue and repository to include an issue description in the report.
 task: smoke-test
 provider: copilot
+# issue: 18739
+# repository: cgeo/cgeo
