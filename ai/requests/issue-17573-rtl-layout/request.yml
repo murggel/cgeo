@@ -1,0 +1,6 @@
+# Copy this template to ai/requests/<task-id>/request.yml.
+# The request directory must be inside ai/requests/.
+# Change provider to "copilot" if you want to use GitHub Copilot instead.
+task: analyze-issue
+provider: claude
+issue: 17573
