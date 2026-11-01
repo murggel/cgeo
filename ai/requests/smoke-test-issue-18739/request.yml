@@ -1,0 +1,5 @@
+# Copilot smoke test with an issue description included in the report.
+task: smoke-test
+provider: copilot
+issue: 18739
+repository: cgeo/cgeo
