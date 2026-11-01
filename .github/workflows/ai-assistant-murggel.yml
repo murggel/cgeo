@@ -13,6 +13,7 @@ permissions:
 concurrency:
   group: ai-request-${{ github.ref }}
   cancel-in-progress: false
+  queue: max
 
 env:
   COPILOT_CLI_VERSION: '1.0.105'
@@ -263,6 +264,9 @@ jobs:
 
       - name: Fetch upstream issue and discussion
         env:
+          # Authenticate public API requests to benefit from the higher
+          # GITHUB_TOKEN rate limit. This token does not grant access
+          # to private resources in the upstream repository.
           GH_API_TOKEN: ${{ github.token }}
         shell: bash
         run: |
