@@ -30,6 +30,11 @@ Provider adapters must preserve the same task instructions and output contract.
 - `scripts/` — request validation and tests.
 - `prompts/` and `skills/` — shared task instructions.
 - `templates/` — request YAML templates.
-- `requests/issue-<number>[-description]/` — individual request directories, each containing `request.yml` and its generated `report.md`. The directory name must start with the same issue number as the request.
+- `requests/issue-<number>[-description]/` — issue-analysis requests, each containing `request.yml` and its generated `report.md`. The directory number must match the issue number in the request.
+- `requests/smoke-test[-description]/` — small Copilot connectivity tests. These requests do not access the upstream repository or fetch issue data.
 
-The `requests/` subdirectory is mandatory. Create new requests there, for example `ai/requests/issue-17573-rtl-layout/request.yml`.
+The `requests/` subdirectory is mandatory. Examples: `ai/requests/issue-17573-rtl-layout/request.yml` and `ai/requests/smoke-test-copilot/request.yml`.
+
+## Smoke test
+
+Use `task: smoke-test` with `provider: copilot` to verify Copilot CLI authentication and report publishing with a short prompt. No issue number is required. The smoke test uses the lightweight `claude-haiku-4.5` model and does not clone or inspect the c:geo repository.
