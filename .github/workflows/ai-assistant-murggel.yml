@@ -18,17 +18,17 @@ jobs:
     permissions:
       contents: read
     outputs:
-      request_file: \${{ steps.request.outputs.request_file }}
-      request_dir: \${{ steps.request.outputs.request_dir }}
-      task: \${{ steps.request.outputs.task }}
-      provider: \${{ steps.request.outputs.provider }}
-      issue: \${{ steps.request.outputs.issue }}
+      request_file: ${{ steps.request.outputs.request_file }}
+      request_dir: ${{ steps.request.outputs.request_dir }}
+      task: ${{ steps.request.outputs.task }}
+      provider: ${{ steps.request.outputs.provider }}
+      issue: ${{ steps.request.outputs.issue }}
 
     steps:
       - name: Check out request branch
         uses: actions/checkout@v4
         with:
-          ref: \${{ github.sha }}
+          ref: ${{ github.sha }}
           fetch-depth: 0
           persist-credentials: false
 
@@ -46,8 +46,8 @@ jobs:
       - name: Find and validate the committed request
         id: request
         env:
-          BEFORE_SHA: \${{ github.event.before }}
-          AFTER_SHA: \${{ github.sha }}
+          BEFORE_SHA: ${{ github.event.before }}
+          AFTER_SHA: ${{ github.sha }}
         shell: bash
         run: |
           set -euo pipefail
@@ -68,15 +68,15 @@ jobs:
             } >> "$GITHUB_STEP_SUMMARY"
           }
 
-          if [[ "\${#request_files[@]}" -ne 1 ]]; then
+          if [[ "${#request_files[@]}" -ne 1 ]]; then
             request_file="Could not identify a single request file"
-            error="Expected exactly one changed ai/requests/<task-id>/request.yml file in this push; found \${#request_files[@]}."
+            error="Expected exactly one changed ai/requests/<task-id>/request.yml file in this push; found ${#request_files[@]}."
             echo "::error::$error"
             write_failure_summary "$error"
             exit 1
           fi
 
-          request_file="\${request_files[0]}"
+          request_file="${request_files[0]}"
           if [[ ! -f "$request_file" ]]; then
             error="The request file was deleted or is not present in the pushed commit."
             echo "::error::$error"
@@ -109,10 +109,10 @@ jobs:
 
       - name: Summarize validation
         env:
-          TASK: \${{ steps.request.outputs.task }}
-          PROVIDER: \${{ steps.request.outputs.provider }}
-          ISSUE: \${{ steps.request.outputs.issue }}
-          REQUEST_FILE: \${{ steps.request.outputs.request_file }}
+          TASK: ${{ steps.request.outputs.task }}
+          PROVIDER: ${{ steps.request.outputs.provider }}
+          ISSUE: ${{ steps.request.outputs.issue }}
+          REQUEST_FILE: ${{ steps.request.outputs.request_file }}
         shell: bash
         run: |
           set -euo pipefail
@@ -134,18 +134,18 @@ jobs:
     permissions:
       contents: read
     env:
-      ISSUE: \${{ needs.validate.outputs.issue }}
+      ISSUE: ${{ needs.validate.outputs.issue }}
 
     steps:
       - name: Check out request branch
         uses: actions/checkout@v4
         with:
-          ref: \${{ github.sha }}
+          ref: ${{ github.sha }}
           persist-credentials: false
 
       - name: Check Copilot authentication secret
         env:
-          COPILOT_GITHUB_TOKEN: \${{ secrets.COPILOT_GITHUB_TOKEN }}
+          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
         shell: bash
         run: |
           set -euo pipefail
@@ -255,7 +255,7 @@ jobs:
 
       - name: Run Copilot analysis
         env:
-          COPILOT_GITHUB_TOKEN: \${{ secrets.COPILOT_GITHUB_TOKEN }}
+          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
         shell: bash
         run: |
           set -euo pipefail
@@ -285,7 +285,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: copilot-report
-          path: \${{ runner.temp }}/report.md
+          path: ${{ runner.temp }}/report.md
           if-no-files-found: error
           retention-days: 3
 
@@ -301,7 +301,7 @@ jobs:
       - name: Summarize Copilot failure
         if: failure()
         env:
-          ISSUE: \${{ needs.validate.outputs.issue }}
+          ISSUE: ${{ needs.validate.outputs.issue }}
         run: |
           {
             echo "## Copilot analysis failed"
@@ -321,14 +321,14 @@ jobs:
     permissions:
       contents: write
     env:
-      ISSUE: \${{ needs.validate.outputs.issue }}
-      REQUEST_DIR: \${{ needs.validate.outputs.request_dir }}
+      ISSUE: ${{ needs.validate.outputs.issue }}
+      REQUEST_DIR: ${{ needs.validate.outputs.request_dir }}
 
     steps:
       - name: Check out request branch
         uses: actions/checkout@v4
         with:
-          ref: \${{ github.sha }}
+          ref: ${{ github.sha }}
           fetch-depth: 0
           persist-credentials: true
 
@@ -336,7 +336,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: copilot-report
-          path: \${{ runner.temp }}/copilot-report
+          path: ${{ runner.temp }}/copilot-report
 
       - name: Commit report
         shell: bash
