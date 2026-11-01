@@ -25,6 +25,30 @@ class ValidateRequestTest(unittest.TestCase):
         )
         self.assertEqual(validate_request(path), ("analyze-issue", "copilot", 17573))
 
+
+    def test_valid_smoke_test_request(self):
+        path = self.write_request(
+            "task: smoke-test\nprovider: copilot\n",
+            directory="smoke-test-copilot",
+        )
+        self.assertEqual(validate_request(path), ("smoke-test", "copilot", None))
+
+    def test_smoke_test_rejects_issue_key(self):
+        path = self.write_request(
+            "task: smoke-test\nprovider: copilot\nissue: 17573\n",
+            directory="smoke-test-copilot",
+        )
+        with self.assertRaisesRegex(ValueError, "wrong keys"):
+            validate_request(path)
+
+    def test_smoke_test_requires_matching_directory(self):
+        path = self.write_request(
+            "task: smoke-test\nprovider: copilot\n",
+            directory="issue-17573",
+        )
+        with self.assertRaisesRegex(ValueError, "smoke-test"):
+            validate_request(path)
+
     def test_duplicate_key_is_rejected(self):
         path = self.write_request(
             "task: analyze-issue\ntask: analyze-issue\nprovider: claude\nissue: 17573\n"
