@@ -95,9 +95,10 @@ def validate_request(request_file: Path) -> tuple[str, str, int | None]:
             f"wrong keys (missing={missing}, unexpected={extra})"
         )
 
-    issue = request["issue"]
-    if isinstance(issue, bool) or not isinstance(issue, int) or issue < 1:
-        raise ValueError("issue must be a positive integer")
+    issue = request.get("issue")
+    if task == "analyze-issue":
+        if isinstance(issue, bool) or not isinstance(issue, int) or issue < 1:
+            raise ValueError("issue must be a positive integer")
 
     task_id = request_file.parent.name
     if task == "analyze-issue":
