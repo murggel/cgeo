@@ -25,36 +25,62 @@ class ValidateRequestTest(unittest.TestCase):
         path = self.write_request(
             "task: analyze-issue\nprovider: claude\nissue: 17573\n"
         )
-        self.assertEqual(validate_request(path), ("analyze-issue", "claude", 17573))
+        self.assertEqual(validate_request(path), ("analyze-issue", "claude", 17573, "cgeo/cgeo"))
 
     def test_valid_copilot_request(self):
         path = self.write_request(
             "task: analyze-issue\nprovider: copilot\nissue: 17573\n"
         )
-        self.assertEqual(validate_request(path), ("analyze-issue", "copilot", 17573))
+        self.assertEqual(validate_request(path), ("analyze-issue", "copilot", 17573, "cgeo/cgeo"))
 
     def test_valid_smoke_test_request(self):
         path = self.write_request(
             "task: smoke-test\nprovider: copilot\n",
             directory="smoke-test-copilot",
         )
-        self.assertEqual(validate_request(path), ("smoke-test", "copilot", None))
+        self.assertEqual(validate_request(path), ("smoke-test", "copilot", None, "cgeo/cgeo"))
 
     def test_directory_with_descriptive_suffix_is_valid(self):
         path = self.write_request(
             "task: analyze-issue\nprovider: claude\nissue: 17573\n",
             directory="issue-17573-rtl-layout",
         )
-        self.assertEqual(validate_request(path), ("analyze-issue", "claude", 17573))
+        self.assertEqual(validate_request(path), ("analyze-issue", "claude", 17573, "cgeo/cgeo"))
 
     # --- smoke-test ---
 
-    def test_smoke_test_rejects_issue_key(self):
+    def test_smoke_test_accepts_issue_with_default_repository(self):
         path = self.write_request(
             "task: smoke-test\nprovider: copilot\nissue: 17573\n",
             directory="smoke-test-copilot",
         )
-        with self.assertRaisesRegex(ValueError, "wrong keys"):
+        self.assertEqual(
+            validate_request(path), ("smoke-test", "copilot", 17573, "cgeo/cgeo")
+        )
+
+    def test_smoke_test_accepts_issue_in_fork_repository(self):
+        path = self.write_request(
+            "task: smoke-test\nprovider: copilot\nissue: 42\nrepository: murggel/cgeo\n",
+            directory="smoke-test-copilot",
+        )
+        self.assertEqual(
+            validate_request(path), ("smoke-test", "copilot", 42, "murggel/cgeo")
+        )
+
+    def test_smoke_test_rejects_repository_without_issue(self):
+        path = self.write_request(
+            "task: smoke-test\nprovider: copilot\nrepository: murggel/cgeo\n",
+            directory="smoke-test-copilot",
+        )
+        with self.assertRaisesRegex(ValueError, "only be specified when an issue"):
+            validate_request(path)
+
+    def test_smoke_test_rejects_unapproved_repository(self):
+        path = self.write_request(
+            "task: smoke-test\nprovider: copilot\nissue: 42\nrepository: attacker/repo\n",
+            directory="smoke-test-copilot",
+        )
+        with self.assertRaisesRegex(ValueError, "repository must be one of"):
             validate_request(path)
 
     def test_smoke_test_requires_matching_directory(self):
