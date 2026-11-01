@@ -59,7 +59,10 @@ class ValidateRequestTest(unittest.TestCase):
             "task: analyze-issue\nprovider: claude\nissue: 17573\n",
             directory="issue-17574-rtl-layout",
         )
-        with self.assertRaisesRegex(ValueError, "start with"):
+        with self.assertRaisesRegex(
+            ValueError,
+            r"issue-17574-rtl-layout.*issue 17574.*issue 17573",
+        ):
             validate_request(path)
 
     def test_mismatched_directory_is_rejected(self):
@@ -67,7 +70,9 @@ class ValidateRequestTest(unittest.TestCase):
             "task: analyze-issue\nprovider: claude\nissue: 17573\n",
             directory="issue-42",
         )
-        with self.assertRaisesRegex(ValueError, "directory"):
+        with self.assertRaisesRegex(
+            ValueError, r"issue-42.*issue 42.*issue 17573"
+        ):
             validate_request(path)
 
     def test_request_outside_requests_directory_is_rejected(self):
