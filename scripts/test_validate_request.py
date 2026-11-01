@@ -47,6 +47,21 @@ class ValidateRequestTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "wrong keys"):
             validate_request(path)
 
+    def test_directory_with_descriptive_suffix_is_valid(self):
+        path = self.write_request(
+            "task: analyze-issue\\nprovider: claude\\nissue: 17573\\n",
+            directory="issue-17573-rtl-layout",
+        )
+        self.assertEqual(validate_request(path), ("analyze-issue", "claude", 17573))
+
+    def test_directory_with_wrong_issue_prefix_is_rejected(self):
+        path = self.write_request(
+            "task: analyze-issue\\nprovider: claude\\nissue: 17573\\n",
+            directory="issue-17574-rtl-layout",
+        )
+        with self.assertRaisesRegex(ValueError, "start with"):
+            validate_request(path)
+
     def test_mismatched_directory_is_rejected(self):
         path = self.write_request(
             "task: analyze-issue\nprovider: claude\nissue: 17573\n",
