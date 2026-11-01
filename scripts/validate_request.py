@@ -17,7 +17,7 @@ TASK_SCHEMAS = {
 }
 COMMON_KEYS = {"task", "provider"}
 PROVIDERS = {"claude", "copilot"}
-TASK_ID_PATTERN = re.compile(r"^issue-[1-9][0-9]*$")
+TASK_ID_PATTERN = re.compile(r"^issue-([1-9][0-9]*)(?:-.+)?$")
 
 
 class UniqueKeyLoader(yaml.SafeLoader):
@@ -96,8 +96,9 @@ def validate_request(request_file: Path) -> tuple[str, str, int]:
         raise ValueError("issue must be a positive integer")
 
     task_id = request_file.parent.name
-    if not TASK_ID_PATTERN.fullmatch(task_id) or task_id != f"issue-{issue}":
-        raise ValueError("request directory must be named issue-<issue-number>")
+    task_id_match = TASK_ID_PATTERN.fullmatch(task_id)
+    if task_id_match is None or int(task_id_match.group(1)) != issue:
+        raise ValueError("request directory must start with issue-<issue-number>")
 
     return task, provider, issue
 
