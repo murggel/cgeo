@@ -544,7 +544,7 @@ jobs:
               "",
           ]
           output = Path(os.environ["RUNNER_TEMP"]) / "issue-report-section.md"
-          output.write_text("\\n".join(section), encoding="utf-8")
+          output.write_text("\n".join(section), encoding="utf-8")
           print(f"Fetched description for {repository}#{issue_number}.")
           PY
 
@@ -574,7 +574,7 @@ jobs:
 
           cat "$copilot_response" > "$report_file"
           if [[ -f "$RUNNER_TEMP/issue-report-section.md" ]]; then
-            printf '\\n\\n---\\n\\n' >> "$report_file"
+            printf '\n\n---\n\n' >> "$report_file"
             cat "$RUNNER_TEMP/issue-report-section.md" >> "$report_file"
           fi
 
