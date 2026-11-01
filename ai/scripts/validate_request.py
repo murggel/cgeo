@@ -18,12 +18,24 @@ TASK_SCHEMAS = {
 }
 COMMON_KEYS = {"task", "provider"}
 PROVIDERS = {"claude", "copilot"}
-ISSUE_TASK_ID_PATTERN = re.compile(r"^issue-([1-9][0-9]*)(?:-.+)?$")
+MAX_ISSUE_NUMBER = 999_999_999
+ISSUE_TASK_ID_PATTERN = re.compile(r"^issue-([1-9][0-9]*)(?:-[A-Za-z0-9._-]+)?$")
 SMOKE_TEST_TASK_ID_PATTERN = re.compile(r"^smoke-test(?:-[a-z0-9]+)*$")
 
 
 class UniqueKeyLoader(yaml.SafeLoader):
-    """Safe YAML loader that rejects duplicate mapping keys."""
+    """Safe YAML loader that rejects duplicate keys, anchors and aliases."""
+
+    def compose_node(self, parent, index):
+        event = self.peek_event()
+        if getattr(event, "anchor", None) is not None:
+            raise yaml.constructor.ConstructorError(
+                None,
+                None,
+                "YAML anchors and aliases are not allowed",
+                event.start_mark,
+            )
+        return super().compose_node(parent, index)
 
 
 def _construct_unique_mapping(
@@ -61,8 +73,11 @@ UniqueKeyLoader.add_constructor(
 def validate_request(request_file: Path) -> tuple[str, str, int | None]:
     if request_file.name != "request.yml":
         raise ValueError("request file must be named request.yml")
-    if request_file.parent.parent.name != "requests":
+    requests_dir = request_file.parent.parent
+    if requests_dir.name != "requests" or requests_dir.parent.name != "ai":
         raise ValueError("request file must be inside ai/requests/<task-id>/")
+    if request_file.is_symlink():
+        raise ValueError("request file must not be a symbolic link")
 
     try:
         if request_file.stat().st_size > 16_384:
@@ -70,7 +85,7 @@ def validate_request(request_file: Path) -> tuple[str, str, int | None]:
         request = yaml.load(
             request_file.read_text(encoding="utf-8"), Loader=UniqueKeyLoader
         )
-    except (OSError, UnicodeError, yaml.YAMLError) as exc:
+    except (OSError, UnicodeError, yaml.YAMLError, RecursionError) as exc:
         raise ValueError(f"cannot read valid YAML ({exc})") from exc
 
     if not isinstance(request, dict):
@@ -99,15 +114,22 @@ def validate_request(request_file: Path) -> tuple[str, str, int | None]:
 
     issue = request.get("issue")
     if task == "analyze-issue":
-        if isinstance(issue, bool) or not isinstance(issue, int) or issue < 1:
-            raise ValueError("issue must be a positive integer")
+        if (
+            isinstance(issue, bool)
+            or not isinstance(issue, int)
+            or not 1 <= issue <= MAX_ISSUE_NUMBER
+        ):
+            raise ValueError(
+                f"issue must be a positive integer up to {MAX_ISSUE_NUMBER}"
+            )
 
     task_id = request_file.parent.name
     if task == "analyze-issue":
         task_id_match = ISSUE_TASK_ID_PATTERN.fullmatch(task_id)
         if task_id_match is None:
             raise ValueError(
-                f"request directory '{task_id}' must match 'issue-{issue}[-description]'"
+                f"request directory '{task_id}' must match 'issue-{issue}[-description]' "
+                "(description: letters, digits, '.', '_' and '-')"
             )
         directory_issue = int(task_id_match.group(1))
         if directory_issue != issue:
