@@ -1,0 +1,3 @@
+# Minimal Copilot connectivity test. No issue number or repository analysis is required.
+task: smoke-test
+provider: copilot
