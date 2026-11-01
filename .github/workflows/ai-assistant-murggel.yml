@@ -5,7 +5,7 @@ on:
     branches:
       - dev/ai-workflows
     paths:
-      - 'ai/**/request.yml'
+      - 'ai/requests/**/request.yml'
 
 permissions:
   contents: read
@@ -47,11 +47,11 @@ jobs:
           set -euo pipefail
 
           mapfile -t request_files < <(
-            git diff --name-only "$BEFORE_SHA" "$AFTER_SHA" -- 'ai/**/request.yml'
+            git diff --name-only "$BEFORE_SHA" "$AFTER_SHA" -- 'ai/requests/**/request.yml'
           )
 
           if [[ "${#request_files[@]}" -ne 1 ]]; then
-            echo "::error::Expected exactly one changed ai/<task-id>/request.yml file in this push; found ${#request_files[@]}."
+            echo "::error::Expected exactly one changed ai/requests/<task-id>/request.yml file in this push; found ${#request_files[@]}."
             exit 1
           fi
 
