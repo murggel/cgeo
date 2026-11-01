@@ -85,6 +85,8 @@ def validate_request(request_file: Path) -> tuple[str, str, int | None]:
     provider = request.get("provider")
     if not isinstance(provider, str) or provider not in PROVIDERS:
         raise ValueError("provider must be 'claude' or 'copilot'")
+    if task == "smoke-test" and provider != "copilot":
+        raise ValueError("smoke-test is currently supported only with provider 'copilot'")
 
     expected_keys = COMMON_KEYS | TASK_SCHEMAS[task]
     actual_keys = set(request)
