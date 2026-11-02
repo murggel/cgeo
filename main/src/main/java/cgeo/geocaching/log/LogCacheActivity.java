@@ -205,6 +205,12 @@ public class LogCacheActivity extends AbstractLoggingActivity implements LoaderM
             }
         }
 
+        if (geocode == null) {
+            showToast(getString(R.string.err_log_load_data));
+            finish();
+            return;
+        }
+
         //handle inventory
         trackableActionsChangeAll.setTextView(binding.changebutton);
         inventoryAdapter = new InventoryLogAdapter(this, binding.inventory, trackableActionsChangeAll,
