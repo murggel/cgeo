@@ -3,13 +3,17 @@
   "build": {
     "dockerfile": "Dockerfile"
   },
+  "features": {
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
   "remoteUser": "vscode",
   "customizations": {
     "vscode": {
       "extensions": [
-        "vscjava.vscode-java-pack"
+        "vscjava.vscode-java-pack",
+        "anthropic.claude-code"
       ]
     }
   },
-  "postCreateCommand": "git switch master"
+  "postCreateCommand": "bash .devcontainer/post-create.sh"
 }
