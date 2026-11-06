@@ -1,0 +1,6 @@
+# Copy this template to ai/requests/smoke-test/<name>/request.yml, e.g. ai/requests/smoke-test/copilot-001/request.yml.
+# Minimal Copilot connectivity test. Uncomment issue (and optionally repository) to append an issue description to the report.
+task: smoke-test
+provider: copilot # claude
+# issue: 18739
+# repository: cgeo/cgeo

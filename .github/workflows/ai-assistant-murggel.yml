@@ -1,0 +1,394 @@
+name: AI request
+
+on:
+  push:
+    branches:
+      - dev/ai-workflows
+    paths:
+      - 'ai/requests/**/request.yml'
+
+permissions: {}
+
+concurrency:
+  group: ai-request-${{ github.ref }}
+  cancel-in-progress: false
+  queue: max
+
+defaults:
+  run:
+    # bash -eo pipefail for all steps
+    shell: bash
+
+env:
+  COPILOT_CLI_VERSION: '1.0.105'
+  # 'auto' lets Copilot choose a model with a 0x to 1x multiplier.
+  # Alternative fixed model that is included on paid plans: 'gpt-5-mini'
+  SMOKE_TEST_MODEL: 'auto'
+  MAX_REPORT_BYTES: '524288'
+
+jobs:
+  validate:
+    name: Validate request
+    if: github.actor == 'murggel' && github.ref == 'refs/heads/dev/ai-workflows'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    outputs:
+      request_dir: ${{ steps.request.outputs.request_dir }}
+      task: ${{ steps.request.outputs.task }}
+      provider: ${{ steps.request.outputs.provider }}
+      number: ${{ steps.request.outputs.number }}
+      repository: ${{ steps.request.outputs.repository }}
+
+    steps:
+      - name: Check out request branch
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ github.sha }}
+          # Two commits are enough for the "pushed commit only" fallback.
+          fetch-depth: 2
+          sparse-checkout: /ai/
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: '3.12'
+
+      - name: Install validator dependencies
+        run: python -m pip install --disable-pip-version-check --no-input --require-hashes --requirement ai/scripts/requirements.txt
+
+      - name: Run script tests
+        run: python -m unittest discover --start-directory ai/scripts --pattern 'test_*.py' --verbose
+
+      - name: Find and validate the pushed request
+        id: request
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
+          AFTER_SHA: ${{ github.sha }}
+        run: |
+          request_file="(unknown)"
+
+          fail() {
+            local msg="$1"
+            {
+              echo "## AI request validation failed"
+              echo
+              echo "- Request: $request_file"
+              echo
+              printf '%s\n' "$msg"
+            } >> "$GITHUB_STEP_SUMMARY"
+            msg="${msg//'%'/'%25'}"
+            msg="${msg//$'\r'/'%0D'}"
+            msg="${msg//$'\n'/'%0A'}"
+            echo "::error::$msg"
+            exit 1
+          }
+
+          # Compare with the state before the push. If it is unavailable
+          # (first push, force push), look only at the pushed commit.
+          zero_sha="0000000000000000000000000000000000000000"
+          if [[ -n "$BEFORE_SHA" && "$BEFORE_SHA" != "$zero_sha" ]] \
+              && git fetch --quiet --no-tags --depth=1 origin "$BEFORE_SHA" 2>/dev/null; then
+            base="$BEFORE_SHA"
+          else
+            echo "::notice::Base commit unavailable; looking only at the pushed commit."
+            base="$AFTER_SHA^"
+          fi
+
+          # Only added and modified requests count; moved (R) and
+          # deleted (D) requests do not start a run.
+          diff_output=$(git diff --name-only --diff-filter=AM "$base" "$AFTER_SHA" -- 'ai/requests/**/request.yml') \
+            || fail "git diff between $base and $AFTER_SHA failed."
+
+          request_files=()
+          if [[ -n "$diff_output" ]]; then
+            mapfile -t request_files <<< "$diff_output"
+          fi
+          if [[ "${#request_files[@]}" -eq 0 ]]; then
+            echo "::notice::No added or modified request.yml in this push (only moved or deleted requests); nothing to do."
+            printf '## Nothing to do\n\nThis push only moved or deleted requests.\n' >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          if [[ "${#request_files[@]}" -ne 1 ]]; then
+            fail "Expected exactly one added or modified request.yml under ai/requests/ in this push; found ${#request_files[@]}: ${request_files[*]}"
+          fi
+          request_file="${request_files[0]}"
+
+          if ! result=$(python ai/scripts/validate_request.py "$request_file" --github-output "$GITHUB_OUTPUT" 2>&1); then
+            fail "$result"
+          fi
+          printf '## AI request validated\n\n%s\n' "$result" >> "$GITHUB_STEP_SUMMARY"
+
+  run-copilot:
+    name: Run ${{ needs.validate.outputs.task }}${{ needs.validate.outputs.number && format(' {0}#{1}', needs.validate.outputs.repository, needs.validate.outputs.number) || '' }} with GitHub Copilot
+    needs: validate
+    if: needs.validate.outputs.provider == 'copilot'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      issues: read
+    env:
+      TASK: ${{ needs.validate.outputs.task }}
+
+    steps:
+      - name: Check out request branch
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ github.sha }}
+          sparse-checkout: /ai/
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+
+      - name: Install GitHub Copilot CLI
+        env:
+          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+        run: |
+          if [[ -z "$COPILOT_GITHUB_TOKEN" ]]; then
+            echo "::error::Repository secret COPILOT_GITHUB_TOKEN is missing."
+            exit 1
+          fi
+          npm install --global --no-audit --no-fund "@github/copilot@${COPILOT_CLI_VERSION}"
+          installed="$(copilot --version | head -n1)"
+          if [[ "$installed" != *"$COPILOT_CLI_VERSION"* ]]; then
+            echo "::error::Expected Copilot CLI $COPILOT_CLI_VERSION, got: $installed"
+            exit 1
+          fi
+
+      - name: Prepare workspace
+        id: prepare
+        env:
+          GH_API_TOKEN: ${{ github.token }}
+          NUMBER: ${{ needs.validate.outputs.number }}
+          REPOSITORY: ${{ needs.validate.outputs.repository }}
+        run: |
+          python ai/scripts/prepare_task.py --task "$TASK" --number "$NUMBER" --repository "$REPOSITORY" \
+            --output-dir "$RUNNER_TEMP" --github-output "$GITHUB_OUTPUT"
+
+      - name: Run Copilot
+        env:
+          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+        run: |
+          model_args=()
+          if [[ "$TASK" == "smoke-test" ]]; then
+            model_args=(--model="$SMOKE_TEST_MODEL")
+          fi
+          copilot -p "$(cat "ai/prompts/$TASK.md")" "${model_args[@]}" \
+            --add-dir "$GITHUB_WORKSPACE" \
+            --available-tools='view,grep,glob' \
+            --deny-tool='write' \
+            --deny-tool='shell' \
+            --deny-tool='url' \
+            --no-ask-user \
+            --secret-env-vars COPILOT_GITHUB_TOKEN \
+            -s > "$RUNNER_TEMP/response.md"
+
+      - name: Create report
+        env:
+          HEADER: ${{ steps.prepare.outputs.header }}
+          APPENDIX: ${{ steps.prepare.outputs.appendix }}
+          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          model=""
+          if [[ "$TASK" == "smoke-test" ]]; then
+            model=" | model: $SMOKE_TEST_MODEL"
+          fi
+          python ai/scripts/finalize_report.py \
+            --copilot-output "$RUNNER_TEMP/response.md" \
+            ${APPENDIX:+--append "$APPENDIX"} \
+            --header "$HEADER | provider: copilot ${COPILOT_CLI_VERSION}${model} | workflow: ${GITHUB_SHA}" \
+            --secret-env COPILOT_GITHUB_TOKEN --secret-env GITHUB_TOKEN \
+            --output "$RUNNER_TEMP/report.md"
+
+      - name: Upload report
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: report
+          path: ${{ runner.temp }}/report.md
+          if-no-files-found: error
+          retention-days: 3
+
+  run-claude:
+    name: Run ${{ needs.validate.outputs.task }}${{ needs.validate.outputs.number && format(' {0}#{1}', needs.validate.outputs.repository, needs.validate.outputs.number) || '' }} with Claude Code
+    needs: validate
+    if: needs.validate.outputs.provider == 'claude'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      issues: read
+    env:
+      TASK: ${{ needs.validate.outputs.task }}
+
+    steps:
+      - name: Check out request branch
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ github.sha }}
+          sparse-checkout: /ai/
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+
+      - name: Check Claude authentication secret
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        run: |
+          if [[ -z "$CLAUDE_CODE_OAUTH_TOKEN" ]]; then
+            echo "::error::Repository secret CLAUDE_CODE_OAUTH_TOKEN is missing."
+            exit 1
+          fi
+
+      - name: Prepare workspace
+        id: prepare
+        env:
+          GH_API_TOKEN: ${{ github.token }}
+          NUMBER: ${{ needs.validate.outputs.number }}
+          REPOSITORY: ${{ needs.validate.outputs.repository }}
+        run: |
+          python ai/scripts/prepare_task.py --task "$TASK" --number "$NUMBER" --repository "$REPOSITORY" \
+            --output-dir "$RUNNER_TEMP" --github-output "$GITHUB_OUTPUT"
+
+      - name: Run Claude Code
+        id: claude
+        uses: anthropics/claude-code-action/base-action@c0949c50a78c1ec8ce2647db36629b870e715d0c # v1.0.268
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt_file: ${{ github.workspace }}/ai/prompts/${{ needs.validate.outputs.task }}.md
+          # Read-only tools; /proc is blocked so environment variables cannot be read.
+          claude_args: >-
+            --tools Read,Glob,Grep
+            --disallowedTools "Bash,Edit,Write,NotebookEdit,WebFetch,WebSearch,Read(//proc/**)"
+            --setting-sources user
+            --max-turns ${{ steps.prepare.outputs.max_turns }}
+          show_full_output: 'false'
+
+      - name: Create report
+        env:
+          HEADER: ${{ steps.prepare.outputs.header }}
+          APPENDIX: ${{ steps.prepare.outputs.appendix }}
+          EXECUTION_FILE: ${{ steps.claude.outputs.execution_file }}
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          python ai/scripts/finalize_report.py \
+            --claude-execution-file "$EXECUTION_FILE" \
+            ${APPENDIX:+--append "$APPENDIX"} \
+            --header "$HEADER | provider: claude | workflow: ${GITHUB_SHA}" \
+            --secret-env CLAUDE_CODE_OAUTH_TOKEN --secret-env GITHUB_TOKEN \
+            --output "$RUNNER_TEMP/report.md"
+
+      - name: Upload report
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: report
+          path: ${{ runner.temp }}/report.md
+          if-no-files-found: error
+          retention-days: 3
+
+  publish-report:
+    name: Commit report${{ needs.validate.outputs.number && format(' {0}#{1}', needs.validate.outputs.repository, needs.validate.outputs.number) || '' }}
+    needs:
+      - validate
+      - run-copilot
+      - run-claude
+    # Exactly one provider job runs; the other one is skipped.
+    if: >-
+      always() && needs.validate.result == 'success' && needs.validate.outputs.provider != '' &&
+      !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    env:
+      BRANCH: dev/ai-workflows
+      REQUEST_DIR: ${{ needs.validate.outputs.request_dir }}
+      TASK: ${{ needs.validate.outputs.task }}
+      PROVIDER: ${{ needs.validate.outputs.provider }}
+      NUMBER: ${{ needs.validate.outputs.number }}
+
+    steps:
+      - name: Check out request branch
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ github.sha }}
+          sparse-checkout: /ai/
+          sparse-checkout-cone-mode: false
+          persist-credentials: true
+
+      - name: Download report
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: report
+          path: ${{ runner.temp }}/report
+
+      - name: Commit and push report
+        run: |
+          source="$RUNNER_TEMP/report/report.md"
+          if [[ -L "$source" || ! -f "$source" ]]; then
+            echo "::error::Downloaded report is missing or not a regular file."
+            exit 1
+          fi
+          if (( $(wc -c < "$source") > MAX_REPORT_BYTES )); then
+            echo "::error::Report exceeds the 512 KiB limit."
+            exit 1
+          fi
+
+          case "$TASK" in
+            analyze-issue) message="Add ${PROVIDER^} analysis report for issue #$NUMBER" ;;
+            review-pr) message="Add ${PROVIDER^} review report for PR #$NUMBER" ;;
+            *) message="Add ${PROVIDER^} smoke-test report" ;;
+          esac
+          report_path="$REQUEST_DIR/report.md"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # Always build on the latest branch state; retry up to three
+          # times if someone pushes in between.
+          for attempt in 1 2 3; do
+            git fetch --quiet --no-tags --depth=1 origin "$BRANCH"
+            git checkout --quiet --force -B publish FETCH_HEAD
+
+            # No path component may be a symlink; otherwise the bot
+            # could write outside the request directory.
+            IFS=/ read -ra parts <<< "$report_path"
+            path=""
+            for part in "${parts[@]}"; do
+              path="${path:+$path/}$part"
+              if [[ -L "$path" ]]; then
+                echo "::error::$path is a symbolic link; refusing to write the report."
+                exit 1
+              fi
+            done
+            if [[ ! -d "$REQUEST_DIR" ]]; then
+              echo "::error::$REQUEST_DIR no longer exists on $BRANCH. The report is still available as the 'report' artifact."
+              exit 1
+            fi
+
+            cp "$source" "$report_path"
+            git add -- "$report_path"
+            if git diff --cached --quiet; then
+              echo "The report is unchanged; no commit is needed."
+              exit 0
+            fi
+            git commit --quiet -m "$message"
+
+            if git push --quiet origin "HEAD:$BRANCH"; then
+              printf '## Report committed\n\n- Report: %s\n' "$report_path" >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            echo "::warning::Push attempt $attempt failed; retrying."
+            sleep $((attempt * 3))
+          done
+
+          echo "::error::Could not push the report after 3 attempts. It is still available for 3 days as the 'report' artifact."
+          exit 1

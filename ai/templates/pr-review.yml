@@ -1,0 +1,6 @@
+# Copy this template to ai/requests/pr-<number>/review-NNN/request.yml.
+# Use a new sequence number for each separate review of the same pull request.
+# Change provider to "copilot" if you want to use GitHub Copilot instead.
+task: review-pr
+provider: claude
+pr: 11067
