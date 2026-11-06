@@ -1,3 +1,3 @@
-# claude smoke-test 
+# simple smoke-test with claude provider
 task: smoke-test
 provider: claude
