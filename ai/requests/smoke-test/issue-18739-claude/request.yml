@@ -1,0 +1,5 @@
+# Claude smoke test with an issue description included in the report.
+task: smoke-test
+provider: claude
+issue: 18739
+repository: cgeo/cgeo

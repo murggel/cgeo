@@ -1,0 +1,3 @@
+# claude smoke-test 
+task: smoke-test
+provider: claude
