@@ -39,8 +39,8 @@ def read_copilot_output(path: Path) -> str:
     return text
 
 
-def read_claude_result(path: Path) -> str:
-    """Return only Claude's final answer, not the intermediate assistant messages."""
+def read_claude_result(path: Path) -> tuple[str, int | None]:
+    """Return Claude's final answer (not the intermediate messages) and its turn count."""
     if path.is_symlink() or not path.is_file():
         raise ReportError("Claude execution file is missing or not a regular file")
     try:
@@ -57,12 +57,20 @@ def read_claude_result(path: Path) -> str:
     if final.get("is_error") or final.get("subtype") != "success":
         raise ReportError(
             f"Claude did not finish successfully (subtype={final.get('subtype')!r}); "
-            "for 'error_max_turns' raise --max-turns or narrow the request"
+            "for 'error_max_turns' raise MAX_TURNS in prepare_task.py or narrow the request"
         )
     text = final.get("result")
     if not isinstance(text, str) or not text.strip():
         raise ReportError("Claude finished without producing a report")
-    return text.strip()
+    num_turns = final.get("num_turns")
+    return text.strip(), num_turns if isinstance(num_turns, int) else None
+
+
+def turn_limit_note(num_turns: int | None, max_turns: int | None) -> str | None:
+    """Describe a run that finished successfully but used more turns than allowed."""
+    if num_turns is None or max_turns is None or num_turns <= max_turns:
+        return None
+    return f"exceeded-max-turns ({num_turns} of {max_turns})"
 
 
 def build_report(header: str, body: str, appendix: str | None = None) -> str:
@@ -94,20 +102,37 @@ def main(argv: list[str] | None = None) -> int:
         "--secret-env", action="append", default=[], metavar="NAME",
         help="environment variable whose value must not appear in the report",
     )
+    parser.add_argument(
+        "--max-turns", type=int,
+        help="Claude only: mark the report if the run used more turns than this",
+    )
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args(argv)
 
     try:
+        header = args.header
         if args.copilot_output:
             body = read_copilot_output(args.copilot_output)
         else:
-            body = read_claude_result(args.claude_execution_file)
+            body, num_turns = read_claude_result(args.claude_execution_file)
+            # The Claude action rejects such runs although the answer is final;
+            # keep the answer, but mark it so the reader knows.
+            status = turn_limit_note(num_turns, args.max_turns)
+            if status:
+                header += f" | status: {status}"
+                body = (
+                    f"> **Note:** Claude needed {num_turns} turns, more than the configured "
+                    f"limit of {args.max_turns}. This is Claude's final answer, but the run was "
+                    "longer than planned; review it with extra care.\n\n" + body
+                )
+                print(f"::warning::Claude needed {num_turns} turns (limit {args.max_turns}); "
+                      "the report is marked accordingly.")
         try:
             appendix = args.append.read_text(encoding="utf-8") if args.append else None
         except (OSError, UnicodeError) as exc:
             raise ReportError(f"cannot read appendix ({exc})") from exc
 
-        report = build_report(args.header, body, appendix)
+        report = build_report(header, body, appendix)
         secrets = {name: os.environ.get(name, "") for name in args.secret_env}
         findings = find_secrets(report, secrets)
         if findings:

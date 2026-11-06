@@ -10,12 +10,13 @@ from unittest import mock
 from finalize_report import ReportError, build_report, find_secrets, main, read_claude_result
 
 
-def claude_messages(result="Final report", subtype="success", is_error=False):
+def claude_messages(result="Final report", subtype="success", is_error=False, num_turns=3):
     return [
         {"type": "system", "subtype": "init"},
         {"type": "assistant", "message": {"content": [{"type": "text", "text": "Let me look."}]}},
         {"type": "assistant", "message": {"content": [{"type": "text", "text": result}]}},
-        {"type": "result", "subtype": subtype, "is_error": is_error, "result": result},
+        {"type": "result", "subtype": subtype, "is_error": is_error, "result": result,
+         "num_turns": num_turns},
     ]
 
 
@@ -41,7 +42,7 @@ class FinalizeReportTest(unittest.TestCase):
 
     def test_claude_uses_only_final_result(self):
         path = Path(self.write("exec.json", claude_messages("# Analysis\n\nDone.")))
-        self.assertEqual(read_claude_result(path), "# Analysis\n\nDone.")
+        self.assertEqual(read_claude_result(path), ("# Analysis\n\nDone.", 3))
 
     def test_claude_max_turns_is_an_error(self):
         messages = claude_messages(subtype="error_max_turns", is_error=True)
@@ -64,6 +65,27 @@ class FinalizeReportTest(unittest.TestCase):
     def test_claude_missing_file(self):
         with self.assertRaisesRegex(ReportError, "missing"):
             read_claude_result(self.dir / "missing.json")
+
+    def test_main_marks_result_over_turn_limit(self):
+        with redirect_stdout(io.StringIO()) as stdout, redirect_stderr(io.StringIO()):
+            code = main([
+                "--claude-execution-file", self.write("exec.json", claude_messages("Report", num_turns=18)),
+                "--max-turns", "15", "--header", "provider: claude", "--output", str(self.output),
+            ])
+        self.assertEqual(code, 0)
+        report = self.output.read_text(encoding="utf-8")
+        self.assertTrue(report.startswith("<!-- provider: claude | status: exceeded-max-turns (18 of 15) -->\n\n"))
+        self.assertIn("> **Note:** Claude needed 18 turns, more than the configured limit of 15.", report)
+        self.assertTrue(report.endswith("\n\nReport\n"))
+        self.assertIn("::warning::", stdout.getvalue())
+
+    def test_main_within_turn_limit_is_unmarked(self):
+        code, _ = self.run_main(
+            "--claude-execution-file", self.write("exec.json", claude_messages("Report", num_turns=15)),
+            "--max-turns", "15", "--header", "h",
+        )
+        self.assertEqual(code, 0)
+        self.assertEqual(self.output.read_text(encoding="utf-8"), "<!-- h -->\n\nReport\n")
 
     # Report building
 

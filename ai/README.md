@@ -205,7 +205,8 @@ There is no automatic fallback from one provider to the other. You always choose
 | *refers to issue … but the request specifies …* | The number in the folder name and in `request.yml` differ. |
 | *wrong keys (missing=…, unexpected=…)* | A key is missing, misspelled or not allowed for this task (e.g. `repository` in `analyze-issue`). |
 | *Repository secret … is missing* | Add the secret, see [One-time setup](#one-time-setup). |
-| Claude: *error_max_turns* | The task needed more steps than allowed. Split it or raise `--max-turns` in the workflow. |
+| Claude: *error_max_turns* | Claude was stopped at the turn limit (30 for analysis and review) before it finished. Narrow the request or raise `MAX_TURNS` in `scripts/prepare_task.py`. |
+| Claude step shows *… after N turns, exceeding the configured maximum of M*, but the run is green | Claude finished, only needed more turns than allowed. The report is still saved; its header says `status: exceeded-max-turns (N of M)` and it starts with a note. Review it with extra care. |
 | Claude: authentication error | The token has expired or was revoked. Create a new one with `claude setup-token`. |
 | Copilot: model error in the smoke test | Change `SMOKE_TEST_MODEL` in the workflow, e.g. to `gpt-5-mini`. |
 | *the report seems to contain a credential* | The answer contains something that looks like a token. Nothing was saved. Check the run log; if it is a false alarm (e.g. a token-like example in the issue), change the request. |

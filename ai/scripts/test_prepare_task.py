@@ -62,7 +62,7 @@ class PrepareTest(unittest.TestCase):
             outputs,
             {
                 "header": "task: analyze-issue | upstream: cgeo/cgeo@head-of-upstream | issue: #1",
-                "max_turns": "15",
+                "max_turns": "30",
                 "appendix": "",
             },
         )
@@ -78,7 +78,7 @@ class PrepareTest(unittest.TestCase):
             outputs["header"],
             "task: review-pr | upstream: cgeo/cgeo@head-of-upstream | PR: #7 | PR head: head-of-pr-head",
         )
-        self.assertEqual(outputs["max_turns"], "12")
+        self.assertEqual(outputs["max_turns"], "30")
         upstream = str(self.workspace / "upstream")
         self.assertIn(
             ["-C", upstream, "fetch", "--quiet", "--depth", "1", "origin", "refs/pull/7/head"], git.commands

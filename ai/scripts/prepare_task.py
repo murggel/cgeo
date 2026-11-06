@@ -23,7 +23,7 @@ from fetch_context import ContextError, Fetch
 
 
 # Upper limit of agent turns per task (used by Claude).
-MAX_TURNS = {"analyze-issue": 15, "review-pr": 12, "smoke-test": 2}
+MAX_TURNS = {"analyze-issue": 30, "review-pr": 30, "smoke-test": 2}
 
 Git = Callable[[list[str]], str]
 
