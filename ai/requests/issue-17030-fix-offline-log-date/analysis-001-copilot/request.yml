@@ -1,0 +1,4 @@
+# missing log-date / time for offline logs
+task: analyze-issue
+provider: copilot
+issue: 17030

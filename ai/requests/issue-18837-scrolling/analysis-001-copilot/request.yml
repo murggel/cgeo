@@ -1,0 +1,4 @@
+# unwanted scrolling in log-page
+task: analyze-issue
+provider: copilot
+issue: 18837
