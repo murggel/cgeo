@@ -1,0 +1,4 @@
+# support right-to-left-language
+task: analyze-issue
+provider: claude
+issue: 18829
