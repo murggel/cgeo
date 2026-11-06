@@ -273,6 +273,7 @@ The work is split in two independent halves: *what* to prepare depends only on t
 - `COPILOT_CLI_VERSION` (top of the workflow): exact version of `@github/copilot`, currently `1.0.105`. The workflow fails if a different version gets installed. Update deliberately after reading the release notes, then run a Copilot smoke test.
 - `SMOKE_TEST_MODEL`: `auto` lets Copilot pick a model with a 0x–1x multiplier; `gpt-5-mini` is a fixed model included in paid plans.
 - GitHub actions: each `uses:` line has a full SHA and the matching release tag as a comment. To update, look up the SHA of the new release tag in the action's repository (e.g. `git ls-remote --tags https://github.com/actions/checkout.git`) and replace SHA and comment together.
+- Runner image: all jobs use `ubuntu-24.04` instead of `ubuntu-latest`, so a new Ubuntu version cannot change the environment unnoticed. To move to a newer image, change `runs-on` in all jobs and run one smoke test per provider.
 - Python dependencies: `scripts/requirements.txt` uses pip hash-checking. When updating, copy the SHA-256 hash of the new release file from PyPI and change version and hash in the same commit.
 
 ### Running the tests
