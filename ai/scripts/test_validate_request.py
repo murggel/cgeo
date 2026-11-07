@@ -154,6 +154,21 @@ class ValidateRequestTest(unittest.TestCase):
     def test_issue_number_must_match_directory(self):
         self.assertInvalid(ISSUE_PATH, "task: analyze-issue\nprovider: claude\nissue: 1\n", "refers to issue 17573")
 
+    def test_review_pr_in_issue_directory(self):
+        request = self.validate(
+            "ai/requests/issue-17573-rtl/review-001/request.yml",
+            "task: review-pr\nprovider: claude\npr: 11067\n",
+        )
+        self.assertEqual(request.number, 11067)
+
+    def test_review_pr_directory_name(self):
+        for relative in (
+            "ai/requests/pr-11067/review-pr-001/request.yml",
+            "ai/requests/issue-17573/review-pr-002-follow-up/request.yml",
+        ):
+            with self.subTest(path=relative):
+                self.validate(relative, "task: review-pr\nprovider: claude\npr: 11067\n")
+
     def test_pr_number_must_match_directory(self):
         self.assertInvalid(PR_PATH, "task: review-pr\nprovider: claude\npr: 1\n", "refers to pr 11067")
 
@@ -167,7 +182,7 @@ class ValidateRequestTest(unittest.TestCase):
             "ai/requests/issue-17573/analysis-copilot/request.yml": issue,
             "ai/requests/issue-017573/analysis-001/request.yml": issue,
             "ai/requests/bug-17573/analysis-001/request.yml": issue,
-            "ai/requests/issue-11067/review-001/request.yml":
+            "ai/requests/issue-11067/analysis-001/request.yml":
                 "task: review-pr\nprovider: claude\npr: 11067\n",
             "ai/requests/smoke-test-copilot/run/request.yml": "task: smoke-test\nprovider: copilot\n",
         }

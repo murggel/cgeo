@@ -54,9 +54,9 @@ TASKS = {
         providers=frozenset({"claude", "copilot"}),
         required_keys=frozenset({"pr"}),
         optional_keys=frozenset(),
-        subject=re.compile(rf"pr-{NUMBER}{DESCRIPTION}"),
-        request_id=re.compile(rf"review-[0-9]{{3}}{DESCRIPTION}"),
-        layout="ai/requests/pr-<number>[-description]/review-NNN[-description]/request.yml",
+        subject=re.compile(rf"(?:pr-{NUMBER}|issue-[1-9][0-9]{{0,8}}){DESCRIPTION}"),
+        request_id=re.compile(rf"review(?:-pr)?-[0-9]{{3}}{DESCRIPTION}"),
+        layout="ai/requests/(pr|issue)-<number>[-description]/review[-pr]-NNN[-description]/request.yml",
     ),
     "smoke-test": TaskRule(
         providers=frozenset({"claude", "copilot"}),
@@ -211,7 +211,8 @@ def validate_request(request_path: str | PurePosixPath, root: Path = Path(".")) 
     subject_match = rule.subject.fullmatch(subject)
     if subject_match is None or rule.request_id.fullmatch(request_id) is None:
         raise ValueError(f"'{task}' requests must be stored as {rule.layout}")
-    if "number" in rule.subject.groupindex and int(subject_match["number"]) != number:
+    if "number" in rule.subject.groupindex and subject_match["number"] is not None \
+            and int(subject_match["number"]) != number:
         raise ValueError(
             f"directory '{subject}' refers to {number_key} {subject_match['number']}, "
             f"but the request specifies {number_key} {number}"
