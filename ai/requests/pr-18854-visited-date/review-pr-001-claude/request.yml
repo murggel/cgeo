@@ -1,0 +1,4 @@
+# set visited date on offline log
+task: review-pr
+provider: claude
+pr: 18854
