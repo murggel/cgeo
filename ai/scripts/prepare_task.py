@@ -73,6 +73,8 @@ def prepare(
     git: Git = run_git,
 ) -> dict[str, str]:
     """Prepare the workspace and return the step outputs."""
+    # git -C resolves relative paths against the -C directory, not the current one.
+    workspace = workspace.absolute()
     upstream = workspace / "upstream"
     pr_head = workspace / "pr-head"
     context = workspace / "ai-context"

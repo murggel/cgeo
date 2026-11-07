@@ -89,6 +89,21 @@ class PrepareTest(unittest.TestCase):
         )
         self.assertIn("@@ x", (self.workspace / "ai-context" / "pr-context.md").read_text(encoding="utf-8"))
 
+    def test_relative_workspace_is_made_absolute(self):
+        git = FakeGit()
+        cwd = os.getcwd()
+        os.chdir(self.workspace)
+        try:
+            with redirect_stdout(io.StringIO()):
+                prepare("review-pr", 7, "cgeo/cgeo", Path("."), self.output_dir, pr_api(), git)
+        finally:
+            os.chdir(cwd)
+        for command in git.commands[1:]:
+            with self.subTest(command=command):
+                self.assertTrue(Path(command[1]).is_absolute())
+        worktree = next(command for command in git.commands if command[2:4] == ["worktree", "add"])
+        self.assertEqual(Path(worktree[-2]), self.workspace.absolute() / "pr-head")
+
     def test_smoke_test_without_issue(self):
         api = FakeApi()
         outputs, git = self.prepare("smoke-test", None, api)
