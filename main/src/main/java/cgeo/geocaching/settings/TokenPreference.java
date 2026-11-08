@@ -68,7 +68,8 @@ public class TokenPreference extends AbstractAuthorizationPreference {
 
     @Override
     protected boolean isAuthorized() {
-        return StringUtils.isNotEmpty(Settings.getTokenSecret(tokenMapping.prefKeyId));
+        // same rule as Settings.hasGeokretyAuthorization(): a blank token is no authorization
+        return StringUtils.isNotBlank(Settings.getTokenSecret(tokenMapping.prefKeyId));
     }
 
     @Override

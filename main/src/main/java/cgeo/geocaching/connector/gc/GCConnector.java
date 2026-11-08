@@ -40,6 +40,7 @@ import cgeo.geocaching.sorting.GeocacheSort;
 import cgeo.geocaching.storage.DataStore;
 import cgeo.geocaching.storage.extension.FoundNumCounter;
 import cgeo.geocaching.utils.DisposableHandler;
+import cgeo.geocaching.utils.LocalizationUtils;
 import cgeo.geocaching.utils.Log;
 import cgeo.geocaching.utils.ShareUtils;
 import cgeo.geocaching.utils.TextUtils;
@@ -503,12 +504,17 @@ public class GCConnector extends AbstractConnector implements ISearchByGeocode, 
 
     @Override
     public String getLoginStatusString() {
+        // the cached login status may be outdated, e.g. after the credentials have been removed
+        if (!getCredentials().isValid()) {
+            return LocalizationUtils.getString(R.string.init_login_popup_not_logged_in);
+        }
         return GCLogin.getInstance().getActualStatus();
     }
 
     @Override
     public boolean isLoggedIn() {
-        return GCLogin.getInstance().isActualLoginStatus();
+        // the cached login status may be outdated, e.g. after the credentials have been removed
+        return getCredentials().isValid() && GCLogin.getInstance().isActualLoginStatus();
     }
 
     @Override

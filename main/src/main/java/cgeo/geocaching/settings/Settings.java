@@ -1078,7 +1078,8 @@ public class Settings {
     }
 
     public static boolean isRegisteredForGeokretyLogging() {
-        return getGeokretySecId() != null;
+        // a revoked authorization leaves an empty secid behind
+        return hasGeokretyAuthorization();
     }
 
     /**
