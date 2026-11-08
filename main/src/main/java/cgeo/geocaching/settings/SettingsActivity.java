@@ -359,6 +359,11 @@ public class SettingsActivity extends CustomMenuEntryActivity implements Prefere
         }
         // Instantiate the new Fragment
         final Bundle args = pref.getExtras();
+        // all opencaching sites share one fragment, the site is given by the clicked preference
+        final OCPreferenceKeys ocSite = OCPreferenceKeys.getByAuthKey(pref.getKey());
+        if (ocSite != null) {
+            PreferenceServiceOpencachingFragment.putSite(args, ocSite);
+        }
         final Fragment fragment = getSupportFragmentManager()
                 .getFragmentFactory()
                 .instantiate(getClassLoader(), pref.getFragment());

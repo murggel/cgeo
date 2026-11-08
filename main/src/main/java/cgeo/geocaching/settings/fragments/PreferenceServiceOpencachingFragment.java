@@ -14,29 +14,31 @@ import androidx.preference.PreferenceFragmentCompat;
 import org.apache.commons.lang3.Strings;
 
 /**
- * Settings screen for all opencaching based services. The site is given by its siteId as fragment argument.
+ * Settings screen for all opencaching based services. The site is given as fragment argument.
  */
 public class PreferenceServiceOpencachingFragment extends PreferenceFragmentCompat {
 
-    /** Has to match the "extra" entries in preferences_services.xml. */
-    public static final String ARG_SITE_ID = "ocSiteId";
+    private static final String ARG_SITE = "ocSite";
 
     public static PreferenceServiceOpencachingFragment newInstance(@NonNull final OCPreferenceKeys site) {
         final PreferenceServiceOpencachingFragment fragment = new PreferenceServiceOpencachingFragment();
         final Bundle args = new Bundle();
-        args.putString(ARG_SITE_ID, site.siteId);
+        putSite(args, site);
         fragment.setArguments(args);
         return fragment;
     }
 
+    public static void putSite(@NonNull final Bundle args, @NonNull final OCPreferenceKeys site) {
+        args.putString(ARG_SITE, site.name());
+    }
+
     @NonNull
     private OCPreferenceKeys getSite() {
-        final String siteId = requireArguments().getString(ARG_SITE_ID);
-        final OCPreferenceKeys site = OCPreferenceKeys.getBySiteId(siteId);
+        final String site = requireArguments().getString(ARG_SITE);
         if (site == null) {
-            throw new IllegalStateException("Unknown opencaching site: " + siteId);
+            throw new IllegalStateException("No opencaching site given");
         }
-        return site;
+        return OCPreferenceKeys.valueOf(site);
     }
 
     @Override
