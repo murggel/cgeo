@@ -146,9 +146,10 @@ public class MainActivity extends AbstractNavigationBarActivity {
                         private void fillView(final View connectorInfo, final ILogin conn) {
 
                             final TextView connectorStatus = connectorInfo.findViewById(R.id.item_status);
-                            final boolean isLoggingIn = Strings.CS.equals(conn.getLoginStatusString(), LocalizationUtils.getString(R.string.init_login_popup_working));
-                            final boolean isLoggingOk = Strings.CS.equals(conn.getLoginStatusString(), LocalizationUtils.getString(R.string.init_login_popup_ok));
-                            final StringBuilder connInfo = new StringBuilder(conn.getNameAbbreviated()).append(Formatter.SEPARATOR).append(conn.getLoginStatusString());
+                            final String loginStatusString = conn.getLoginStatusString();
+                            final boolean isLoggingIn = Strings.CS.equals(loginStatusString, LocalizationUtils.getString(R.string.init_login_popup_working));
+                            final boolean isLoggingOk = Strings.CS.equals(loginStatusString, LocalizationUtils.getString(R.string.init_login_popup_ok));
+                            final StringBuilder connInfo = new StringBuilder(conn.getNameAbbreviated()).append(Formatter.SEPARATOR).append(loginStatusString);
                             if (conn instanceof GCConnector && Network.isConnected() && !isLoggingIn && !isLoggingOk) {
                                 final Pair<String, Long> lastError = Settings.getLastLoginErrorGC();
                                 if (lastError != null && StringUtils.isNotBlank(lastError.first) && lastError.second > Settings.getLastLoginSuccessGC()) {

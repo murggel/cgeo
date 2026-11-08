@@ -184,12 +184,17 @@ public class OCApiLiveConnector extends OCApiConnector implements ISearchByViewP
 
     @Override
     public String getLoginStatusString() {
+        // the cached user info may be outdated, e.g. after the authorization has been revoked
+        if (!supportsPersonalization()) {
+            return LocalizationUtils.getString(UserInfoStatus.NOT_SUPPORTED.resId);
+        }
         return LocalizationUtils.getString(userInfo.getStatus().resId);
     }
 
     @Override
     public boolean isLoggedIn() {
-        return userInfo.getStatus() == UserInfoStatus.SUCCESSFUL;
+        // the cached user info may be outdated, e.g. after the authorization has been revoked
+        return supportsPersonalization() && userInfo.getStatus() == UserInfoStatus.SUCCESSFUL;
     }
 
     @NonNull
