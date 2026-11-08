@@ -2,6 +2,10 @@ package cgeo.geocaching.settings;
 
 import cgeo.geocaching.R;
 import cgeo.geocaching.activity.OAuthAuthorizationActivity.OAuthParameters;
+import cgeo.geocaching.connector.ConnectorFactory;
+import cgeo.geocaching.connector.IConnector;
+import cgeo.geocaching.connector.capability.ILogin;
+import cgeo.geocaching.connector.capability.IOAuthCapability;
 import cgeo.geocaching.connector.oc.OCAuthParams;
 import cgeo.geocaching.connector.oc.OCAuthorizationActivity;
 import cgeo.geocaching.connector.su.SuAuthorizationActivity;
@@ -12,7 +16,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.util.AttributeSet;
 
-public class OAuthPreference extends AbstractClickablePreference {
+import androidx.annotation.Nullable;
+
+public class OAuthPreference extends AbstractAuthorizationPreference {
 
     private static final int NO_KEY = -1;
 
@@ -24,7 +30,7 @@ public class OAuthPreference extends AbstractClickablePreference {
         OCUS(R.string.pref_fakekey_ocus_authorization, OCAuthorizationActivity.class, OCAuthParams.OC_US_AUTH_PARAMS, -1, -1),
         OCRO(R.string.pref_fakekey_ocro_authorization, OCAuthorizationActivity.class, OCAuthParams.OC_RO_AUTH_PARAMS, -1, -1),
         OCUK(R.string.pref_fakekey_ocuk_authorization, OCAuthorizationActivity.class, OCAuthParams.OC_UK_AUTH_PARAMS, -1, -1),
-        SU(R.string.pref_fakekey_su_authorization, SuAuthorizationActivity.class, SuAuthorizationActivity.SU_OAUTH_PARAMS, SuConnector.getInstance().getTokenPublicPrefKeyId(), SuConnector.getInstance().getTokenPublicPrefKeyId());
+        SU(R.string.pref_fakekey_su_authorization, SuAuthorizationActivity.class, SuAuthorizationActivity.SU_OAUTH_PARAMS, SuConnector.getInstance().getTokenPublicPrefKeyId(), SuConnector.getInstance().getTokenSecretPrefKeyId());
 
         public final int prefKeyId;
         public final int publicKeyId;
@@ -101,5 +107,16 @@ public class OAuthPreference extends AbstractClickablePreference {
         }
 
         Settings.setTokens(oAuthMapping.publicKeyId, null, oAuthMapping.secretKeyId, null);
+    }
+
+    @Override
+    @Nullable
+    protected String getUserName() {
+        for (final IConnector connector : ConnectorFactory.getConnectors()) {
+            if (connector instanceof IOAuthCapability && connector instanceof ILogin && ((IOAuthCapability) connector).getTokenPublicPrefKeyId() == oAuthMapping.publicKeyId) {
+                return ((ILogin) connector).getUserName();
+            }
+        }
+        return null;
     }
 }

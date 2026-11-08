@@ -11,7 +11,7 @@ import android.util.AttributeSet;
 
 import org.apache.commons.lang3.StringUtils;
 
-public class TokenPreference extends AbstractClickablePreference {
+public class TokenPreference extends AbstractAuthorizationPreference {
 
     private static final int NO_KEY = -1;
 

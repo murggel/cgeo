@@ -2,14 +2,12 @@ package cgeo.geocaching.settings.fragments;
 
 import cgeo.geocaching.R;
 import cgeo.geocaching.connector.gc.GCConnector;
-import cgeo.geocaching.settings.Credentials;
-import cgeo.geocaching.settings.CredentialsPreference;
+import cgeo.geocaching.settings.AbstractAuthorizationPreference;
 import cgeo.geocaching.settings.Settings;
 import cgeo.geocaching.ui.dialog.Dialogs;
 import cgeo.geocaching.utils.ImageUtils;
 import cgeo.geocaching.utils.LocalizationUtils;
 import cgeo.geocaching.utils.PreferenceUtils;
-import cgeo.geocaching.utils.SettingsUtils;
 import cgeo.geocaching.utils.ShareUtils;
 
 import android.os.Bundle;
@@ -21,7 +19,6 @@ import androidx.preference.PreferenceFragmentCompat;
 
 import java.util.Arrays;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Strings;
 
 public class PreferenceServiceGeocachingComFragment extends PreferenceFragmentCompat {
@@ -63,18 +60,7 @@ public class PreferenceServiceGeocachingComFragment extends PreferenceFragmentCo
         requireActivity().setTitle(R.string.settings_title_gc);
 
         // Update authentication preference
-        final GCConnector connector = GCConnector.getInstance();
-        final Credentials credentials = Settings.getCredentials(connector);
-        SettingsUtils.setAuthTitle(this, R.string.pref_fakekey_gc_authorization, StringUtils.isNotBlank(credentials.getUsernameRaw()));
-        final CredentialsPreference credentialsPreference = findPreference(getString(R.string.pref_fakekey_gc_authorization));
-        assert credentialsPreference != null;
-        if (credentials.isValid()) {
-            credentialsPreference.setIcon(null);
-            credentialsPreference.setSummary(LocalizationUtils.getString(R.string.auth_connected_as, credentials.getUserName()));
-        } else {
-            credentialsPreference.setIcon(R.drawable.attribute_firstaid);
-            credentialsPreference.setSummary(R.string.auth_unconnected_tap_here);
-        }
+        AbstractAuthorizationPreference.updateAuthorizationPreference(this, R.string.pref_fakekey_gc_authorization);
         initBasicMemberPreferences();
     }
 

@@ -1,9 +1,8 @@
 package cgeo.geocaching.settings.fragments;
 
 import cgeo.geocaching.R;
-import cgeo.geocaching.settings.Settings;
+import cgeo.geocaching.settings.AbstractAuthorizationPreference;
 import cgeo.geocaching.utils.PreferenceUtils;
-import cgeo.geocaching.utils.SettingsUtils;
 import cgeo.geocaching.utils.ShareUtils;
 
 import android.os.Bundle;
@@ -43,6 +42,6 @@ public class PreferenceServiceGeokretyOrgFragment extends PreferenceFragmentComp
         requireActivity().setTitle(R.string.init_geokrety);
 
         // Update authentication preference
-        SettingsUtils.setAuthTitle(this, R.string.pref_fakekey_geokrety_authorization, Settings.hasGeokretyAuthorization());
+        AbstractAuthorizationPreference.updateAuthorizationPreference(this, R.string.pref_fakekey_geokrety_authorization);
     }
 }
