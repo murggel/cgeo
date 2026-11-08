@@ -77,10 +77,10 @@ public abstract class TokenAuthorizationActivity extends AbstractActivity {
                     String errMsg = activity.getErrAuthInitialize();
                     errMsg += msg.obj != null ? '\n' + msg.obj.toString() : "";
                     activity.showToast(errMsg);
-                    startButton.setText(activity.getAuthStart());
+                    activity.setStartButtonText(activity.getAuthStart());
                 } else {
                     activity.showToast(activity.getErrAuthProcess());
-                    startButton.setText(activity.getAuthStart());
+                    activity.setStartButtonText(activity.getAuthStart());
                 }
             }
         }
@@ -103,10 +103,6 @@ public abstract class TokenAuthorizationActivity extends AbstractActivity {
 
         setTitle(getAuthTitle());
 
-        binding.auth1.setText(getAuthExplainShort());
-        binding.auth2.setText(getAuthExplainLong());
-        binding.auth3.setText(getAuthRegisterExplain());
-
         binding.start.setText(getAuthAuthorize());
         binding.start.setOnClickListener(new StartListener(this));
         enableStartButtonIfReady();
@@ -119,7 +115,9 @@ public abstract class TokenAuthorizationActivity extends AbstractActivity {
             binding.register.setOnClickListener(new RegisterListener());
         }
 
-        binding.start.setText(StringUtils.isBlank(getToken()) ? getAuthStart() : getAuthAgain());
+        binding.auth1.setText(getAuthExplainShort());
+        binding.auth3.setText(getAuthRegisterExplain());
+        setStartButtonText(StringUtils.isBlank(getToken()) ? getAuthStart() : getAuthAgain());
 
         final TextWatcher enableStartButtonWatcher = ViewUtils.createSimpleWatcher(s -> enableStartButtonIfReady());
         binding.username.addTextChangedListener(enableStartButtonWatcher);
@@ -274,12 +272,18 @@ public abstract class TokenAuthorizationActivity extends AbstractActivity {
         return LocalizationUtils.getString(R.string.auth_dialog_waiting, getAuthTitle());
     }
 
+    /** sets the start button text and keeps the explanation referring to the button in sync */
+    private void setStartButtonText(final String buttonText) {
+        binding.start.setText(buttonText);
+        binding.auth2.setText(getAuthExplainLong(buttonText));
+    }
+
     protected String getAuthExplainShort() {
         return LocalizationUtils.getString(R.string.auth_token_explain_short, getAuthTitle());
     }
 
-    protected String getAuthExplainLong() {
-        return LocalizationUtils.getString(R.string.auth_token_explain_long, getAuthTitle());
+    protected String getAuthExplainLong(final String buttonText) {
+        return LocalizationUtils.getString(R.string.auth_token_explain_long, getAuthTitle(), buttonText);
     }
 
     protected String getAuthAuthorize() {

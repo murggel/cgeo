@@ -90,15 +90,15 @@ public abstract class OAuthAuthorizationActivity extends AbstractActivity {
                 startButton.setEnabled(true);
 
                 if (msg.what == STATUS_SUCCESS) {
-                    startButton.setText(activity.getAuthAgain());
+                    activity.setStartButtonText(activity.getAuthAgain());
                 } else if (msg.what == STATUS_ERROR_EXT_MSG) {
                     String errMsg = activity.getErrAuthInitialize();
                     errMsg += msg.obj != null ? "\n" + msg.obj : "";
                     activity.showToast(errMsg);
-                    startButton.setText(activity.getAuthStart());
+                    activity.setStartButtonText(activity.getAuthStart());
                 } else {
                     activity.showToast(activity.getErrAuthInitialize());
-                    startButton.setText(activity.getAuthStart());
+                    activity.setStartButtonText(activity.getAuthStart());
                 }
             }
         }
@@ -121,7 +121,7 @@ public abstract class OAuthAuthorizationActivity extends AbstractActivity {
                     activity.finish();
                 } else {
                     activity.showToast(activity.getErrAuthProcess());
-                    activity.binding.start.setText(activity.getAuthStart());
+                    activity.setStartButtonText(activity.getAuthStart());
                 }
             }
         }
@@ -149,10 +149,6 @@ public abstract class OAuthAuthorizationActivity extends AbstractActivity {
 
         setTitle(getAuthTitle());
 
-        binding.auth1.setText(getAuthExplainShort());
-        binding.auth2.setText(getAuthExplainLong());
-        binding.auth3.setText(getAuthRegisterExplain());
-
         final ImmutablePair<String, String> tempToken = getTempTokens();
         oAtoken = tempToken.left;
         oAtokenSecret = tempToken.right;
@@ -169,13 +165,23 @@ public abstract class OAuthAuthorizationActivity extends AbstractActivity {
             binding.register.setOnClickListener(new RegisterListener());
         }
 
+        final String buttonText;
         if (StringUtils.isBlank(oAtoken) && StringUtils.isBlank(oAtokenSecret)) {
             // start authorization process
-            binding.start.setText(getAuthStart());
+            buttonText = getAuthStart();
         } else {
             // already have temporary tokens, continue from pin
-            binding.start.setText(getAuthAgain());
+            buttonText = getAuthAgain();
         }
+        binding.auth1.setText(getAuthExplainShort());
+        binding.auth3.setText(getAuthRegisterExplain());
+        setStartButtonText(buttonText);
+    }
+
+    /** sets the start button text and keeps the explanation referring to the button in sync */
+    private void setStartButtonText(final String buttonText) {
+        binding.start.setText(buttonText);
+        binding.auth2.setText(getAuthExplainLong(buttonText));
     }
 
     @Override
@@ -405,8 +411,8 @@ public abstract class OAuthAuthorizationActivity extends AbstractActivity {
         return LocalizationUtils.getString(R.string.auth_explain_short, getAuthTitle());
     }
 
-    private String getAuthExplainLong() {
-        return LocalizationUtils.getString(R.string.auth_explain_long, getAuthStart(), getAuthTitle());
+    private String getAuthExplainLong(final String buttonText) {
+        return LocalizationUtils.getString(R.string.auth_explain_long, getAuthTitle(), buttonText);
     }
 
     private String getAuthAuthorize() {
