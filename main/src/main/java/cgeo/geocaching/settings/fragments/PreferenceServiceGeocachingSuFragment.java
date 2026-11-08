@@ -2,9 +2,8 @@ package cgeo.geocaching.settings.fragments;
 
 import cgeo.geocaching.R;
 import cgeo.geocaching.connector.su.SuConnector;
-import cgeo.geocaching.settings.Settings;
+import cgeo.geocaching.settings.AbstractAuthorizationPreference;
 import cgeo.geocaching.utils.PreferenceUtils;
-import cgeo.geocaching.utils.SettingsUtils;
 import cgeo.geocaching.utils.ShareUtils;
 
 import android.os.Bundle;
@@ -35,6 +34,6 @@ public class PreferenceServiceGeocachingSuFragment extends PreferenceFragmentCom
         requireActivity().setTitle(R.string.init_su);
 
         // Update authentication preference
-        SettingsUtils.updateOAuthPreference(this, R.string.pref_fakekey_su_authorization, Settings.hasOAuthAuthorization(R.string.pref_su_tokenpublic, R.string.pref_su_tokensecret));
+        AbstractAuthorizationPreference.updateAuthorizationPreference(this, R.string.pref_fakekey_su_authorization);
     }
 }

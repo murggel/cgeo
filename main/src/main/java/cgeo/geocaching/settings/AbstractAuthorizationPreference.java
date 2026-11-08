@@ -2,18 +2,23 @@ package cgeo.geocaching.settings;
 
 import cgeo.geocaching.R;
 import cgeo.geocaching.ui.dialog.Dialogs;
+import cgeo.geocaching.utils.LocalizationUtils;
 
 import android.content.Context;
 import android.util.AttributeSet;
 import android.view.View;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.preference.Preference;
+import androidx.preference.PreferenceFragmentCompat;
 import androidx.preference.PreferenceViewHolder;
 
+import org.apache.commons.lang3.StringUtils;
+
 // https://www.joehxblog.com/how-to-add-a-long-click-to-an-androidx-preference/
-abstract class AbstractClickablePreference extends Preference {
+public abstract class AbstractAuthorizationPreference extends Preference {
 
     private final SettingsActivity activity;
 
@@ -28,8 +33,7 @@ abstract class AbstractClickablePreference extends Preference {
                 .setTitle(R.string.auth_forget_title)
                 .setPositiveButton(android.R.string.yes, (dialog, id) -> {
                     revokeAuthorization();
-                    setSummary(R.string.auth_unconnected_tap_here);
-                    setIcon(R.drawable.attribute_firstaid);
+                    updateAuthorizationInfo();
                 })
                 .setNegativeButton(android.R.string.cancel, (dialog, id) -> dialog.cancel());
         builder.create().show();
@@ -37,14 +41,21 @@ abstract class AbstractClickablePreference extends Preference {
         return true;
     };
 
-    AbstractClickablePreference(final Context context, final AttributeSet attrs) {
+    AbstractAuthorizationPreference(final Context context, final AttributeSet attrs) {
         super(context, attrs);
         activity = (SettingsActivity) context;
     }
 
-    AbstractClickablePreference(final Context context, final AttributeSet attrs, final int defStyle) {
+    AbstractAuthorizationPreference(final Context context, final AttributeSet attrs, final int defStyle) {
         super(context, attrs, defStyle);
         activity = (SettingsActivity) context;
+    }
+
+    public static void updateAuthorizationPreference(final PreferenceFragmentCompat preferenceFragment, final int prefKeyId) {
+        final Preference preference = preferenceFragment.findPreference(LocalizationUtils.getPlainString(prefKeyId));
+        if (preference instanceof AbstractAuthorizationPreference) {
+            ((AbstractAuthorizationPreference) preference).updateAuthorizationInfo();
+        }
     }
 
     @Override
@@ -57,6 +68,20 @@ abstract class AbstractClickablePreference extends Preference {
         itemView.setOnLongClickListener(this.longClickListener);
     }
 
+    void updateAuthorizationInfo() {
+        if (isAuthorized()) {
+            final String userName = getUserName();
+            setTitle(R.string.settings_reauthorize);
+            // user name is only known after a successful login
+            setSummary(StringUtils.isNotBlank(userName) ? LocalizationUtils.getString(R.string.auth_connected_as, userName) : LocalizationUtils.getString(R.string.auth_connected));
+            setIcon(null);
+        } else {
+            setTitle(R.string.settings_authorize);
+            setSummary(R.string.auth_unconnected_tap_here);
+            setIcon(R.drawable.attribute_firstaid);
+        }
+    }
+
     protected abstract OnPreferenceClickListener getOnPreferenceClickListener(SettingsActivity settingsActivity);
 
     protected boolean isAuthorized() {
@@ -64,5 +89,10 @@ abstract class AbstractClickablePreference extends Preference {
     }
 
     protected void revokeAuthorization() {
+    }
+
+    @Nullable
+    protected String getUserName() {
+        return null;
     }
 }

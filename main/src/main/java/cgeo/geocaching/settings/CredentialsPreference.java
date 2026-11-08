@@ -22,7 +22,7 @@ import androidx.preference.PreferenceViewHolder;
 
 import org.apache.commons.lang3.StringUtils;
 
-public class CredentialsPreference extends AbstractClickablePreference {
+public class CredentialsPreference extends AbstractAuthorizationPreference {
 
     private static final int NO_KEY = -1;
 
@@ -84,6 +84,11 @@ public class CredentialsPreference extends AbstractClickablePreference {
             settingsActivity.startActivityForResult(checkIntent, credentialsMapping.prefKeyId);
             return false; // no shared preference has to be changed
         };
+    }
+
+    @Override
+    protected String getUserName() {
+        return credentialsMapping.getConnector().getCredentials().getUsernameRaw();
     }
 
     @Override

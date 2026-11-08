@@ -1609,13 +1609,12 @@
     <string name="auth_start">Start authorization</string>
     <string name="auth_again">Start again</string>
     <string name="auth_register">Create an account</string>
-    <string name="auth_connected">Connected</string>
-    <string name="auth_unconnected">Not connected yet</string>
+    <string name="auth_connected">Connected.\nTap here to update or long tap to remove authorization data from c:geo.</string>
     <string name="auth_unconnected_tap_here">Not connected yet - tap here to authorize</string>
     <string name="auth_connected_as">Connected as %s.\nTap here to update or long tap to remove authorization data from c:geo.</string>
     <string name="auth_dialog_waiting">Waiting for %s…</string>
     <string name="auth_explain_short">The following process will allow <b>c:geo</b> to access %s.</string>
-    <string name="auth_explain_long">Tapping the \"authorize c:geo\" button will start the process. This process will open up a web browser with a %s page. Log in on this page and allow <b>c:geo</b> to access your account. That\'s all.</string>
+    <string name="auth_explain_long">Tapping the \"%s\" button will start the process. This process will open up a web browser with a %s page. Log in on this page and allow <b>c:geo</b> to access your account. That\'s all.</string>
     <string name="auth_forget_title">Forget authorization?</string>
     <string name="auth_forget_message">You\'ll be disconnected from this service. Your currently saved credentials will be lost.</string>
 

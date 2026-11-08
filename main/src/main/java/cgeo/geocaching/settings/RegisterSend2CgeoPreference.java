@@ -17,7 +17,7 @@ import io.reactivex.rxjava3.core.Observable;
 import okhttp3.Response;
 import org.apache.commons.lang3.StringUtils;
 
-public class RegisterSend2CgeoPreference extends AbstractClickablePreference {
+public class RegisterSend2CgeoPreference extends AbstractAuthorizationPreference {
 
     public RegisterSend2CgeoPreference(final Context context, final AttributeSet attrs) {
         super(context, attrs);

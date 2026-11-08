@@ -1,9 +1,9 @@
 package cgeo.geocaching.settings.fragments;
 
 import cgeo.geocaching.R;
+import cgeo.geocaching.settings.AbstractAuthorizationPreference;
 import cgeo.geocaching.settings.OCPreferenceKeys;
 import cgeo.geocaching.utils.PreferenceUtils;
-import cgeo.geocaching.utils.SettingsUtils;
 import cgeo.geocaching.utils.ShareUtils;
 
 import android.os.Bundle;
@@ -34,6 +34,6 @@ public class PreferenceServiceOpencachingRoFragment extends PreferenceFragmentCo
         requireActivity().setTitle(R.string.init_oc_ro);
 
         // Update authentication preference
-        SettingsUtils.updateOpenCachingAuthPreference(this, R.string.pref_fakekey_ocro_authorization);
+        AbstractAuthorizationPreference.updateAuthorizationPreference(this, R.string.pref_fakekey_ocro_authorization);
     }
 }
