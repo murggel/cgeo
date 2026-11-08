@@ -406,7 +406,7 @@ public abstract class OAuthAuthorizationActivity extends AbstractActivity {
     }
 
     private String getAuthExplainLong() {
-        return LocalizationUtils.getString(R.string.auth_explain_long, getAuthStart(), getAuthTitle());
+        return LocalizationUtils.getString(R.string.auth_explain_long, getAuthTitle(), getAuthStart());
     }
 
     private String getAuthAuthorize() {
