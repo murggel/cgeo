@@ -21,12 +21,7 @@ import cgeo.geocaching.settings.fragments.PreferenceServiceGeocachingComAdventur
 import cgeo.geocaching.settings.fragments.PreferenceServiceGeocachingComFragment;
 import cgeo.geocaching.settings.fragments.PreferenceServiceGeocachingSuFragment;
 import cgeo.geocaching.settings.fragments.PreferenceServiceGeokretyOrgFragment;
-import cgeo.geocaching.settings.fragments.PreferenceServiceOpencacheUkFragment;
-import cgeo.geocaching.settings.fragments.PreferenceServiceOpencachingDeFragment;
-import cgeo.geocaching.settings.fragments.PreferenceServiceOpencachingNlFragment;
-import cgeo.geocaching.settings.fragments.PreferenceServiceOpencachingPlFragment;
-import cgeo.geocaching.settings.fragments.PreferenceServiceOpencachingRoFragment;
-import cgeo.geocaching.settings.fragments.PreferenceServiceOpencachingUsFragment;
+import cgeo.geocaching.settings.fragments.PreferenceServiceOpencachingFragment;
 import cgeo.geocaching.settings.fragments.PreferenceServiceSendToCgeoFragment;
 import cgeo.geocaching.settings.fragments.PreferenceServicesFragment;
 import cgeo.geocaching.settings.fragments.PreferenceSystemFragment;
@@ -257,6 +252,7 @@ public class SettingsActivity extends CustomMenuEntryActivity implements Prefere
             return;
         }
         Fragment preferenceFragment = new PreferencesFragmentRoot();
+        final OCPreferenceKeys ocKey = OCPreferenceKeys.getByPrefScreenKey(baseKey);
 
         // main configuration screens
         if (Strings.CS.equals(baseKey, LocalizationUtils.getPlainString(R.string.preference_screen_services))) {
@@ -287,18 +283,8 @@ public class SettingsActivity extends CustomMenuEntryActivity implements Prefere
             preferenceFragment = new PreferenceServiceGeokretyOrgFragment();
         } else if (Strings.CS.equals(baseKey, LocalizationUtils.getPlainString(R.string.preference_screen_gc))) {
             preferenceFragment = new PreferenceServiceGeocachingComFragment();
-        } else if (Strings.CS.equals(baseKey, LocalizationUtils.getPlainString(R.string.preference_screen_ocde))) {
-            preferenceFragment = new PreferenceServiceOpencachingDeFragment();
-        } else if (Strings.CS.equals(baseKey, LocalizationUtils.getPlainString(R.string.preference_screen_ocuk))) {
-            preferenceFragment = new PreferenceServiceOpencacheUkFragment();
-        } else if (Strings.CS.equals(baseKey, LocalizationUtils.getPlainString(R.string.preference_screen_ocnl))) {
-            preferenceFragment = new PreferenceServiceOpencachingNlFragment();
-        } else if (Strings.CS.equals(baseKey, LocalizationUtils.getPlainString(R.string.preference_screen_ocpl))) {
-            preferenceFragment = new PreferenceServiceOpencachingPlFragment();
-        } else if (Strings.CS.equals(baseKey, LocalizationUtils.getPlainString(R.string.preference_screen_ocus))) {
-            preferenceFragment = new PreferenceServiceOpencachingUsFragment();
-        } else if (Strings.CS.equals(baseKey, LocalizationUtils.getPlainString(R.string.preference_screen_ocro))) {
-            preferenceFragment = new PreferenceServiceOpencachingRoFragment();
+        } else if (ocKey != null) {
+            preferenceFragment = PreferenceServiceOpencachingFragment.newInstance(ocKey);
         } else if (Strings.CS.equals(baseKey, LocalizationUtils.getPlainString(R.string.preference_screen_al))) {
             preferenceFragment = new PreferenceServiceGeocachingComAdventureLabsFragment();
         } else if (Strings.CS.equals(baseKey, LocalizationUtils.getPlainString(R.string.preference_screen_ec))) {
@@ -372,11 +358,17 @@ public class SettingsActivity extends CustomMenuEntryActivity implements Prefere
             }
         }
         // Instantiate the new Fragment
-        final Bundle args = pref.getExtras();
-        final Fragment fragment = getSupportFragmentManager()
-                .getFragmentFactory()
-                .instantiate(getClassLoader(), pref.getFragment());
-        fragment.setArguments(args);
+        final Fragment fragment;
+        final OCPreferenceKeys ocSite = OCPreferenceKeys.getByAuthPrefKey(pref.getKey());
+        if (ocSite != null && Strings.CS.equals(pref.getFragment(), PreferenceServiceOpencachingFragment.class.getName())) {
+            // the opencaching site is given by the key of the clicked service entry
+            fragment = PreferenceServiceOpencachingFragment.newInstance(ocSite);
+        } else {
+            fragment = getSupportFragmentManager()
+                    .getFragmentFactory()
+                    .instantiate(getClassLoader(), pref.getFragment());
+            fragment.setArguments(pref.getExtras());
+        }
         fragment.setTargetFragment(caller, 0);
         // Replace the existing Fragment with the new Fragment
         getSupportFragmentManager().beginTransaction()
