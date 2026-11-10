@@ -13,22 +13,26 @@ import android.app.ProgressDialog;
 import android.content.Context;
 import android.util.AttributeSet;
 
+import androidx.preference.Preference;
+
 import io.reactivex.rxjava3.core.Observable;
 import okhttp3.Response;
 import org.apache.commons.lang3.StringUtils;
 
-public class RegisterSend2CgeoPreference extends AbstractAuthorizationPreference {
+/** registers this device at send2cgeo - this is no authorization, so it is a plain clickable preference */
+public class RegisterSend2CgeoPreference extends Preference {
 
     public RegisterSend2CgeoPreference(final Context context, final AttributeSet attrs) {
         super(context, attrs);
+        setOnPreferenceClickListener(getOnPreferenceClickListener((SettingsActivity) context));
     }
 
     public RegisterSend2CgeoPreference(final Context context, final AttributeSet attrs, final int defStyle) {
         super(context, attrs, defStyle);
+        setOnPreferenceClickListener(getOnPreferenceClickListener((SettingsActivity) context));
     }
 
-    @Override
-    protected OnPreferenceClickListener getOnPreferenceClickListener(final SettingsActivity activity) {
+    private static OnPreferenceClickListener getOnPreferenceClickListener(final SettingsActivity activity) {
         return preference -> {
             // satisfy static code analysis
             if (activity == null) {
