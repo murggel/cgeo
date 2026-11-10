@@ -248,7 +248,7 @@ There is no automatic fallback from one provider to the other. You always choose
 | *Invalid request: … must be stored as …* | The folder name does not match the rules in [Where the request goes](#where-the-request-goes). |
 | *refers to issue … but the request specifies …* | The number in the folder name and in `request.yml` differ. |
 | *wrong keys (missing=…, unexpected=…)* | A key is missing, misspelled or not allowed for this task (e.g. `repository` in `analyze-issue`, `instructions` in `smoke-test`). |
-| *branch must be a branch name …* | Check the spelling of `branch`. Only letters, digits, `.`, `_`, `-` and `/` are allowed. |
+| *branch must be a branch name …* | Check the spelling of `branch`. Only letters, digits, `.`, `_`, `-` and `/` are allowed, and the name must start with a letter, a digit or `_`. |
 | *Cannot fetch … refs/heads/…* (branch review) | The branch does not exist in `murggel/cgeo`. Push it first: `git push -u origin <branch>`. |
 | *has no commits that are not in …* | The branch contains nothing new compared to the base. Check `base` and whether the latest commits are pushed. |
 | *no common ancestor … within 600 commits* | The branch and the base are far apart. Usually the wrong `base` (e.g. `master` instead of `release`); otherwise rebase the branch. |

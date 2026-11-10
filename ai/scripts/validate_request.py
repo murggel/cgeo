@@ -30,7 +30,7 @@ MAX_INSTRUCTIONS_CHARS = 4_000
 # Tabs and line breaks are fine; other control characters are not.
 FORBIDDEN_CHARACTERS = re.compile("[\x00-\x08\x0b-\x1f\x7f]")
 # review-branch: branch names of the fork, restricted to safe characters.
-BRANCH_PATTERN = re.compile(r"[A-Za-z0-9][A-Za-z0-9._/-]{0,199}")
+BRANCH_PATTERN = re.compile(r"[A-Za-z0-9_][A-Za-z0-9._/-]{0,199}")
 ALLOWED_BASES = frozenset({"master", "release"})
 DEFAULT_REPOSITORY = "cgeo/cgeo"
 # Only smoke tests may choose a repository; all other tasks use the default.
@@ -227,8 +227,9 @@ def _branch(request: dict[str, Any]) -> tuple[str, str]:
         or branch.endswith(("/", ".", ".lock"))
     ):
         raise ValueError(
-            "branch must be a branch name of A-Z, a-z, 0-9, '.', '_', '-' and '/' "
-            "(e.g. feature/issue-123-fix-map)"
+            "branch must be a branch name of up to 200 characters A-Z, a-z, 0-9, '.', '_', '-' and '/'. "
+            "It must start with a letter, a digit or '_', must not contain '..', '//' or '/.' "
+            "and must not end with '/', '.' or '.lock' (e.g. feature/issue-123-fix-map)"
         )
     if not isinstance(base, str) or base not in ALLOWED_BASES:
         raise ValueError(f"base must be one of: {', '.join(sorted(ALLOWED_BASES))}")

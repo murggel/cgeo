@@ -127,6 +127,13 @@ class ValidateRequestTest(unittest.TestCase):
         self.assertInvalid(BRANCH_PATH, base + "branch: a\nbase: develop\n", "base must be one of")
         self.assertInvalid(BRANCH_PATH, base + "branch: a\nbase: 1\n", "base must be one of")
 
+    def test_branch_name_may_start_with_underscore(self):
+        request = self.validate(
+            BRANCH_PATH,
+            "task: review-branch\nprovider: claude\nbranch: _draft/ai/improve-authorization\nbase: master\n",
+        )
+        self.assertEqual(request.branch, "_draft/ai/improve-authorization")
+
     def test_invalid_branch_names(self):
         for branch in ("-x", "a..b", "a//b", "a/.b", "a/", "a.", "a.lock", "a b", "a~1", "a:b",
                        "a@{1}", "'$(id)'", "12", "x" * 201, "[a]"):
