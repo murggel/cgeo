@@ -8,7 +8,8 @@ its outputs and does not repeat these rules.
 Every request lives at ai/requests/<subject>/<request-id>/request.yml.
 Branch reviews name a branch of the fork and a base branch of the upstream
 repository. Analyses and reviews may carry free-text ``instructions`` that are added to
-the prompt; the workflow passes them on unchanged.
+the prompt; the workflow passes them on unchanged. They may also name an earlier
+request of the same subject as ``previous``, whose report the new run builds on.
 """
 
 from __future__ import annotations
@@ -55,7 +56,7 @@ TASKS = {
     "analyze-issue": TaskRule(
         providers=frozenset({"claude", "copilot"}),
         required_keys=frozenset({"issue"}),
-        optional_keys=frozenset({"instructions"}),
+        optional_keys=frozenset({"instructions", "previous"}),
         subject=re.compile(rf"issue-{NUMBER}{DESCRIPTION}"),
         request_id=re.compile(rf"analysis-[0-9]{{3}}{DESCRIPTION}"),
         layout="ai/requests/issue-<number>[-description]/analysis-NNN[-description]/request.yml",
@@ -63,7 +64,7 @@ TASKS = {
     "review-pr": TaskRule(
         providers=frozenset({"claude", "copilot"}),
         required_keys=frozenset({"pr"}),
-        optional_keys=frozenset({"instructions"}),
+        optional_keys=frozenset({"instructions", "previous"}),
         subject=re.compile(rf"(?:pr-{NUMBER}|issue-[1-9][0-9]{{0,8}}){DESCRIPTION}"),
         request_id=re.compile(rf"review(?:-pr)?-[0-9]{{3}}{DESCRIPTION}"),
         layout="ai/requests/(pr|issue)-<number>[-description]/review[-pr]-NNN[-description]/request.yml",
@@ -71,7 +72,7 @@ TASKS = {
     "review-branch": TaskRule(
         providers=frozenset({"claude", "copilot"}),
         required_keys=frozenset({"branch", "base"}),
-        optional_keys=frozenset({"instructions"}),
+        optional_keys=frozenset({"instructions", "previous"}),
         subject=re.compile(rf"branch-[A-Za-z0-9_-]+"),
         request_id=re.compile(rf"review-[0-9]{{3}}{DESCRIPTION}"),
         layout="ai/requests/branch-<description>/review-NNN[-description]/request.yml",
@@ -97,6 +98,7 @@ class Request:
     instructions: str = ""
     branch: str = ""
     base: str = ""
+    previous_report: str = ""
 
     def outputs(self) -> dict[str, str]:
         return {
@@ -108,6 +110,7 @@ class Request:
             "instructions": self.instructions,
             "branch": self.branch,
             "base": self.base,
+            "previous_report": self.previous_report,
         }
 
     def summary(self) -> str:
@@ -120,6 +123,8 @@ class Request:
             lines.append(f"- Issue: {self.repository}#{self.number}")
         if self.instructions:
             lines.append(f"- Additional instructions: {len(self.instructions)} characters")
+        if self.previous_report:
+            lines.append(f"- Previous report: {self.previous_report}")
         lines.append(f"- Request: {self.path.as_posix()}")
         return "\n".join(lines)
 
@@ -177,12 +182,16 @@ def _split_path(request_path: str | PurePosixPath) -> tuple[str, str]:
     return parts[2], parts[3]
 
 
-def _read_yaml(root: Path, path: PurePosixPath) -> Any:
+def _reject_symlinks(root: Path, path: PurePosixPath) -> None:
     parts = path.parts
     for depth in range(1, len(parts) + 1):
         if (root.joinpath(*parts[:depth])).is_symlink():
             raise ValueError(f"'{PurePosixPath(*parts[:depth])}' must not be a symbolic link")
-    file = root.joinpath(*parts)
+
+
+def _read_yaml(root: Path, path: PurePosixPath) -> Any:
+    _reject_symlinks(root, path)
+    file = root.joinpath(*path.parts)
     if not file.is_file():
         raise ValueError("request file does not exist or is not a regular file")
     try:
@@ -234,6 +243,31 @@ def _branch(request: dict[str, Any]) -> tuple[str, str]:
     if not isinstance(base, str) or base not in ALLOWED_BASES:
         raise ValueError(f"base must be one of: {', '.join(sorted(ALLOWED_BASES))}")
     return branch, base
+
+
+def _previous_report(request: dict[str, Any], root: Path, path: PurePosixPath) -> str:
+    """Return the report of the earlier request named by ``previous``, if any.
+
+    The report must already be part of the pushed commit, so a report that is
+    still being generated fails here instead of being silently left out.
+    """
+    if "previous" not in request:
+        return ""
+    previous = request["previous"]
+    if not isinstance(previous, str) or not NAME.fullmatch(previous):
+        raise ValueError(
+            "previous must be the folder name of an earlier request in the same directory (e.g. review-001)"
+        )
+    if previous == path.parent.name:
+        raise ValueError("previous must not name the request itself")
+    report = path.parent.parent / previous / "report.md"
+    _reject_symlinks(root, report)
+    if not root.joinpath(*report.parts).is_file():
+        raise ValueError(
+            f"'{report}' does not exist in this commit; wait for that report and run "
+            "'git pull --rebase' before pushing this request"
+        )
+    return report.as_posix()
 
 
 def write_github_output(path: Path, outputs: dict[str, str]) -> None:
@@ -296,7 +330,8 @@ def validate_request(request_path: str | PurePosixPath, root: Path = Path(".")) 
         )
 
     branch, base = _branch(request)
-    return Request(path, task, provider, number, repository, _instructions(request), branch, base)
+    return Request(path, task, provider, number, repository, _instructions(request), branch, base,
+                   _previous_report(request, root, path))
 
 
 def main(argv: list[str] | None = None) -> int:

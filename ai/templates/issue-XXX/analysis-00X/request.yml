@@ -9,3 +9,5 @@ issue: 17573
 # instructions: |
 #   Focus on the offline-log code path; online logging is out of scope.
 #   Answer in German.
+# Optional: build on the committed report of an earlier request in the same directory.
+# previous: analysis-001

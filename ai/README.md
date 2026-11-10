@@ -112,6 +112,7 @@ Rules:
 | `branch` | `review-branch` | branch name in `murggel/cgeo`, e.g. `feature/issue-18886-fix-map` |
 | `base` | `review-branch` | `master` or `release` (the branch of `cgeo/cgeo` the later PR would target) |
 | `instructions` | optional, only for `analyze-issue`, `review-pr` and `review-branch` | free text, up to 4000 characters, see [Additional instructions](#additional-instructions) |
+| `previous` | optional, only for `analyze-issue`, `review-pr` and `review-branch` | folder name of an earlier request in the same directory, e.g. `review-001`, see [Building on an earlier report](#building-on-an-earlier-report) |
 
 Issue analysis and PR review always use `cgeo/cgeo`. Only a smoke test may read an issue from `murggel/cgeo`.
 
@@ -173,6 +174,25 @@ The text is added to the end of the prompt in its own section, for Claude and Co
   They cannot lift the safety rules: the AI stays read-only and keeps treating issue and PR text as untrusted.
 - At most 4000 characters, no control characters, not empty. Smoke tests do not accept instructions.
 - The instructions are not copied into the report; they stay in `request.yml` next to it. The report header says `instructions: yes` when there were any.
+
+### Building on an earlier report
+
+With `previous` a new request builds on the report of an earlier request. Name the folder of that request; it must be in the same directory as the new one:
+
+```yaml
+# ai/requests/branch-map-npe/review-002/request.yml
+task: review-branch
+provider: claude
+branch: feature/release-issue-18886-NPE-isMapReady
+base: release
+previous: review-001
+```
+
+- The AI checks every point of the earlier report against the current code and starts its answer with a section "Status of the previous report": fixed, still open or wrong. After that it concentrates on what is new.
+- The earlier report must already be in the commit you push. Wait until its run is finished and run `git pull --rebase origin dev/ai-workflows` first. Otherwise the request is rejected.
+- Only the report is passed on, not the `instructions` of the earlier request. Repeat them if they still matter.
+- The provider may differ from the earlier one. The report header says `previous: <folder>`.
+- Smoke tests do not accept `previous`.
 
 The file is checked strictly. It is rejected if it has unknown or duplicate keys, YAML anchors (`&name`, `*name`), is larger than 16 KiB, is a symbolic link, or if a number is not a whole number between 1 and 999999999.
 
@@ -254,6 +274,8 @@ There is no automatic fallback from one provider to the other. You always choose
 | *no common ancestor … within 600 commits* | The branch and the base are far apart. Usually the wrong `base` (e.g. `master` instead of `release`); otherwise rebase the branch. |
 | *at most 250 can be reviewed* | The branch has too many commits for one review. Rebase or split it. |
 | *instructions must be text* | Write the instructions as a block: `instructions: |` and the text indented on the following lines. |
+| *… report.md does not exist in this commit* | The report named by `previous` is missing from your push. Check the folder name, wait for that run to finish, run `git pull --rebase origin dev/ai-workflows` and change the request again so that a new push starts a run. |
+| *previous must be the folder name …* | Write only the folder name of the earlier request, e.g. `previous: review-001`, without a path. |
 | *Repository secret … is missing* | Add the secret, see [One-time setup](#one-time-setup). |
 | Claude: *error_max_turns* | Claude was stopped at the turn limit (30 for analysis and review) before it finished. Narrow the request or raise `MAX_TURNS` in `scripts/prepare_task.py`. |
 | Claude step shows *… after N turns, exceeding the configured maximum of M*, but the run is green | Claude finished, only needed more turns than allowed. The report is still saved; its header says `status: exceeded-max-turns (N of M)` and it starts with a note. Review it with extra care. |
@@ -292,7 +314,7 @@ There is no automatic fallback from one provider to the other. You always choose
 - **Output check:** the answer is limited to 512 KiB and scanned for tokens (`sk-ant-…`, `ghp_…`, `github_pat_…` and others, plus the actual secret values). If anything matches, nothing is saved.
 - **Safe saving:** the save job writes only into the validated request folder and refuses symbolic links on the way.
 - **Pinned dependencies:** all GitHub actions are pinned to full commit SHAs, Copilot CLI to an exact version, Python packages to exact versions with hashes.
-- **Reports are untrusted too:** a report is derived from third-party text. Read it critically and do not feed it into other automation unchecked.
+- **Reports are untrusted too:** a report is derived from third-party text. Read it critically and do not feed it into other automation unchecked. A report named by `previous` is only passed as a file that the AI is told to treat as untrusted data and to verify against the code.
 
 Possible future hardening: if the workflow is ever opened to other users or triggers, move the secrets into a protected GitHub *environment*.
 

@@ -96,6 +96,7 @@ class ValidateRequestTest(unittest.TestCase):
                 "instructions": "",
                 "branch": "",
                 "base": "",
+                "previous_report": "",
             },
         )
 
@@ -170,6 +171,49 @@ class ValidateRequestTest(unittest.TestCase):
         for text, message in cases.items():
             with self.subTest(text=text[:30]):
                 self.assertInvalid(ISSUE_PATH, base + text, message)
+
+    # Previous report
+
+    def test_previous_report_for_all_follow_up_tasks(self):
+        cases = {
+            "ai/requests/issue-17573/analysis-002/request.yml": "task: analyze-issue\nprovider: claude\nissue: 17573\n",
+            "ai/requests/pr-11067/review-002/request.yml": "task: review-pr\nprovider: copilot\npr: 11067\n",
+            "ai/requests/branch-map-fix/review-002/request.yml":
+                "task: review-branch\nprovider: claude\nbranch: a\nbase: master\n",
+        }
+        for relative, text in cases.items():
+            with self.subTest(path=relative):
+                directory = PurePosixPath(relative).parent.parent
+                expected = (directory / "first-001" / "report.md").as_posix()
+                self.write(expected, "old report\n")
+                request = self.validate(relative, text + "previous: first-001\n")
+                self.assertEqual(request.previous_report, expected)
+                self.assertEqual(request.outputs()["previous_report"], expected)
+                self.assertIn(f"- Previous report: {expected}", request.summary())
+
+    def test_previous_report_must_exist(self):
+        self.assertInvalid(PR_PATH, "task: review-pr\nprovider: claude\npr: 11067\nprevious: review-000\n",
+                           "does not exist in this commit")
+
+    def test_invalid_previous(self):
+        base = "task: review-pr\nprovider: claude\npr: 11067\n"
+        for value in ("1", "../review-000", "a/b", "''", "[a]"):
+            with self.subTest(value=value):
+                self.assertInvalid(PR_PATH, base + f"previous: {value}\n", "previous must be the folder name")
+        self.assertInvalid(PR_PATH, base + "previous: review-001\n", "must not name the request itself")
+
+    def test_previous_not_allowed_for_smoke_test(self):
+        self.assertInvalid(SMOKE_PATH, "task: smoke-test\nprovider: claude\nprevious: other\n",
+                           r"unexpected=\['previous'\]")
+
+    def test_symlinked_previous_report(self):
+        real = self.root / "real.md"
+        real.write_text("x", encoding="utf-8")
+        link = self.root / "ai/requests/pr-11067/review-000/report.md"
+        link.parent.mkdir(parents=True)
+        self.symlink(real, link)
+        self.assertInvalid(PR_PATH, "task: review-pr\nprovider: claude\npr: 11067\nprevious: review-000\n",
+                           "must not be a symbolic link")
 
     # Task, provider and keys
 
@@ -345,7 +389,7 @@ class ValidateRequestTest(unittest.TestCase):
         self.assertEqual(
             output.read_text(encoding="utf-8"),
             "request_dir=ai/requests/smoke-test/copilot\ntask=smoke-test\nprovider=claude\n"
-            "number=18739\nrepository=cgeo/cgeo\ninstructions=\nbranch=\nbase=\n",
+            "number=18739\nrepository=cgeo/cgeo\ninstructions=\nbranch=\nbase=\nprevious_report=\n",
         )
 
     def test_main_writes_multiline_instructions(self):
@@ -362,7 +406,7 @@ class ValidateRequestTest(unittest.TestCase):
         delimiter = lines[start].split("<<", 1)[1]
         self.assertRegex(delimiter, "^EOF_[0-9a-f]{32}$")
         self.assertEqual(lines[start + 1:start + 4], ["line one", "line two", delimiter])
-        self.assertEqual(lines[start + 4:], ["branch=", "base="])
+        self.assertEqual(lines[start + 4:], ["branch=", "base=", "previous_report="])
 
     def test_main_rejects_invalid_request(self):
         self.write(SMOKE_PATH, "task: smoke-test\n")

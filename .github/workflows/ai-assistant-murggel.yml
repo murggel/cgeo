@@ -43,6 +43,7 @@ jobs:
       instructions: ${{ steps.request.outputs.instructions }}
       branch: ${{ steps.request.outputs.branch }}
       base: ${{ steps.request.outputs.base }}
+      previous_report: ${{ steps.request.outputs.previous_report }}
 
     steps:
       - name: Check out request branch
@@ -176,9 +177,11 @@ jobs:
           INSTRUCTIONS: ${{ needs.validate.outputs.instructions }}
           REVIEW_BRANCH: ${{ needs.validate.outputs.branch }}
           REVIEW_BASE: ${{ needs.validate.outputs.base }}
+          PREVIOUS_REPORT: ${{ needs.validate.outputs.previous_report }}
         run: |
           python ai/scripts/prepare_task.py --task "$TASK" --number "$NUMBER" --repository "$REPOSITORY" \
             --instructions="$INSTRUCTIONS" --branch="$REVIEW_BRANCH" --base="$REVIEW_BASE" \
+            --previous-report="$PREVIOUS_REPORT" \
             --output-dir "$RUNNER_TEMP" --github-output "$GITHUB_OUTPUT"
 
       - name: Run Copilot
@@ -266,9 +269,11 @@ jobs:
           INSTRUCTIONS: ${{ needs.validate.outputs.instructions }}
           REVIEW_BRANCH: ${{ needs.validate.outputs.branch }}
           REVIEW_BASE: ${{ needs.validate.outputs.base }}
+          PREVIOUS_REPORT: ${{ needs.validate.outputs.previous_report }}
         run: |
           python ai/scripts/prepare_task.py --task "$TASK" --number "$NUMBER" --repository "$REPOSITORY" \
             --instructions="$INSTRUCTIONS" --branch="$REVIEW_BRANCH" --base="$REVIEW_BASE" \
+            --previous-report="$PREVIOUS_REPORT" \
             --output-dir "$RUNNER_TEMP" --github-output "$GITHUB_OUTPUT"
 
       - name: Run Claude Code

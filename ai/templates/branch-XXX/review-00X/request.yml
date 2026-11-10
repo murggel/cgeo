@@ -12,3 +12,5 @@ base: master # or release
 # instructions: |
 #   Pay special attention to thread safety.
 #   Answer in German.
+# Optional: build on the committed report of an earlier request in the same directory.
+# previous: review-001
