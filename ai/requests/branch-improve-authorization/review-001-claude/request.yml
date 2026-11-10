@@ -1,12 +1,11 @@
 # Fix some issues and improve authorization handling in the app.
 task: review-branch
 provider: claude
-branch: _draft/ai/improve-authorization
+branch: feature/improve-authorization
 base: master # or release
 # Optional: additional instructions that are added to the prompt (max. 4000 characters).
 # They can steer focus, scope or form of the review, but never lift the read-only rules.
 instructions: |
    Pay special attention to correct authorization handling.
    Loss of internet connection should be handled gracefully.
-   Do you find out the known issue with the login flow? 
-   If so, please provide a detailed explanation of the problem and suggest a solution.
+   Please provide a detailed explanation of the problem with the login flow and suggest a solution.
