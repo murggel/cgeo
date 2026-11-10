@@ -1,6 +1,6 @@
 # AI requests for c:geo
 
-This folder lets you ask an AI assistant (Claude Code or GitHub Copilot) to analyze a c:geo issue or review a c:geo pull request.
+This folder lets you ask an AI assistant (Claude Code or GitHub Copilot) to analyze a c:geo issue, review a c:geo pull request, or review one of your branches before you open a pull request.
 You describe the job in a small text file called `request.yml` and push it to the branch `dev/ai-workflows`.
 A few minutes later GitHub adds the AI's answer as `report.md` in the same folder.
 
@@ -58,6 +58,7 @@ Ready-made request files are in [`templates/`](templates/).
 |---|---|---|---|
 | `analyze-issue` | Reads the issue with all comments and the current c:geo source code, then explains the probable cause and a possible fix. | yes | yes |
 | `review-pr` | Reads a pull request (description, changes, existing reviews and comments) and the exact code of the PR, then lists concrete problems. | yes | yes |
+| `review-branch` | Reviews a branch of `murggel/cgeo` that has no pull request yet, against `master` or `release` of `cgeo/cgeo`. Same checks as `review-pr`, plus a draft PR description. | yes | yes |
 | `smoke-test` | Sends a tiny "are you there?" prompt. Use it to check that the setup works. Can optionally copy an issue description into the report. | yes | yes |
 
 ## Where the request goes
@@ -73,6 +74,8 @@ ai/requests/
 │   └── analysis-002-copilot/       ← second analysis, e.g. with the other provider
 ├── pr-11067/
 │   └── review-001/
+├── branch-map-npe/                 ← short description of the branch
+│   └── review-001/
 └── smoke-test/
     ├── copilot/
     └── claude-issue-18739/
@@ -82,6 +85,7 @@ Rules:
 
 - Issue analysis: `ai/requests/issue-<number>[-description]/analysis-NNN[-description]/request.yml`
 - Pull-request review: `ai/requests/pr-<number>[-description]/review-NNN[-description]/request.yml`
+- Branch review: `ai/requests/branch-<description>/review-NNN[-description]/request.yml` (the description is free, the branch name itself goes into `request.yml`)
 - Smoke test: `ai/requests/smoke-test/<name>/request.yml`
 - `NNN` is a three-digit sequence number (`001`, `002`, …). Use a new number for every new request so old reports are never overwritten.
 - The number in the folder name must be the same as the number in `request.yml`.
@@ -98,7 +102,9 @@ Rules:
 | `issue` | `analyze-issue`; optional for `smoke-test` | issue number, e.g. `17573` |
 | `pr` | `review-pr` | pull-request number, e.g. `11067` |
 | `repository` | optional, only for `smoke-test` together with `issue` | `cgeo/cgeo` (default) or `murggel/cgeo` |
-| `instructions` | optional, only for `analyze-issue` and `review-pr` | free text, up to 4000 characters, see [Additional instructions](#additional-instructions) |
+| `branch` | `review-branch` | branch name in `murggel/cgeo`, e.g. `feature/issue-18886-fix-map` |
+| `base` | `review-branch` | `master` or `release` (the branch of `cgeo/cgeo` the later PR would target) |
+| `instructions` | optional, only for `analyze-issue`, `review-pr` and `review-branch` | free text, up to 4000 characters, see [Additional instructions](#additional-instructions) |
 
 Issue analysis and PR review always use `cgeo/cgeo`. Only a smoke test may read an issue from `murggel/cgeo`.
 
@@ -126,6 +132,14 @@ pr: 11067
 instructions: |
   Pay special attention to database migrations and thread safety.
   Ignore the changes in the translation files.
+```
+
+```yaml
+# Review a branch before opening a pull request
+task: review-branch
+provider: claude
+branch: feature/release-issue-18886-NPE-isMapReady
+base: release
 ```
 
 ```yaml
@@ -159,6 +173,7 @@ The file is checked strictly. It is rejected if it has unknown or duplicate keys
 
 1. **Validate.** The workflow looks for the one `request.yml` that was added or changed in your push and checks it. A push must contain exactly one such file. Moving or deleting request files does not start a new AI run.
 2. **Prepare.** It downloads the current c:geo source code (`cgeo/cgeo`, branch `master`) and, for a review, the exact code of the pull request. It also downloads the issue or PR text and comments from GitHub.
+   For a branch review it downloads the branch from `murggel/cgeo` and the chosen base from `cgeo/cgeo`, finds the commit where the branch started (merge base) and builds the diff and the list of commit messages with git.
 3. **Ask the AI.** Claude or Copilot reads these files and writes its answer. It can only use read-only tools.
 4. **Check the answer.** The answer must not be empty, not larger than 512 KiB and must not look like it contains a password or token. Otherwise the run fails and nothing is saved.
 5. **Save.** A separate step commits the answer as `report.md` next to your `request.yml` and pushes it to `dev/ai-workflows`.
@@ -226,6 +241,11 @@ There is no automatic fallback from one provider to the other. You always choose
 | *Invalid request: … must be stored as …* | The folder name does not match the rules in [Where the request goes](#where-the-request-goes). |
 | *refers to issue … but the request specifies …* | The number in the folder name and in `request.yml` differ. |
 | *wrong keys (missing=…, unexpected=…)* | A key is missing, misspelled or not allowed for this task (e.g. `repository` in `analyze-issue`, `instructions` in `smoke-test`). |
+| *branch must be a branch name …* | Check the spelling of `branch`. Only letters, digits, `.`, `_`, `-` and `/` are allowed. |
+| *Cannot fetch … refs/heads/…* (branch review) | The branch does not exist in `murggel/cgeo`. Push it first: `git push -u origin <branch>`. |
+| *has no commits that are not in …* | The branch contains nothing new compared to the base. Check `base` and whether the latest commits are pushed. |
+| *no common ancestor … within 600 commits* | The branch and the base are far apart. Usually the wrong `base` (e.g. `master` instead of `release`); otherwise rebase the branch. |
+| *at most 250 can be reviewed* | The branch has too many commits for one review. Rebase or split it. |
 | *instructions must be text* | Write the instructions as a block: `instructions: |` and the text indented on the following lines. |
 | *Repository secret … is missing* | Add the secret, see [One-time setup](#one-time-setup). |
 | Claude: *error_max_turns* | Claude was stopped at the turn limit (30 for analysis and review) before it finished. Narrow the request or raise `MAX_TURNS` in `scripts/prepare_task.py`. |
@@ -260,7 +280,7 @@ There is no automatic fallback from one provider to the other. You always choose
 - **Least privilege:** the workflow starts with no permissions. Each job gets only what it needs. Only the final save job may write to the repository, and it does not run any AI.
 - **Read-only AI:** Copilot may only use `view`, `grep` and `glob`; shell, write and web tools are denied. Claude may only use `Read`, `Glob` and `Grep`; reading `/proc` (where environment variables are visible) is blocked. Neither gets a GitHub token.
 - **Request instructions:** only the trusted requester writes them. They are passed to the jobs as an environment variable, never pasted into a shell script, and added to the prompt in a clearly marked section that cannot override the read-only rules.
-- **Untrusted input:** issue texts, PR texts, comments and PR code are treated as untrusted. They are marked as such for the AI. Symbolic links are deleted from the downloaded c:geo and PR code before the AI starts.
+- **Untrusted input:** issue texts, PR texts, comments, PR code, and branch code and commit messages are treated as untrusted. They are marked as such for the AI. Symbolic links are deleted from the downloaded c:geo, PR and branch code before the AI starts.
 - **No silent truncation:** issue and PR data are read completely (all pages) and limited to 512 KiB. Too much data makes the run fail instead of hiding parts.
 - **Output check:** the answer is limited to 512 KiB and scanned for tokens (`sk-ant-…`, `ghp_…`, `github_pat_…` and others, plus the actual secret values). If anything matches, nothing is saved.
 - **Safe saving:** the save job writes only into the validated request folder and refuses symbolic links on the way.
@@ -277,7 +297,7 @@ Possible future hardening: if the workflow is ever opened to other users or trig
 |---|---|
 | `.github/workflows/ai-assistant-murggel.yml` | The workflow: validate, one job per provider (`run-copilot`, `run-claude`), save. |
 | `scripts/validate_request.py` | Checks `request.yml`. The **only** place that defines allowed tasks, providers, repositories and folder names. |
-| `scripts/fetch_context.py` | Downloads issue or PR data from the GitHub API (with paging, error handling and size limit). |
+| `scripts/fetch_context.py` | Downloads issue or PR data from the GitHub API (with paging, error handling and size limit) and formats the branch-review context. |
 | `scripts/prepare_task.py` | Prepares the workspace for a task, the same for every provider: c:geo checkout, PR checkout, issue/PR data, removal of symbolic links, and the final prompt (`prompts/<task>.md` plus the request's instructions). |
 | `scripts/finalize_report.py` | Builds `report.md`: header line, Claude's final answer only, size limit, token scan. |
 | `scripts/test_*.py` | Unit tests for the scripts. |

@@ -41,6 +41,8 @@ jobs:
       number: ${{ steps.request.outputs.number }}
       repository: ${{ steps.request.outputs.repository }}
       instructions: ${{ steps.request.outputs.instructions }}
+      branch: ${{ steps.request.outputs.branch }}
+      base: ${{ steps.request.outputs.base }}
 
     steps:
       - name: Check out request branch
@@ -124,7 +126,7 @@ jobs:
           printf '## AI request validated\n\n%s\n' "$result" >> "$GITHUB_STEP_SUMMARY"
 
   run-copilot:
-    name: Run ${{ needs.validate.outputs.task }}${{ needs.validate.outputs.number && format(' {0}#{1}', needs.validate.outputs.repository, needs.validate.outputs.number) || '' }} with GitHub Copilot
+    name: Run ${{ needs.validate.outputs.task }}${{ needs.validate.outputs.number && format(' {0}#{1}', needs.validate.outputs.repository, needs.validate.outputs.number) || '' }}${{ needs.validate.outputs.branch && format(' {0}', needs.validate.outputs.branch) || '' }} with GitHub Copilot
     needs: validate
     if: needs.validate.outputs.provider == 'copilot'
     runs-on: ubuntu-24.04
@@ -172,9 +174,11 @@ jobs:
           REPOSITORY: ${{ needs.validate.outputs.repository }}
           # Passed through the environment, never inlined into the script.
           INSTRUCTIONS: ${{ needs.validate.outputs.instructions }}
+          REVIEW_BRANCH: ${{ needs.validate.outputs.branch }}
+          REVIEW_BASE: ${{ needs.validate.outputs.base }}
         run: |
           python ai/scripts/prepare_task.py --task "$TASK" --number "$NUMBER" --repository "$REPOSITORY" \
-            --instructions="$INSTRUCTIONS" \
+            --instructions="$INSTRUCTIONS" --branch="$REVIEW_BRANCH" --base="$REVIEW_BASE" \
             --output-dir "$RUNNER_TEMP" --github-output "$GITHUB_OUTPUT"
 
       - name: Run Copilot
@@ -223,7 +227,7 @@ jobs:
           retention-days: 3
 
   run-claude:
-    name: Run ${{ needs.validate.outputs.task }}${{ needs.validate.outputs.number && format(' {0}#{1}', needs.validate.outputs.repository, needs.validate.outputs.number) || '' }} with Claude Code
+    name: Run ${{ needs.validate.outputs.task }}${{ needs.validate.outputs.number && format(' {0}#{1}', needs.validate.outputs.repository, needs.validate.outputs.number) || '' }}${{ needs.validate.outputs.branch && format(' {0}', needs.validate.outputs.branch) || '' }} with Claude Code
     needs: validate
     if: needs.validate.outputs.provider == 'claude'
     runs-on: ubuntu-24.04
@@ -260,9 +264,11 @@ jobs:
           REPOSITORY: ${{ needs.validate.outputs.repository }}
           # Passed through the environment, never inlined into the script.
           INSTRUCTIONS: ${{ needs.validate.outputs.instructions }}
+          REVIEW_BRANCH: ${{ needs.validate.outputs.branch }}
+          REVIEW_BASE: ${{ needs.validate.outputs.base }}
         run: |
           python ai/scripts/prepare_task.py --task "$TASK" --number "$NUMBER" --repository "$REPOSITORY" \
-            --instructions="$INSTRUCTIONS" \
+            --instructions="$INSTRUCTIONS" --branch="$REVIEW_BRANCH" --base="$REVIEW_BASE" \
             --output-dir "$RUNNER_TEMP" --github-output "$GITHUB_OUTPUT"
 
       - name: Run Claude Code
@@ -309,7 +315,7 @@ jobs:
           retention-days: 3
 
   publish-report:
-    name: Commit report${{ needs.validate.outputs.number && format(' {0}#{1}', needs.validate.outputs.repository, needs.validate.outputs.number) || '' }}
+    name: Commit report${{ needs.validate.outputs.number && format(' {0}#{1}', needs.validate.outputs.repository, needs.validate.outputs.number) || '' }}${{ needs.validate.outputs.branch && format(' {0}', needs.validate.outputs.branch) || '' }}
     needs:
       - validate
       - run-copilot
@@ -328,6 +334,7 @@ jobs:
       TASK: ${{ needs.validate.outputs.task }}
       PROVIDER: ${{ needs.validate.outputs.provider }}
       NUMBER: ${{ needs.validate.outputs.number }}
+      REVIEW_BRANCH: ${{ needs.validate.outputs.branch }}
 
     steps:
       - name: Check out request branch
@@ -359,6 +366,7 @@ jobs:
           case "$TASK" in
             analyze-issue) message="Add ${PROVIDER^} analysis report for issue #$NUMBER" ;;
             review-pr) message="Add ${PROVIDER^} review report for PR #$NUMBER" ;;
+            review-branch) message="Add ${PROVIDER^} review report for branch $REVIEW_BRANCH" ;;
             *) message="Add ${PROVIDER^} smoke-test report" ;;
           esac
           report_path="$REQUEST_DIR/report.md"

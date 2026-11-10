@@ -30,6 +30,40 @@ class FakeGit:
         return ""
 
 
+MERGE_BASE = "a" * 40
+HEAD = "b" * 40
+
+
+class BranchGit(FakeGit):
+    """FakeGit with the answers that the branch review needs."""
+
+    def __init__(self, merge_base_failures=0, ahead="2"):
+        super().__init__()
+        self.merge_base_failures = merge_base_failures
+        self.ahead = ahead
+
+    def __call__(self, args):
+        if args[2:3] == ["merge-base"]:
+            self.commands.append(args)
+            if self.merge_base_failures:
+                self.merge_base_failures -= 1
+                raise PrepareError("git merge-base failed")
+            return MERGE_BASE
+        if args[2:3] == ["rev-parse"] and args[3] == "refs/review/head":
+            self.commands.append(args)
+            return HEAD
+        if args[2:4] == ["rev-list", "--count"]:
+            self.commands.append(args)
+            return self.ahead if args[4].endswith(HEAD) else "7"
+        if args[2:3] == ["log"]:
+            self.commands.append(args)
+            return "### abc by Me (d1)\n\nFix map"
+        if args[2:3] == ["diff"]:
+            self.commands.append(args)
+            return " A.java | 2 +-" if "--stat=200" in args else "+fixed"
+        return super().__call__(args)
+
+
 def pr_api():
     root = "/repos/cgeo/cgeo/pulls/7"
     return FakeApi(
@@ -51,11 +85,11 @@ class PrepareTest(unittest.TestCase):
         self.workspace.mkdir()
         self.output_dir.mkdir()
 
-    def prepare(self, task, number, api, git=None, repository="cgeo/cgeo", instructions=""):
+    def prepare(self, task, number, api, git=None, repository="cgeo/cgeo", instructions="", **kwargs):
         git = git or FakeGit()
         with redirect_stdout(io.StringIO()):
             outputs = prepare(task, number, repository, self.workspace, self.output_dir, api, git,
-                              instructions=instructions)
+                              instructions=instructions, **kwargs)
         return outputs, git
 
     def test_analyze_issue(self):
@@ -155,6 +189,57 @@ class PrepareTest(unittest.TestCase):
     def test_missing_prompt(self):
         with self.assertRaisesRegex(PrepareError, "cannot read prompt"):
             build_prompt("analyze-issue", "", self.workspace)
+
+    def test_review_branch(self):
+        git = BranchGit(merge_base_failures=2)
+        outputs, git = self.prepare("review-branch", None, FakeApi(), git=git,
+                                    branch="feature/x", base="master", instructions="Be strict.")
+        self.assertEqual(
+            outputs["header"],
+            f"task: review-branch | upstream: cgeo/cgeo@head-of-upstream | "
+            f"branch: murggel/cgeo:feature/x@{HEAD} | base: master@{MERGE_BASE} | instructions: yes",
+        )
+        upstream = str(self.workspace / "upstream")
+        fork = "https://github.com/murggel/cgeo.git"
+        fetches = [c[3:] for c in git.commands if c[2:3] == ["fetch"]]
+        base_ref = "+refs/heads/master:refs/review/base"
+        head_ref = "+refs/heads/feature/x:refs/review/head"
+        deepen = [["--quiet", "--no-tags", "--deepen=100", "origin", base_ref],
+                  ["--quiet", "--no-tags", "--deepen=100", fork, head_ref]]
+        # Two failed merge-base attempts deepen the history twice.
+        self.assertEqual(fetches, [
+            ["--quiet", "--no-tags", "--depth=100", "origin", base_ref],
+            ["--quiet", "--no-tags", "--depth=100", fork, head_ref],
+            *deepen, *deepen,
+        ])
+        self.assertIn(["-C", upstream, "worktree", "add", "--quiet", "--detach",
+                       str(self.workspace / "branch-head"), HEAD], git.commands)
+        self.assertIn(["-C", upstream, "diff", "--no-color", "--find-renames", MERGE_BASE, HEAD], git.commands)
+        context = (self.workspace / "ai-context" / "branch-context.md").read_text(encoding="utf-8")
+        for text in ("+fixed", " A.java | 2 +-", "Fix map", "Commits on the branch: 2",
+                     "Commits on the base since the merge base: 7"):
+            self.assertIn(text, context)
+        self.assertTrue((self.workspace / "branch-head" / "Main.java").is_file())
+        prompt = Path(outputs["prompt_file"]).read_text(encoding="utf-8")
+        self.assertTrue(prompt.startswith("c:geo branch review"))
+        self.assertIn("Be strict.", prompt)
+
+    def test_review_branch_without_common_ancestor(self):
+        with self.assertRaisesRegex(PrepareError, "no common ancestor .* within 600 commits"):
+            self.prepare("review-branch", None, FakeApi(), git=BranchGit(merge_base_failures=99),
+                         branch="feature/x", base="release")
+
+    def test_review_branch_limits(self):
+        for ahead, message in (("0", "has no commits"), ("251", "at most 250")):
+            with self.subTest(ahead=ahead), self.assertRaisesRegex(PrepareError, message):
+                shutil.rmtree(self.workspace)
+                self.workspace.mkdir()
+                self.prepare("review-branch", None, FakeApi(), git=BranchGit(ahead=ahead),
+                             branch="feature/x", base="master")
+
+    def test_review_branch_needs_branch_and_base(self):
+        with self.assertRaisesRegex(PrepareError, "needs a branch and a base"):
+            self.prepare("review-branch", None, FakeApi(), branch="feature/x")
 
     def test_number_required(self):
         for task in ("analyze-issue", "review-pr"):

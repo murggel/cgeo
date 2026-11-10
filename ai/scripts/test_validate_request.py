@@ -11,6 +11,7 @@ from validate_request import Request, main, validate_request
 ISSUE_PATH = "ai/requests/issue-17573/analysis-001/request.yml"
 PR_PATH = "ai/requests/pr-11067/review-001/request.yml"
 SMOKE_PATH = "ai/requests/smoke-test/copilot/request.yml"
+BRANCH_PATH = "ai/requests/branch-map-fix/review-001/request.yml"
 
 
 class ValidateRequestTest(unittest.TestCase):
@@ -93,6 +94,8 @@ class ValidateRequestTest(unittest.TestCase):
                 "number": "11067",
                 "repository": "cgeo/cgeo",
                 "instructions": "",
+                "branch": "",
+                "base": "",
             },
         )
 
@@ -103,6 +106,45 @@ class ValidateRequestTest(unittest.TestCase):
         self.assertIn("Additional instructions: 35 characters", request.summary())
         request = self.validate(PR_PATH, "task: review-pr\nprovider: copilot\npr: 11067\n" + text)
         self.assertEqual(request.outputs()["instructions"], "Focus on the map.\nAnswer in German.")
+
+    def test_review_branch(self):
+        request = self.validate(
+            BRANCH_PATH,
+            "task: review-branch\nprovider: claude\nbranch: feature/issue-1-fix.map_2\nbase: release\n"
+            "instructions: |\n  Focus on threading.\n",
+        )
+        self.assertEqual((request.number, request.repository), (None, "cgeo/cgeo"))
+        self.assertEqual(request.outputs()["branch"], "feature/issue-1-fix.map_2")
+        self.assertEqual(request.outputs()["base"], "release")
+        self.assertEqual(request.outputs()["number"], "")
+        self.assertIn("- Branch: feature/issue-1-fix.map_2 (base: cgeo/cgeo:release)", request.summary())
+
+    def test_review_branch_keys(self):
+        base = "task: review-branch\nprovider: copilot\n"
+        self.assertInvalid(BRANCH_PATH, base + "branch: a\n", r"missing=\['base'\]")
+        self.assertInvalid(BRANCH_PATH, base + "base: master\n", r"missing=\['branch'\]")
+        self.assertInvalid(BRANCH_PATH, base + "branch: a\nbase: master\nissue: 1\n", r"unexpected=\['issue'\]")
+        self.assertInvalid(BRANCH_PATH, base + "branch: a\nbase: develop\n", "base must be one of")
+        self.assertInvalid(BRANCH_PATH, base + "branch: a\nbase: 1\n", "base must be one of")
+
+    def test_invalid_branch_names(self):
+        for branch in ("-x", "a..b", "a//b", "a/.b", "a/", "a.", "a.lock", "a b", "a~1", "a:b",
+                       "a@{1}", "'$(id)'", "12", "x" * 201, "[a]"):
+            with self.subTest(branch=branch):
+                self.assertInvalid(
+                    BRANCH_PATH,
+                    f"task: review-branch\nprovider: claude\nbranch: {branch}\nbase: master\n",
+                    "branch must be a branch name",
+                )
+
+    def test_review_branch_directory_names(self):
+        text = "task: review-branch\nprovider: claude\nbranch: a\nbase: master\n"
+        self.assertEqual(self.validate("ai/requests/branch-a/review-002-second/request.yml", text).branch, "a")
+        for path in ("ai/requests/branch/review-001/request.yml",
+                     "ai/requests/pr-1/review-001/request.yml",
+                     "ai/requests/branch-a/analysis-001/request.yml"):
+            with self.subTest(path=path):
+                self.assertInvalid(path, text, "must be stored as")
 
     def test_instructions_not_allowed_for_smoke_test(self):
         self.assertInvalid(SMOKE_PATH, "task: smoke-test\nprovider: claude\ninstructions: hi\n",
@@ -296,7 +338,7 @@ class ValidateRequestTest(unittest.TestCase):
         self.assertEqual(
             output.read_text(encoding="utf-8"),
             "request_dir=ai/requests/smoke-test/copilot\ntask=smoke-test\nprovider=claude\n"
-            "number=18739\nrepository=cgeo/cgeo\ninstructions=\n",
+            "number=18739\nrepository=cgeo/cgeo\ninstructions=\nbranch=\nbase=\n",
         )
 
     def test_main_writes_multiline_instructions(self):
@@ -312,7 +354,8 @@ class ValidateRequestTest(unittest.TestCase):
         start = next(i for i, line in enumerate(lines) if line.startswith("instructions<<"))
         delimiter = lines[start].split("<<", 1)[1]
         self.assertRegex(delimiter, "^EOF_[0-9a-f]{32}$")
-        self.assertEqual(lines[start + 1:], ["line one", "line two", delimiter])
+        self.assertEqual(lines[start + 1:start + 4], ["line one", "line two", delimiter])
+        self.assertEqual(lines[start + 4:], ["branch=", "base="])
 
     def test_main_rejects_invalid_request(self):
         self.write(SMOKE_PATH, "task: smoke-test\n")

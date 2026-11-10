@@ -1,0 +1,14 @@
+# Copy this template to ai/requests/branch-<description>/review-NNN/request.yml,
+# e.g. ai/requests/branch-map-npe/review-001/request.yml.
+# Reviews a branch of murggel/cgeo that has no pull request yet, against a base branch of cgeo/cgeo.
+# Push the branch to murggel/cgeo first. Use a new sequence number for each separate review.
+# Change provider to "copilot" if you want to use GitHub Copilot instead.
+task: review-branch
+provider: claude
+branch: feature/issue-17573-fix-map
+base: master # or release
+# Optional: additional instructions that are added to the prompt (max. 4000 characters).
+# They can steer focus, scope or form of the review, but never lift the read-only rules.
+# instructions: |
+#   Pay special attention to thread safety.
+#   Answer in German.

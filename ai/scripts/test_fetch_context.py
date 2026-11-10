@@ -7,7 +7,9 @@ from pathlib import Path
 from unittest import mock
 
 import fetch_context
-from fetch_context import ContextError, fetch_all, github_fetch, issue_context, main, pr_context
+from fetch_context import (
+    ContextError, branch_context, fetch_all, github_fetch, issue_context, main, pr_context,
+)
 
 
 class FakeApi:
@@ -136,6 +138,21 @@ class PrContextTest(unittest.TestCase):
         self.assertIn("_No review text._", text)
         self.assertIn("### rev on src/F1.java:12", text)
         self.assertIn("thanks", text)
+
+
+class BranchContextTest(unittest.TestCase):
+    def test_branch_context(self):
+        text = branch_context("cgeo/cgeo", "master", "murggel/cgeo", "feature/x", "a" * 40, "b" * 40,
+                              2, 5, "### abc by Me (d1)\n\nFix map", " A.java | 2 +-",
+                              "+ text with ``` inside")
+        self.assertIn("# Branch murggel/cgeo:feature/x", text)
+        self.assertIn("- Base: cgeo/cgeo:master", text)
+        self.assertIn(f"- Merge base: {'a' * 40}", text)
+        self.assertIn("- Commits on the branch: 2", text)
+        self.assertIn("- Commits on the base since the merge base: 5", text)
+        self.assertIn("### abc by Me (d1)\n\nFix map", text)
+        self.assertIn(" A.java | 2 +-", text)
+        self.assertIn("````diff\n+ text with ``` inside\n````", text)
 
 
 class GithubFetchTest(unittest.TestCase):

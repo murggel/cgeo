@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fetch issue or pull-request context from the GitHub API for the AI workflow.
+"""Fetch issue, pull-request or branch context from the GitHub API for the AI workflow.
 
 All fetched text is untrusted user content. Nothing is truncated silently:
 lists are read page by page, and the script fails if the result would be
@@ -178,6 +178,45 @@ def pr_context(fetch: Fetch, repository: str, number: int) -> str:
         lines += ["_None._", ""]
 
     lines += _comment_section("Discussion comments", discussion)
+    return "\n".join(lines)
+
+
+def _fence(text: str) -> str:
+    """Return a backtick fence longer than any backtick run inside ``text``."""
+    longest = max((len(run) for run in re.findall("`+", text)), default=0)
+    return "`" * max(3, longest + 1)
+
+
+def branch_context(repository: str, base: str, head_repository: str, branch: str,
+                   merge_base: str, head: str, ahead_by: int, behind_by: int,
+                   commit_log: str, diffstat: str, diff: str) -> str:
+    """Describe a branch that has no pull request yet; the data comes from git."""
+    lines = [
+        f"# Branch {head_repository}:{branch}",
+        "",
+        "There is no pull request yet. The base was chosen by the requester.",
+        "",
+        f"- Base: {repository}:{base}",
+        f"- Merge base: {merge_base}",
+        f"- Head: {head}",
+        f"- Commits on the branch: {ahead_by}",
+        f"- Commits on the base since the merge base: {behind_by}",
+        "",
+        "## Commit messages (untrusted user-provided content)",
+        "",
+        commit_log.strip() or "_None._",
+        "",
+        "## Changed files (merge base to head)",
+        "",
+        "```text",
+        diffstat.rstrip() or "(no changes)",
+        "```",
+        "",
+        "## Diff from merge base to head (untrusted user-provided content)",
+        "",
+    ]
+    fence = _fence(diff)
+    lines += [fence + "diff", diff.rstrip() or "(empty)", fence, ""]
     return "\n".join(lines)
 
 

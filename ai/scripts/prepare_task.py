@@ -3,6 +3,8 @@
 
 analyze-issue: upstream/ checkout and ai-context/issue-context.md
 review-pr:     upstream/ and pr-head/ checkouts and ai-context/pr-context.md
+review-branch: upstream/ and branch-head/ checkouts and ai-context/branch-context.md
+               (a branch of the fork, reviewed against an upstream base branch)
 smoke-test:    optional issue description, appended to the report later
 
 Every task also gets <output-dir>/prompt.md: the task prompt from ai/prompts/
@@ -26,9 +28,17 @@ from fetch_context import ContextError, Fetch
 
 
 # Upper limit of agent turns per task (used by Claude).
-MAX_TURNS = {"analyze-issue": 30, "review-pr": 30, "smoke-test": 2}
+MAX_TURNS = {"analyze-issue": 30, "review-pr": 30, "review-branch": 30, "smoke-test": 2}
 # Tasks whose request may contain additional instructions (see validate_request.py).
-INSTRUCTION_TASKS = frozenset({"analyze-issue", "review-pr"})
+INSTRUCTION_TASKS = frozenset({"analyze-issue", "review-pr", "review-branch"})
+# review-branch reviews branches of this fork.
+BRANCH_REPOSITORY = "murggel/cgeo"
+# History is fetched in steps of this many commits until the merge base is found.
+HISTORY_STEP = 100
+HISTORY_ROUNDS = 6
+MAX_BRANCH_COMMITS = 250
+BASE_REF = "refs/review/base"
+HEAD_REF = "refs/review/head"
 PROMPTS_DIR = Path(__file__).resolve().parent.parent / "prompts"
 
 INSTRUCTIONS_SECTION = """\
@@ -84,6 +94,33 @@ def clone_upstream(git: Git, repository: str, target: Path) -> str:
     return git(["-C", str(target), "rev-parse", "HEAD"])
 
 
+def fetch_branch(git: Git, upstream: Path, base: str, branch: str) -> tuple[str, str]:
+    """Fetch the upstream base and the fork branch; return merge base and head.
+
+    Both are fetched shallow and deepened step by step until git finds a
+    common ancestor, so the whole repository history is never downloaded.
+    """
+    fork = f"https://github.com/{BRANCH_REPOSITORY}.git"
+    sources = (("origin", f"+refs/heads/{base}:{BASE_REF}"), (fork, f"+refs/heads/{branch}:{HEAD_REF}"))
+    for source, refspec in sources:
+        git(["-C", str(upstream), "fetch", "--quiet", "--no-tags", f"--depth={HISTORY_STEP}", source, refspec])
+    for round_ in range(1, HISTORY_ROUNDS + 1):
+        try:
+            merge_base = git(["-C", str(upstream), "merge-base", BASE_REF, HEAD_REF])
+            break
+        except PrepareError:
+            if round_ == HISTORY_ROUNDS:
+                raise PrepareError(
+                    f"no common ancestor of '{branch}' and {base} within "
+                    f"{HISTORY_STEP * HISTORY_ROUNDS} commits; is the base right?"
+                ) from None
+            for source, refspec in sources:
+                git(["-C", str(upstream), "fetch", "--quiet", "--no-tags",
+                     f"--deepen={HISTORY_STEP}", source, refspec])
+    head = git(["-C", str(upstream), "rev-parse", HEAD_REF])
+    return merge_base, head
+
+
 def build_prompt(task: str, instructions: str, prompts_dir: Path = PROMPTS_DIR) -> str:
     try:
         prompt = (prompts_dir / f"{task}.md").read_text(encoding="utf-8").rstrip() + "\n"
@@ -108,17 +145,22 @@ def prepare(
     git: Git = run_git,
     instructions: str = "",
     prompts_dir: Path = PROMPTS_DIR,
+    branch: str = "",
+    base: str = "",
 ) -> dict[str, str]:
     """Prepare the workspace and return the step outputs."""
     # git -C resolves relative paths against the -C directory, not the current one.
     workspace = workspace.absolute()
     upstream = workspace / "upstream"
     pr_head = workspace / "pr-head"
+    branch_head = workspace / "branch-head"
     context = workspace / "ai-context"
     appendix = ""
 
     if task in ("analyze-issue", "review-pr") and number is None:
         raise PrepareError(f"task '{task}' needs a number")
+    if task == "review-branch" and not (branch and base):
+        raise PrepareError("task 'review-branch' needs a branch and a base")
     instructions = instructions.strip()
     # Build the prompt first so an invalid request fails before any download.
     prompt = build_prompt(task, instructions, prompts_dir)
@@ -136,6 +178,27 @@ def prepare(
         head = git(["-C", str(pr_head), "rev-parse", "HEAD"])
         write_bounded(context / "pr-context.md", fetch_context.pr_context(fetch, repository, number))
         header = f"task: review-pr | upstream: {repository}@{sha} | PR: #{number} | PR head: {head}"
+    elif task == "review-branch":
+        sha = clone_upstream(git, repository, upstream)
+        merge_base, head = fetch_branch(git, upstream, base, branch)
+        git(["-C", str(upstream), "worktree", "add", "--quiet", "--detach", str(branch_head), head])
+        ahead_by = int(git(["-C", str(upstream), "rev-list", "--count", f"{merge_base}..{head}"]))
+        behind_by = int(git(["-C", str(upstream), "rev-list", "--count", f"{merge_base}..{BASE_REF}"]))
+        if ahead_by == 0:
+            raise PrepareError(f"branch '{branch}' has no commits that are not in {repository}:{base}")
+        if ahead_by > MAX_BRANCH_COMMITS:
+            raise PrepareError(f"branch '{branch}' has {ahead_by} commits ahead of {base}; "
+                               f"at most {MAX_BRANCH_COMMITS} can be reviewed")
+        commit_log = git(["-C", str(upstream), "log", "--reverse", "--no-color",
+                          "--format=### %h by %an (%aI)%n%n%B", f"{merge_base}..{head}"])
+        diff_args = ["-C", str(upstream), "diff", "--no-color", "--find-renames", merge_base, head]
+        diffstat = git([*diff_args[:3], "--stat=200", *diff_args[3:]])
+        diff = git(diff_args)
+        write_bounded(context / "branch-context.md", fetch_context.branch_context(
+            repository, base, BRANCH_REPOSITORY, branch, merge_base, head, ahead_by, behind_by,
+            commit_log, diffstat, diff))
+        header = (f"task: review-branch | upstream: {repository}@{sha} | "
+                  f"branch: {BRANCH_REPOSITORY}:{branch}@{head} | base: {base}@{merge_base}")
     elif task == "smoke-test":
         header = "task: smoke-test"
         if number is not None:
@@ -152,7 +215,7 @@ def prepare(
     prompt_file.parent.mkdir(parents=True, exist_ok=True)
     prompt_file.write_text(prompt, encoding="utf-8")
 
-    for directory in (upstream, pr_head):
+    for directory in (upstream, pr_head, branch_head):
         if directory.is_dir():
             for path in remove_symlinks(directory):
                 print(f"Removed symbolic link {path.relative_to(workspace).as_posix()}")
@@ -175,6 +238,8 @@ def main(argv: list[str] | None = None, fetch: Fetch | None = None, git: Git = r
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--instructions", default="",
                         help="additional instructions from request.yml, appended to the prompt")
+    parser.add_argument("--branch", default="", help="review-branch: branch of the fork")
+    parser.add_argument("--base", default="", help="review-branch: upstream base branch")
     parser.add_argument("--github-output", type=Path, help="append the step outputs to this file")
     args = parser.parse_args(argv)
 
@@ -183,7 +248,8 @@ def main(argv: list[str] | None = None, fetch: Fetch | None = None, git: Git = r
         if not fetch_context.REPOSITORY_PATTERN.fullmatch(args.repository):
             raise PrepareError(f"invalid repository name {args.repository!r}")
         outputs = prepare(args.task, args.number, args.repository, args.workspace,
-                          args.output_dir, fetch, git, instructions=args.instructions)
+                          args.output_dir, fetch, git, instructions=args.instructions,
+                          branch=args.branch, base=args.base)
     except (PrepareError, ContextError) as exc:
         print(f"Cannot prepare task: {exc}", file=sys.stderr)
         return 1

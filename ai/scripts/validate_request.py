@@ -6,7 +6,8 @@ repositories and directory names are allowed. The workflow only consumes
 its outputs and does not repeat these rules.
 
 Every request lives at ai/requests/<subject>/<request-id>/request.yml.
-Analyses and reviews may carry free-text ``instructions`` that are added to
+Branch reviews name a branch of the fork and a base branch of the upstream
+repository. Analyses and reviews may carry free-text ``instructions`` that are added to
 the prompt; the workflow passes them on unchanged.
 """
 
@@ -28,6 +29,9 @@ MAX_NUMBER = 999_999_999
 MAX_INSTRUCTIONS_CHARS = 4_000
 # Tabs and line breaks are fine; other control characters are not.
 FORBIDDEN_CHARACTERS = re.compile("[\x00-\x08\x0b-\x1f\x7f]")
+# review-branch: branch names of the fork, restricted to safe characters.
+BRANCH_PATTERN = re.compile(r"[A-Za-z0-9][A-Za-z0-9._/-]{0,199}")
+ALLOWED_BASES = frozenset({"master", "release"})
 DEFAULT_REPOSITORY = "cgeo/cgeo"
 # Only smoke tests may choose a repository; all other tasks use the default.
 ALLOWED_REPOSITORIES = frozenset({"cgeo/cgeo", "murggel/cgeo"})
@@ -64,6 +68,14 @@ TASKS = {
         request_id=re.compile(rf"review(?:-pr)?-[0-9]{{3}}{DESCRIPTION}"),
         layout="ai/requests/(pr|issue)-<number>[-description]/review[-pr]-NNN[-description]/request.yml",
     ),
+    "review-branch": TaskRule(
+        providers=frozenset({"claude", "copilot"}),
+        required_keys=frozenset({"branch", "base"}),
+        optional_keys=frozenset({"instructions"}),
+        subject=re.compile(rf"branch-[A-Za-z0-9_-]+"),
+        request_id=re.compile(rf"review-[0-9]{{3}}{DESCRIPTION}"),
+        layout="ai/requests/branch-<description>/review-NNN[-description]/request.yml",
+    ),
     "smoke-test": TaskRule(
         providers=frozenset({"claude", "copilot"}),
         required_keys=frozenset(),
@@ -83,6 +95,8 @@ class Request:
     number: int | None
     repository: str
     instructions: str = ""
+    branch: str = ""
+    base: str = ""
 
     def outputs(self) -> dict[str, str]:
         return {
@@ -92,12 +106,16 @@ class Request:
             "number": "" if self.number is None else str(self.number),
             "repository": self.repository,
             "instructions": self.instructions,
+            "branch": self.branch,
+            "base": self.base,
         }
 
     def summary(self) -> str:
         lines = [f"- Task: {self.task}", f"- Provider: {self.provider}"]
         if self.task == "review-pr":
             lines.append(f"- Pull request: {self.repository}#{self.number}")
+        elif self.task == "review-branch":
+            lines.append(f"- Branch: {self.branch} (base: {self.repository}:{self.base})")
         elif self.number is not None:
             lines.append(f"- Issue: {self.repository}#{self.number}")
         if self.instructions:
@@ -198,6 +216,25 @@ def _instructions(request: dict[str, Any]) -> str:
     return text
 
 
+def _branch(request: dict[str, Any]) -> tuple[str, str]:
+    if "branch" not in request:
+        return "", ""
+    branch, base = request["branch"], request["base"]
+    if (
+        not isinstance(branch, str)
+        or not BRANCH_PATTERN.fullmatch(branch)
+        or ".." in branch or "//" in branch or "/." in branch or "@{" in branch
+        or branch.endswith(("/", ".", ".lock"))
+    ):
+        raise ValueError(
+            "branch must be a branch name of A-Z, a-z, 0-9, '.', '_', '-' and '/' "
+            "(e.g. feature/issue-123-fix-map)"
+        )
+    if not isinstance(base, str) or base not in ALLOWED_BASES:
+        raise ValueError(f"base must be one of: {', '.join(sorted(ALLOWED_BASES))}")
+    return branch, base
+
+
 def write_github_output(path: Path, outputs: dict[str, str]) -> None:
     """Append outputs to $GITHUB_OUTPUT; multi-line values use a random delimiter."""
     with path.open("a", encoding="utf-8") as stream:
@@ -257,7 +294,8 @@ def validate_request(request_path: str | PurePosixPath, root: Path = Path(".")) 
             f"but the request specifies {number_key} {number}"
         )
 
-    return Request(path, task, provider, number, repository, _instructions(request))
+    branch, base = _branch(request)
+    return Request(path, task, provider, number, repository, _instructions(request), branch, base)
 
 
 def main(argv: list[str] | None = None) -> int:
