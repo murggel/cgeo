@@ -77,10 +77,10 @@ public abstract class TokenAuthorizationActivity extends AbstractActivity {
                     String errMsg = activity.getErrAuthInitialize();
                     errMsg += msg.obj != null ? '\n' + msg.obj.toString() : "";
                     activity.showToast(errMsg);
-                    startButton.setText(activity.getAuthStart());
+                    activity.setStartButtonText(activity.getAuthStart());
                 } else {
                     activity.showToast(activity.getErrAuthProcess());
-                    startButton.setText(activity.getAuthStart());
+                    activity.setStartButtonText(activity.getAuthStart());
                 }
             }
         }
@@ -115,12 +115,9 @@ public abstract class TokenAuthorizationActivity extends AbstractActivity {
             binding.register.setOnClickListener(new RegisterListener());
         }
 
-        final String buttonText = StringUtils.isBlank(getToken()) ? getAuthStart() : getAuthAgain();
-        binding.start.setText(buttonText);
-
         binding.auth1.setText(getAuthExplainShort());
-        binding.auth2.setText(getAuthExplainLong(buttonText));
         binding.auth3.setText(getAuthRegisterExplain());
+        setStartButtonText(StringUtils.isBlank(getToken()) ? getAuthStart() : getAuthAgain());
 
         final TextWatcher enableStartButtonWatcher = ViewUtils.createSimpleWatcher(s -> enableStartButtonIfReady());
         binding.username.addTextChangedListener(enableStartButtonWatcher);
@@ -273,6 +270,12 @@ public abstract class TokenAuthorizationActivity extends AbstractActivity {
 
     protected String getAuthDialogWait() {
         return LocalizationUtils.getString(R.string.auth_dialog_waiting, getAuthTitle());
+    }
+
+    /** sets the start button text and keeps the explanation referring to the button in sync */
+    private void setStartButtonText(final String buttonText) {
+        binding.start.setText(buttonText);
+        binding.auth2.setText(getAuthExplainLong(buttonText));
     }
 
     protected String getAuthExplainShort() {

@@ -90,15 +90,15 @@ public abstract class OAuthAuthorizationActivity extends AbstractActivity {
                 startButton.setEnabled(true);
 
                 if (msg.what == STATUS_SUCCESS) {
-                    startButton.setText(activity.getAuthAgain());
+                    activity.setStartButtonText(activity.getAuthAgain());
                 } else if (msg.what == STATUS_ERROR_EXT_MSG) {
                     String errMsg = activity.getErrAuthInitialize();
                     errMsg += msg.obj != null ? "\n" + msg.obj : "";
                     activity.showToast(errMsg);
-                    startButton.setText(activity.getAuthStart());
+                    activity.setStartButtonText(activity.getAuthStart());
                 } else {
                     activity.showToast(activity.getErrAuthInitialize());
-                    startButton.setText(activity.getAuthStart());
+                    activity.setStartButtonText(activity.getAuthStart());
                 }
             }
         }
@@ -121,7 +121,7 @@ public abstract class OAuthAuthorizationActivity extends AbstractActivity {
                     activity.finish();
                 } else {
                     activity.showToast(activity.getErrAuthProcess());
-                    activity.binding.start.setText(activity.getAuthStart());
+                    activity.setStartButtonText(activity.getAuthStart());
                 }
             }
         }
@@ -173,10 +173,15 @@ public abstract class OAuthAuthorizationActivity extends AbstractActivity {
             // already have temporary tokens, continue from pin
             buttonText = getAuthAgain();
         }
-        binding.start.setText(buttonText);
         binding.auth1.setText(getAuthExplainShort());
-        binding.auth2.setText(getAuthExplainLong(buttonText));
         binding.auth3.setText(getAuthRegisterExplain());
+        setStartButtonText(buttonText);
+    }
+
+    /** sets the start button text and keeps the explanation referring to the button in sync */
+    private void setStartButtonText(final String buttonText) {
+        binding.start.setText(buttonText);
+        binding.auth2.setText(getAuthExplainLong(buttonText));
     }
 
     @Override
