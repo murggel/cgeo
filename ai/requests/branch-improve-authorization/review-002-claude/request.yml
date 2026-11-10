@@ -1,0 +1,15 @@
+# Follow-up review: fix some issues and improve authorization handling in the app.
+task: review-branch
+provider: claude
+branch: feature/improve-authorization
+base: master # or release
+# Optional: additional instructions that are added to the prompt (max. 4000 characters).
+# They can steer focus, scope or form of the review, but never lift the read-only rules.
+instructions: |
+   This is a follow-up review. The branch has changed since the previous review (it may have been rebased).
+   For every finding of the previous report, state whether it is fixed, partly fixed or still open, with a short reason.
+   Then review the new and changed commits for new issues.
+   Pay special attention to correct authorization handling.
+   Loss of internet connection should be handled gracefully.
+# Optional: build on the committed report of an earlier request in the same directory.
+previous: review-001-claude
