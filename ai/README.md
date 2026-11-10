@@ -50,7 +50,14 @@ Example: let Claude analyze issue 17573.
 
    The answer is now in `ai/requests/issue-17573/analysis-001/report.md`.
 
-Ready-made request files are in [`templates/`](templates/).
+Ready-made request files are in [`templates/`](templates/). They use the same folder layout as `ai/requests/`:
+
+- Issue analysis: [`templates/issue-XXX/analysis-00X/`](templates/issue-XXX/analysis-00X/request.yml)
+- Pull-request review: [`templates/pr-XXX/review-00X/`](templates/pr-XXX/review-00X/request.yml)
+- Branch review: [`templates/branch-XXX/review-00X/`](templates/branch-XXX/review-00X/request.yml)
+- Smoke test: [`templates/smoke-test/XXX/`](templates/smoke-test/XXX/request.yml)
+
+Copy the folder you need to `ai/requests/` and replace `XXX` and `00X` in the folder names as described in [Where the request goes](#where-the-request-goes).
 
 ## What you can ask for
 
@@ -303,7 +310,7 @@ Possible future hardening: if the workflow is ever opened to other users or trig
 | `scripts/test_*.py` | Unit tests for the scripts. |
 | `scripts/requirements.txt` | Python dependencies with hashes. |
 | `prompts/`, `skills/` | Instructions for the AI, shared by both providers. |
-| `templates/` | Example request files. |
+| `templates/` | Example request files, in the same folder layout as `requests/`. |
 
 ### Adding a task or provider
 
