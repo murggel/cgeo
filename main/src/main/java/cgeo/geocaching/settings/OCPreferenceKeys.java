@@ -37,34 +37,25 @@ public enum OCPreferenceKeys {
     private static final SparseArray<OCPreferenceKeys> FIND_BY_ISACTIVE_ID;
     private static final Map<String, OCPreferenceKeys> FIND_BY_ISACTIVE_KEY;
     private static final SparseArray<OCPreferenceKeys> FIND_BY_AUTH_PREF_ID;
-    private static final Map<String, OCPreferenceKeys> FIND_BY_AUTH_PREF_KEY;
     private static final Map<String, OCPreferenceKeys> FIND_BY_PREF_SCREEN_KEY;
 
     static {
         FIND_BY_ISACTIVE_ID = new SparseArray<>(values().length);
         FIND_BY_AUTH_PREF_ID = new SparseArray<>(values().length);
         final Map<String, OCPreferenceKeys> byIsactiveKey = new HashMap<>();
-        final Map<String, OCPreferenceKeys> byAuthPrefKey = new HashMap<>();
         final Map<String, OCPreferenceKeys> byPrefScreenKey = new HashMap<>();
         for (final OCPreferenceKeys key : values()) {
             FIND_BY_ISACTIVE_ID.put(key.isActivePrefId, key);
             FIND_BY_AUTH_PREF_ID.put(key.authPrefId, key);
             byIsactiveKey.put(LocalizationUtils.getPlainString(key.isActivePrefId), key);
-            byAuthPrefKey.put(LocalizationUtils.getPlainString(key.authPrefId), key);
             byPrefScreenKey.put(LocalizationUtils.getPlainString(key.prefScreenId), key);
         }
         FIND_BY_ISACTIVE_KEY = Collections.unmodifiableMap(byIsactiveKey);
-        FIND_BY_AUTH_PREF_KEY = Collections.unmodifiableMap(byAuthPrefKey);
         FIND_BY_PREF_SCREEN_KEY = Collections.unmodifiableMap(byPrefScreenKey);
     }
 
     public static OCPreferenceKeys getByAuthId(final int authPrefId) {
         return FIND_BY_AUTH_PREF_ID.get(authPrefId);
-    }
-
-    @Nullable
-    public static OCPreferenceKeys getByAuthKey(@Nullable final String authPrefKey) {
-        return FIND_BY_AUTH_PREF_KEY.get(authPrefKey);
     }
 
     @Nullable

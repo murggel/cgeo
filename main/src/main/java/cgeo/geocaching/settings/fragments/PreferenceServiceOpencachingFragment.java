@@ -14,10 +14,12 @@ import androidx.preference.PreferenceFragmentCompat;
 import org.apache.commons.lang3.Strings;
 
 /**
- * Settings screen for all opencaching based services. The site is given as fragment argument.
+ * Settings screen for all opencaching based services. The site is given as fragment argument,
+ * either by {@link #newInstance} or by an {@code <extra android:name="ocSite">} of the opening preference.
  */
 public class PreferenceServiceOpencachingFragment extends PreferenceFragmentCompat {
 
+    // must match the extra name used in preferences_services.xml
     private static final String ARG_SITE = "ocSite";
 
     public static PreferenceServiceOpencachingFragment newInstance(@NonNull final OCPreferenceKeys site) {
@@ -28,7 +30,7 @@ public class PreferenceServiceOpencachingFragment extends PreferenceFragmentComp
         return fragment;
     }
 
-    public static void putSite(@NonNull final Bundle args, @NonNull final OCPreferenceKeys site) {
+    private static void putSite(@NonNull final Bundle args, @NonNull final OCPreferenceKeys site) {
         args.putString(ARG_SITE, site.name());
     }
 

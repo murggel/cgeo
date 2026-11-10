@@ -30,42 +30,54 @@
             android:key="@string/pref_fakekey_ocde_authorization"
             app:fragment="cgeo.geocaching.settings.fragments.PreferenceServiceOpencachingFragment"
             app:title="@string/init_oc"
-            app:iconSpaceReserved="false" />
+            app:iconSpaceReserved="false">
+            <extra android:name="ocSite" android:value="OC_DE" />
+        </Preference>
 
         <!-- Opencaching.pl -->
         <Preference
             android:key="@string/pref_fakekey_ocpl_authorization"
             app:fragment="cgeo.geocaching.settings.fragments.PreferenceServiceOpencachingFragment"
             app:title="@string/init_oc_pl"
-            app:iconSpaceReserved="false" />
+            app:iconSpaceReserved="false">
+            <extra android:name="ocSite" android:value="OC_PL" />
+        </Preference>
 
         <!-- Opencaching.nl -->
         <Preference
             android:key="@string/pref_fakekey_ocnl_authorization"
             app:fragment="cgeo.geocaching.settings.fragments.PreferenceServiceOpencachingFragment"
             app:title="@string/init_oc_nl"
-            app:iconSpaceReserved="false" />
+            app:iconSpaceReserved="false">
+            <extra android:name="ocSite" android:value="OC_NL" />
+        </Preference>
 
         <!-- Opencaching.us -->
         <Preference
             android:key="@string/pref_fakekey_ocus_authorization"
             app:fragment="cgeo.geocaching.settings.fragments.PreferenceServiceOpencachingFragment"
             app:title="@string/init_oc_us"
-            app:iconSpaceReserved="false" />
+            app:iconSpaceReserved="false">
+            <extra android:name="ocSite" android:value="OC_US" />
+        </Preference>
 
         <!-- Opencaching.ro -->
         <Preference
             android:key="@string/pref_fakekey_ocro_authorization"
             app:fragment="cgeo.geocaching.settings.fragments.PreferenceServiceOpencachingFragment"
             app:title="@string/init_oc_ro"
-            app:iconSpaceReserved="false" />
+            app:iconSpaceReserved="false">
+            <extra android:name="ocSite" android:value="OC_RO" />
+        </Preference>
 
         <!-- Opencache.uk -->
         <Preference
             android:key="@string/pref_fakekey_ocuk_authorization"
             app:fragment="cgeo.geocaching.settings.fragments.PreferenceServiceOpencachingFragment"
             app:title="@string/init_oc_uk"
-            app:iconSpaceReserved="false" />
+            app:iconSpaceReserved="false">
+            <extra android:name="ocSite" android:value="OC_UK" />
+        </Preference>
 
         <!-- Extremcaching.com -->
         <Preference
