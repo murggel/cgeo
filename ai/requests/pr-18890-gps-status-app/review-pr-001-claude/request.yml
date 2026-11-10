@@ -1,0 +1,12 @@
+# support GSP Status 12.x
+task: review-pr
+provider: claude
+pr: 18890
+# Optional: additional instructions that are added to the prompt (max. 4000 characters).
+# They can steer focus, scope or form of the review, but never lift the read-only rules.
+instructions: |
+   Old versions of GPS status and other navigation apps should still be supported. 
+   Please ensure that the code changes do not break compatibility with older versions of GPS status (12.x)
+    and other navigation applications. 
+    Review the code for any potential issues that could affect these older versions, 
+    and provide feedback on how to maintain backward compatibility while implementing new features or improvements.
