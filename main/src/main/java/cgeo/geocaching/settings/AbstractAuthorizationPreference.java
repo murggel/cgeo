@@ -3,6 +3,7 @@ package cgeo.geocaching.settings;
 import cgeo.geocaching.R;
 import cgeo.geocaching.ui.dialog.Dialogs;
 import cgeo.geocaching.utils.LocalizationUtils;
+import cgeo.geocaching.utils.Log;
 
 import android.content.Context;
 import android.util.AttributeSet;
@@ -52,10 +53,13 @@ public abstract class AbstractAuthorizationPreference extends Preference {
     }
 
     public static void updateAuthorizationPreference(final PreferenceFragmentCompat preferenceFragment, final int prefKeyId) {
-        final Preference preference = preferenceFragment.findPreference(LocalizationUtils.getPlainString(prefKeyId));
-        if (preference instanceof AbstractAuthorizationPreference) {
-            ((AbstractAuthorizationPreference) preference).updateAuthorizationInfo();
+        final String prefKey = LocalizationUtils.getPlainString(prefKeyId);
+        final Preference preference = preferenceFragment.findPreference(prefKey);
+        if (!(preference instanceof AbstractAuthorizationPreference)) {
+            Log.e("No authorization preference found for key " + prefKey + " in " + preferenceFragment.getClass().getSimpleName());
+            return;
         }
+        ((AbstractAuthorizationPreference) preference).updateAuthorizationInfo();
     }
 
     @Override
