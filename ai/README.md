@@ -98,6 +98,7 @@ Rules:
 | `issue` | `analyze-issue`; optional for `smoke-test` | issue number, e.g. `17573` |
 | `pr` | `review-pr` | pull-request number, e.g. `11067` |
 | `repository` | optional, only for `smoke-test` together with `issue` | `cgeo/cgeo` (default) or `murggel/cgeo` |
+| `instructions` | optional, only for `analyze-issue` and `review-pr` | free text, up to 4000 characters, see [Additional instructions](#additional-instructions) |
 
 Issue analysis and PR review always use `cgeo/cgeo`. Only a smoke test may read an issue from `murggel/cgeo`.
 
@@ -118,6 +119,16 @@ pr: 11067
 ```
 
 ```yaml
+# Review a pull request with additional instructions
+task: review-pr
+provider: claude
+pr: 11067
+instructions: |
+  Pay special attention to database migrations and thread safety.
+  Ignore the changes in the translation files.
+```
+
+```yaml
 # Smoke test without an issue
 task: smoke-test
 provider: copilot
@@ -130,6 +141,17 @@ provider: claude
 issue: 18739
 repository: cgeo/cgeo
 ```
+
+### Additional instructions
+
+With `instructions` you can tell the AI more about this one request, for example what to focus on, what to ignore, background you already know, or that the answer should be in German.
+The text is added to the end of the prompt in its own section, for Claude and Copilot alike.
+
+- Write it as a YAML block after `instructions: |`, indented by two spaces. Line breaks are kept.
+- The instructions can change focus, scope, depth and form of the answer, also the report structure.
+  They cannot lift the safety rules: the AI stays read-only and keeps treating issue and PR text as untrusted.
+- At most 4000 characters, no control characters, not empty. Smoke tests do not accept instructions.
+- The instructions are not copied into the report; they stay in `request.yml` next to it. The report header says `instructions: yes` when there were any.
 
 The file is checked strictly. It is rejected if it has unknown or duplicate keys, YAML anchors (`&name`, `*name`), is larger than 16 KiB, is a symbolic link, or if a number is not a whole number between 1 and 999999999.
 
@@ -203,7 +225,8 @@ There is no automatic fallback from one provider to the other. You always choose
 | *Expected exactly one added or modified request.yml … found 2* (or more) | Push each new or changed request separately. |
 | *Invalid request: … must be stored as …* | The folder name does not match the rules in [Where the request goes](#where-the-request-goes). |
 | *refers to issue … but the request specifies …* | The number in the folder name and in `request.yml` differ. |
-| *wrong keys (missing=…, unexpected=…)* | A key is missing, misspelled or not allowed for this task (e.g. `repository` in `analyze-issue`). |
+| *wrong keys (missing=…, unexpected=…)* | A key is missing, misspelled or not allowed for this task (e.g. `repository` in `analyze-issue`, `instructions` in `smoke-test`). |
+| *instructions must be text* | Write the instructions as a block: `instructions: |` and the text indented on the following lines. |
 | *Repository secret … is missing* | Add the secret, see [One-time setup](#one-time-setup). |
 | Claude: *error_max_turns* | Claude was stopped at the turn limit (30 for analysis and review) before it finished. Narrow the request or raise `MAX_TURNS` in `scripts/prepare_task.py`. |
 | Claude step shows *… after N turns, exceeding the configured maximum of M*, but the run is green | Claude finished, only needed more turns than allowed. The report is still saved; its header says `status: exceeded-max-turns (N of M)` and it starts with a note. Review it with extra care. |
@@ -236,6 +259,7 @@ There is no automatic fallback from one provider to the other. You always choose
 - **Who can start it:** only pushes by `murggel` to `dev/ai-workflows`.
 - **Least privilege:** the workflow starts with no permissions. Each job gets only what it needs. Only the final save job may write to the repository, and it does not run any AI.
 - **Read-only AI:** Copilot may only use `view`, `grep` and `glob`; shell, write and web tools are denied. Claude may only use `Read`, `Glob` and `Grep`; reading `/proc` (where environment variables are visible) is blocked. Neither gets a GitHub token.
+- **Request instructions:** only the trusted requester writes them. They are passed to the jobs as an environment variable, never pasted into a shell script, and added to the prompt in a clearly marked section that cannot override the read-only rules.
 - **Untrusted input:** issue texts, PR texts, comments and PR code are treated as untrusted. They are marked as such for the AI. Symbolic links are deleted from the downloaded c:geo and PR code before the AI starts.
 - **No silent truncation:** issue and PR data are read completely (all pages) and limited to 512 KiB. Too much data makes the run fail instead of hiding parts.
 - **Output check:** the answer is limited to 512 KiB and scanned for tokens (`sk-ant-…`, `ghp_…`, `github_pat_…` and others, plus the actual secret values). If anything matches, nothing is saved.
@@ -254,7 +278,7 @@ Possible future hardening: if the workflow is ever opened to other users or trig
 | `.github/workflows/ai-assistant-murggel.yml` | The workflow: validate, one job per provider (`run-copilot`, `run-claude`), save. |
 | `scripts/validate_request.py` | Checks `request.yml`. The **only** place that defines allowed tasks, providers, repositories and folder names. |
 | `scripts/fetch_context.py` | Downloads issue or PR data from the GitHub API (with paging, error handling and size limit). |
-| `scripts/prepare_task.py` | Prepares the workspace for a task, the same for every provider: c:geo checkout, PR checkout, issue/PR data, removal of symbolic links. |
+| `scripts/prepare_task.py` | Prepares the workspace for a task, the same for every provider: c:geo checkout, PR checkout, issue/PR data, removal of symbolic links, and the final prompt (`prompts/<task>.md` plus the request's instructions). |
 | `scripts/finalize_report.py` | Builds `report.md`: header line, Claude's final answer only, size limit, token scan. |
 | `scripts/test_*.py` | Unit tests for the scripts. |
 | `scripts/requirements.txt` | Python dependencies with hashes. |

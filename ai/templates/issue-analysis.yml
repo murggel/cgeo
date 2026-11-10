@@ -4,3 +4,8 @@
 task: analyze-issue
 provider: claude
 issue: 17573
+# Optional: additional instructions that are added to the prompt (max. 4000 characters).
+# They can steer focus, scope or form of the report, but never lift the read-only rules.
+# instructions: |
+#   Focus on the offline-log code path; online logging is out of scope.
+#   Answer in German.

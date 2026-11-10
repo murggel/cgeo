@@ -40,6 +40,7 @@ jobs:
       provider: ${{ steps.request.outputs.provider }}
       number: ${{ steps.request.outputs.number }}
       repository: ${{ steps.request.outputs.repository }}
+      instructions: ${{ steps.request.outputs.instructions }}
 
     steps:
       - name: Check out request branch
@@ -169,19 +170,23 @@ jobs:
           GH_API_TOKEN: ${{ github.token }}
           NUMBER: ${{ needs.validate.outputs.number }}
           REPOSITORY: ${{ needs.validate.outputs.repository }}
+          # Passed through the environment, never inlined into the script.
+          INSTRUCTIONS: ${{ needs.validate.outputs.instructions }}
         run: |
           python ai/scripts/prepare_task.py --task "$TASK" --number "$NUMBER" --repository "$REPOSITORY" \
+            --instructions="$INSTRUCTIONS" \
             --output-dir "$RUNNER_TEMP" --github-output "$GITHUB_OUTPUT"
 
       - name: Run Copilot
         env:
           COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+          PROMPT_FILE: ${{ steps.prepare.outputs.prompt_file }}
         run: |
           model_args=()
           if [[ "$TASK" == "smoke-test" ]]; then
             model_args=(--model="$SMOKE_TEST_MODEL")
           fi
-          copilot -p "$(cat "ai/prompts/$TASK.md")" "${model_args[@]}" \
+          copilot -p "$(cat "$PROMPT_FILE")" "${model_args[@]}" \
             --add-dir "$GITHUB_WORKSPACE" \
             --available-tools='view,grep,glob' \
             --deny-tool='write' \
@@ -253,8 +258,11 @@ jobs:
           GH_API_TOKEN: ${{ github.token }}
           NUMBER: ${{ needs.validate.outputs.number }}
           REPOSITORY: ${{ needs.validate.outputs.repository }}
+          # Passed through the environment, never inlined into the script.
+          INSTRUCTIONS: ${{ needs.validate.outputs.instructions }}
         run: |
           python ai/scripts/prepare_task.py --task "$TASK" --number "$NUMBER" --repository "$REPOSITORY" \
+            --instructions="$INSTRUCTIONS" \
             --output-dir "$RUNNER_TEMP" --github-output "$GITHUB_OUTPUT"
 
       - name: Run Claude Code
@@ -265,7 +273,8 @@ jobs:
         uses: anthropics/claude-code-action/base-action@c0949c50a78c1ec8ce2647db36629b870e715d0c # v1.0.268
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          prompt_file: ${{ github.workspace }}/ai/prompts/${{ needs.validate.outputs.task }}.md
+          # Task prompt plus the request's additional instructions, if any.
+          prompt_file: ${{ steps.prepare.outputs.prompt_file }}
           # Read-only tools; /proc is blocked so environment variables cannot be read.
           claude_args: >-
             --tools Read,Glob,Grep

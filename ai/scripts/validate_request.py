@@ -6,6 +6,8 @@ repositories and directory names are allowed. The workflow only consumes
 its outputs and does not repeat these rules.
 
 Every request lives at ai/requests/<subject>/<request-id>/request.yml.
+Analyses and reviews may carry free-text ``instructions`` that are added to
+the prompt; the workflow passes them on unchanged.
 """
 
 from __future__ import annotations
@@ -13,6 +15,7 @@ from __future__ import annotations
 import argparse
 import re
 import sys
+import uuid
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Any
@@ -22,6 +25,9 @@ import yaml
 
 MAX_REQUEST_BYTES = 16_384
 MAX_NUMBER = 999_999_999
+MAX_INSTRUCTIONS_CHARS = 4_000
+# Tabs and line breaks are fine; other control characters are not.
+FORBIDDEN_CHARACTERS = re.compile("[\x00-\x08\x0b-\x1f\x7f]")
 DEFAULT_REPOSITORY = "cgeo/cgeo"
 # Only smoke tests may choose a repository; all other tasks use the default.
 ALLOWED_REPOSITORIES = frozenset({"cgeo/cgeo", "murggel/cgeo"})
@@ -45,7 +51,7 @@ TASKS = {
     "analyze-issue": TaskRule(
         providers=frozenset({"claude", "copilot"}),
         required_keys=frozenset({"issue"}),
-        optional_keys=frozenset(),
+        optional_keys=frozenset({"instructions"}),
         subject=re.compile(rf"issue-{NUMBER}{DESCRIPTION}"),
         request_id=re.compile(rf"analysis-[0-9]{{3}}{DESCRIPTION}"),
         layout="ai/requests/issue-<number>[-description]/analysis-NNN[-description]/request.yml",
@@ -53,7 +59,7 @@ TASKS = {
     "review-pr": TaskRule(
         providers=frozenset({"claude", "copilot"}),
         required_keys=frozenset({"pr"}),
-        optional_keys=frozenset(),
+        optional_keys=frozenset({"instructions"}),
         subject=re.compile(rf"(?:pr-{NUMBER}|issue-[1-9][0-9]{{0,8}}){DESCRIPTION}"),
         request_id=re.compile(rf"review(?:-pr)?-[0-9]{{3}}{DESCRIPTION}"),
         layout="ai/requests/(pr|issue)-<number>[-description]/review[-pr]-NNN[-description]/request.yml",
@@ -76,6 +82,7 @@ class Request:
     provider: str
     number: int | None
     repository: str
+    instructions: str = ""
 
     def outputs(self) -> dict[str, str]:
         return {
@@ -84,6 +91,7 @@ class Request:
             "provider": self.provider,
             "number": "" if self.number is None else str(self.number),
             "repository": self.repository,
+            "instructions": self.instructions,
         }
 
     def summary(self) -> str:
@@ -92,6 +100,8 @@ class Request:
             lines.append(f"- Pull request: {self.repository}#{self.number}")
         elif self.number is not None:
             lines.append(f"- Issue: {self.repository}#{self.number}")
+        if self.instructions:
+            lines.append(f"- Additional instructions: {len(self.instructions)} characters")
         lines.append(f"- Request: {self.path.as_posix()}")
         return "\n".join(lines)
 
@@ -172,6 +182,35 @@ def _number(request: dict[str, Any], key: str) -> int:
     return value
 
 
+def _instructions(request: dict[str, Any]) -> str:
+    if "instructions" not in request:
+        return ""
+    value = request["instructions"]
+    if not isinstance(value, str):
+        raise ValueError("instructions must be text (use a YAML block scalar 'instructions: |')")
+    text = value.replace("\r\n", "\n").strip()
+    if not text:
+        raise ValueError("instructions must not be empty; remove the key instead")
+    if len(text) > MAX_INSTRUCTIONS_CHARS:
+        raise ValueError(f"instructions must not exceed {MAX_INSTRUCTIONS_CHARS} characters")
+    if FORBIDDEN_CHARACTERS.search(text):
+        raise ValueError("instructions must not contain control characters")
+    return text
+
+
+def write_github_output(path: Path, outputs: dict[str, str]) -> None:
+    """Append outputs to $GITHUB_OUTPUT; multi-line values use a random delimiter."""
+    with path.open("a", encoding="utf-8") as stream:
+        for name, value in outputs.items():
+            if "\n" not in value:
+                stream.write(f"{name}={value}\n")
+                continue
+            delimiter = f"EOF_{uuid.uuid4().hex}"
+            if delimiter in value:  # practically impossible, but never ambiguous
+                raise ValueError(f"cannot write output {name}")
+            stream.write(f"{name}<<{delimiter}\n{value}\n{delimiter}\n")
+
+
 def validate_request(request_path: str | PurePosixPath, root: Path = Path(".")) -> Request:
     """Validate a request given relative to the repository root ``root``."""
     path = PurePosixPath(request_path)
@@ -218,7 +257,7 @@ def validate_request(request_path: str | PurePosixPath, root: Path = Path(".")) 
             f"but the request specifies {number_key} {number}"
         )
 
-    return Request(path, task, provider, number, repository)
+    return Request(path, task, provider, number, repository, _instructions(request))
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -236,9 +275,7 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     if args.github_output:
-        with args.github_output.open("a", encoding="utf-8") as stream:
-            for name, value in request.outputs().items():
-                stream.write(f"{name}={value}\n")
+        write_github_output(args.github_output, request.outputs())
     print(request.summary())
     return 0
 

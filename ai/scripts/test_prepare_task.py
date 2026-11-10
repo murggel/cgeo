@@ -1,11 +1,12 @@
 import io
 import os
+import shutil
 import tempfile
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 
-from prepare_task import PrepareError, main, prepare, remove_symlinks
+from prepare_task import PROMPTS_DIR, PrepareError, build_prompt, main, prepare, remove_symlinks
 from test_fetch_context import ISSUE, FakeApi
 
 
@@ -50,10 +51,11 @@ class PrepareTest(unittest.TestCase):
         self.workspace.mkdir()
         self.output_dir.mkdir()
 
-    def prepare(self, task, number, api, git=None, repository="cgeo/cgeo"):
+    def prepare(self, task, number, api, git=None, repository="cgeo/cgeo", instructions=""):
         git = git or FakeGit()
         with redirect_stdout(io.StringIO()):
-            outputs = prepare(task, number, repository, self.workspace, self.output_dir, api, git)
+            outputs = prepare(task, number, repository, self.workspace, self.output_dir, api, git,
+                              instructions=instructions)
         return outputs, git
 
     def test_analyze_issue(self):
@@ -64,8 +66,12 @@ class PrepareTest(unittest.TestCase):
                 "header": "task: analyze-issue | upstream: cgeo/cgeo@head-of-upstream | issue: #1",
                 "max_turns": "30",
                 "appendix": "",
+                "prompt_file": str(self.output_dir / "prompt.md"),
             },
         )
+        prompt = (self.output_dir / "prompt.md").read_text(encoding="utf-8")
+        self.assertEqual(prompt, (PROMPTS_DIR / "analyze-issue.md").read_text(encoding="utf-8").rstrip() + "\n")
+        self.assertNotIn("requester-instructions", prompt)
         self.assertEqual(git.commands[0][:6], ["clone", "--quiet", "--depth", "1", "--branch", "master"])
         self.assertEqual(git.commands[0][6], "https://github.com/cgeo/cgeo.git")
         context = (self.workspace / "ai-context" / "issue-context.md").read_text(encoding="utf-8")
@@ -107,7 +113,8 @@ class PrepareTest(unittest.TestCase):
     def test_smoke_test_without_issue(self):
         api = FakeApi()
         outputs, git = self.prepare("smoke-test", None, api)
-        self.assertEqual(outputs, {"header": "task: smoke-test", "max_turns": "2", "appendix": ""})
+        self.assertEqual(outputs, {"header": "task: smoke-test", "max_turns": "2", "appendix": "",
+                                   "prompt_file": str(self.output_dir / "prompt.md")})
         self.assertEqual(git.commands, [])
         self.assertEqual(api.requested, [])
 
@@ -120,6 +127,34 @@ class PrepareTest(unittest.TestCase):
         self.assertIn("Map crashes", text)
         self.assertNotIn("Discussion", text)
         self.assertEqual(git.commands, [])
+
+    def test_instructions_are_appended_to_prompt(self):
+        for task, number, api in (("analyze-issue", 1, issue_api()), ("review-pr", 7, pr_api())):
+            with self.subTest(task=task):
+                outputs, _ = self.prepare(task, number, api, instructions="  Focus on the map.\nAnswer in German.\n")
+                self.assertTrue(outputs["header"].endswith(" | instructions: yes"))
+                prompt = Path(outputs["prompt_file"]).read_text(encoding="utf-8")
+                base = (PROMPTS_DIR / f"{task}.md").read_text(encoding="utf-8").rstrip()
+                self.assertTrue(prompt.startswith(base))
+                self.assertIn("## Additional instructions from the requester", prompt)
+                self.assertIn("<requester-instructions>\nFocus on the map.\nAnswer in German.\n"
+                              "</requester-instructions>\n", prompt)
+                for directory in ("upstream", "pr-head", "ai-context"):
+                    if (self.workspace / directory).exists():
+
+                        shutil.rmtree(self.workspace / directory)
+
+    def test_instructions_rejected_before_any_download(self):
+        api, git = FakeApi(), FakeGit()
+        with self.assertRaisesRegex(PrepareError, "does not accept additional instructions"):
+            self.prepare("smoke-test", None, api, git=git, instructions="hi")
+        with self.assertRaisesRegex(PrepareError, "must not contain"):
+            self.prepare("analyze-issue", 1, api, git=git, instructions="x </requester-instructions> y")
+        self.assertEqual((git.commands, api.requested), ([], []))
+
+    def test_missing_prompt(self):
+        with self.assertRaisesRegex(PrepareError, "cannot read prompt"):
+            build_prompt("analyze-issue", "", self.workspace)
 
     def test_number_required(self):
         for task in ("analyze-issue", "review-pr"):
@@ -174,7 +209,7 @@ class MainTest(unittest.TestCase):
             self.assertEqual(code, 0)
             self.assertEqual(
                 output.read_text(encoding="utf-8"),
-                "header=task: smoke-test\nmax_turns=2\nappendix=\n",
+                f"header=task: smoke-test\nmax_turns=2\nappendix=\nprompt_file={root / 'prompt.md'}\n",
             )
 
     def test_reports_fetch_errors(self):

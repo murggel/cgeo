@@ -92,8 +92,35 @@ class ValidateRequestTest(unittest.TestCase):
                 "provider": "claude",
                 "number": "11067",
                 "repository": "cgeo/cgeo",
+                "instructions": "",
             },
         )
+
+    def test_instructions_for_analysis_and_review(self):
+        text = "instructions: |\n  Focus on the map.\n  Answer in German.\n"
+        request = self.validate(ISSUE_PATH, "task: analyze-issue\nprovider: claude\nissue: 17573\n" + text)
+        self.assertEqual(request.instructions, "Focus on the map.\nAnswer in German.")
+        self.assertIn("Additional instructions: 35 characters", request.summary())
+        request = self.validate(PR_PATH, "task: review-pr\nprovider: copilot\npr: 11067\n" + text)
+        self.assertEqual(request.outputs()["instructions"], "Focus on the map.\nAnswer in German.")
+
+    def test_instructions_not_allowed_for_smoke_test(self):
+        self.assertInvalid(SMOKE_PATH, "task: smoke-test\nprovider: claude\ninstructions: hi\n",
+                           r"unexpected=\['instructions'\]")
+
+    def test_invalid_instructions(self):
+        base = "task: analyze-issue\nprovider: claude\nissue: 17573\n"
+        cases = {
+            "instructions: 5\n": "must be text",
+            "instructions: [a, b]\n": "must be text",
+            "instructions: '  '\n": "must not be empty",
+            "instructions:\n": "must be text",
+            f"instructions: {'x' * 4001}\n": "must not exceed 4000",
+            'instructions: "a\\x07b"\n': "control characters",
+        }
+        for text, message in cases.items():
+            with self.subTest(text=text[:30]):
+                self.assertInvalid(ISSUE_PATH, base + text, message)
 
     # Task, provider and keys
 
@@ -269,8 +296,23 @@ class ValidateRequestTest(unittest.TestCase):
         self.assertEqual(
             output.read_text(encoding="utf-8"),
             "request_dir=ai/requests/smoke-test/copilot\ntask=smoke-test\nprovider=claude\n"
-            "number=18739\nrepository=cgeo/cgeo\n",
+            "number=18739\nrepository=cgeo/cgeo\ninstructions=\n",
         )
+
+    def test_main_writes_multiline_instructions(self):
+        self.write(ISSUE_PATH, "task: analyze-issue\nprovider: claude\nissue: 17573\n"
+                               "instructions: |\n  line one\n  line two\n")
+        output = self.root / "github-output"
+        cwd = os.getcwd()
+        os.chdir(self.root)
+        self.addCleanup(os.chdir, cwd)
+        with redirect_stdout(io.StringIO()):
+            self.assertEqual(main([ISSUE_PATH, "--github-output", str(output)]), 0)
+        lines = output.read_text(encoding="utf-8").splitlines()
+        start = next(i for i, line in enumerate(lines) if line.startswith("instructions<<"))
+        delimiter = lines[start].split("<<", 1)[1]
+        self.assertRegex(delimiter, "^EOF_[0-9a-f]{32}$")
+        self.assertEqual(lines[start + 1:], ["line one", "line two", delimiter])
 
     def test_main_rejects_invalid_request(self):
         self.write(SMOKE_PATH, "task: smoke-test\n")
