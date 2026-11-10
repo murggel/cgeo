@@ -149,10 +149,6 @@ public abstract class OAuthAuthorizationActivity extends AbstractActivity {
 
         setTitle(getAuthTitle());
 
-        binding.auth1.setText(getAuthExplainShort());
-        binding.auth2.setText(getAuthExplainLong());
-        binding.auth3.setText(getAuthRegisterExplain());
-
         final ImmutablePair<String, String> tempToken = getTempTokens();
         oAtoken = tempToken.left;
         oAtokenSecret = tempToken.right;
@@ -169,13 +165,18 @@ public abstract class OAuthAuthorizationActivity extends AbstractActivity {
             binding.register.setOnClickListener(new RegisterListener());
         }
 
+        final String buttonText;
         if (StringUtils.isBlank(oAtoken) && StringUtils.isBlank(oAtokenSecret)) {
             // start authorization process
-            binding.start.setText(getAuthStart());
+            buttonText = getAuthStart();
         } else {
             // already have temporary tokens, continue from pin
-            binding.start.setText(getAuthAgain());
+            buttonText = getAuthAgain();
         }
+        binding.start.setText(buttonText);
+        binding.auth1.setText(getAuthExplainShort());
+        binding.auth2.setText(getAuthExplainLong(buttonText));
+        binding.auth3.setText(getAuthRegisterExplain());
     }
 
     @Override
@@ -405,8 +406,8 @@ public abstract class OAuthAuthorizationActivity extends AbstractActivity {
         return LocalizationUtils.getString(R.string.auth_explain_short, getAuthTitle());
     }
 
-    private String getAuthExplainLong() {
-        return LocalizationUtils.getString(R.string.auth_explain_long, getAuthTitle(), getAuthStart());
+    private String getAuthExplainLong(final String buttonText) {
+        return LocalizationUtils.getString(R.string.auth_explain_long, getAuthTitle(), buttonText);
     }
 
     private String getAuthAuthorize() {

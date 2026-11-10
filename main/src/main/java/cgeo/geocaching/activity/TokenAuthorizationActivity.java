@@ -103,10 +103,6 @@ public abstract class TokenAuthorizationActivity extends AbstractActivity {
 
         setTitle(getAuthTitle());
 
-        binding.auth1.setText(getAuthExplainShort());
-        binding.auth2.setText(getAuthExplainLong());
-        binding.auth3.setText(getAuthRegisterExplain());
-
         binding.start.setText(getAuthAuthorize());
         binding.start.setOnClickListener(new StartListener(this));
         enableStartButtonIfReady();
@@ -119,7 +115,12 @@ public abstract class TokenAuthorizationActivity extends AbstractActivity {
             binding.register.setOnClickListener(new RegisterListener());
         }
 
-        binding.start.setText(StringUtils.isBlank(getToken()) ? getAuthStart() : getAuthAgain());
+        final String buttonText = StringUtils.isBlank(getToken()) ? getAuthStart() : getAuthAgain();
+        binding.start.setText(buttonText);
+
+        binding.auth1.setText(getAuthExplainShort());
+        binding.auth2.setText(getAuthExplainLong(buttonText));
+        binding.auth3.setText(getAuthRegisterExplain());
 
         final TextWatcher enableStartButtonWatcher = ViewUtils.createSimpleWatcher(s -> enableStartButtonIfReady());
         binding.username.addTextChangedListener(enableStartButtonWatcher);
@@ -278,8 +279,8 @@ public abstract class TokenAuthorizationActivity extends AbstractActivity {
         return LocalizationUtils.getString(R.string.auth_token_explain_short, getAuthTitle());
     }
 
-    protected String getAuthExplainLong() {
-        return LocalizationUtils.getString(R.string.auth_token_explain_long, getAuthTitle());
+    protected String getAuthExplainLong(final String buttonText) {
+        return LocalizationUtils.getString(R.string.auth_token_explain_long, getAuthTitle(), buttonText);
     }
 
     protected String getAuthAuthorize() {

@@ -1625,7 +1625,7 @@
 
     <!-- auth token -->
     <string name="auth_token_explain_short">The following process will allow <b>c:geo</b> to access %s.</string>
-    <string name="auth_token_explain_long">Filling your credential and tapping the \"authorize c:geo\" button will start the process. This process will connect to %s and retrieve an authentication token. That\'s all.</string>
+    <string name="auth_token_explain_long">Filling your credential and tapping the \"%2$s\" button will start the process. This process will connect to %1$s and retrieve an authentication token. That\'s all.</string>
 
     <!-- auth opencaching -->
     <string name="auth_dialog_completed_oc">c:geo is now authorized to interact with %s.</string>
