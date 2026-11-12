@@ -624,7 +624,22 @@ public class GCConnector extends AbstractConnector implements ISearchByGeocode, 
 
     @Override
     public boolean isChallengeCache(@NonNull final Geocache cache) {
-        return cache.getType() == CacheType.MYSTERY && Strings.CI.contains(cache.getName(), "challenge");
+        return (cache.getType() == CacheType.MYSTERY && Strings.CI.contains(cache.getName(), "challenge"))
+                || hasPgcChallengeCheckerLink(cache);
+    }
+
+    /**
+     * Checks whether the listing links to the project-gc.com challenge checker of this cache,
+     * e.g. "https://project-gc.com/Challenges/GC12345/67890"
+     */
+    private static boolean hasPgcChallengeCheckerLink(@NonNull final Geocache cache) {
+        final String geocode = cache.getGeocode();
+        if (StringUtils.isBlank(geocode)) {
+            return false;
+        }
+        final Pattern pgcChallengeLink = Pattern.compile("project-gc\\.com/Challenges/" + Pattern.quote(geocode) + "(?![A-Z0-9])", Pattern.CASE_INSENSITIVE);
+        return pgcChallengeLink.matcher(cache.getDescription()).find()
+                || pgcChallengeLink.matcher(cache.getShortDescription()).find();
     }
 
     @Override

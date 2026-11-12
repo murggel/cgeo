@@ -124,6 +124,26 @@ public class GCConnectorTest  {
         assertIsChallengeCache("Some ordinary Mystery", CacheType.MYSTERY).isFalse();
     }
 
+    @Test
+    public void testIsChallengeCacheByPgcLink() {
+        assertIsChallengeCacheByDescription("GCBRRJX", "<a href=\"https://project-gc.com/Challenges/GCBRRJX/12345\">Checker</a>").isTrue();
+        assertIsChallengeCacheByDescription("GCBRRJX", "<a href=\"https://project-gc.com/Challenges/gcbrrjx\">Checker</a>").isTrue();
+        // link of another cache
+        assertIsChallengeCacheByDescription("GCBRRJX", "<a href=\"https://project-gc.com/Challenges/GCBRRJ/12345\">Checker</a>").isFalse();
+        assertIsChallengeCacheByDescription("GCBRRJX", "<a href=\"https://project-gc.com/Challenges/GCBRRJXY/12345\">Checker</a>").isFalse();
+        assertIsChallengeCacheByDescription("GCBRRJX", "no checker link here").isFalse();
+    }
+
+    private static AbstractBooleanAssert<?> assertIsChallengeCacheByDescription(final String geocode, final String description) {
+        final Geocache geocache = new Geocache();
+        geocache.setGeocode(geocode);
+        geocache.setName("Some ordinary Mystery");
+        geocache.setType(CacheType.MYSTERY);
+        geocache.setDescription(description);
+        geocache.setShortDescription("");
+        return assertThat(GCConnector.getInstance().isChallengeCache(geocache));
+    }
+
     private static AbstractBooleanAssert<?> assertIsChallengeCache(final String name, final CacheType type) {
         final Geocache geocache = new Geocache();
         geocache.setName(name);
