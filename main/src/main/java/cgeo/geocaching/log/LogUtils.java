@@ -349,6 +349,20 @@ public final class LogUtils {
 
     }
 
+    /**
+     * Updates the cache's visited date after creating or editing a found/DNF log.
+     * The visited date is only changed if the day of the log is newer than the day of the stored visited date.
+     * This keeps the order of the history list stable, e.g. when editing a log (server may deliver a different
+     * time-of-day) or when logging/editing an older log of the cache.
+     */
+    private static void adaptVisitedDate(final Geocache cache, final LogEntry newLogEntry) {
+        final long visitedDate = cache.getVisitedDate();
+        if (visitedDate > 0 && getDaysSinceEpochZoneCorrected(newLogEntry.date) <= getDaysSinceEpochZoneCorrected(visitedDate)) {
+            return;
+        }
+        cache.setVisitedDate(newLogEntry.date);
+    }
+
     private static void adaptCacheCommonsAfterLogging(final Geocache cache, final ILoggingManager loggingManager, @Nullable final LogEntry oldLogEntry, final LogEntry newLogEntry) {
 
         final IConnector cacheConnector = loggingManager.getConnector();
@@ -367,11 +381,11 @@ public final class LogUtils {
             case ATTENDED:
             case FOUND_IT:
                 cache.setFound(true);
-                cache.setVisitedDate(newLogEntry.date);
+                adaptVisitedDate(cache, newLogEntry);
                 break;
             case DIDNT_FIND_IT:
                 cache.setDNF(true);
-                cache.setVisitedDate(newLogEntry.date);
+                adaptVisitedDate(cache, newLogEntry);
                 break;
             case ARCHIVE:
                 cache.setArchived(true);
