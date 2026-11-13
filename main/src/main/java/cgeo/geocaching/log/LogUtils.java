@@ -32,6 +32,7 @@ import androidx.annotation.WorkerThread;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -357,10 +358,21 @@ public final class LogUtils {
      */
     private static void adaptVisitedDate(final Geocache cache, final LogEntry newLogEntry) {
         final long visitedDate = cache.getVisitedDate();
-        if (visitedDate > 0 && getDaysSinceEpochZoneCorrected(newLogEntry.date) <= getDaysSinceEpochZoneCorrected(visitedDate)) {
+        if (visitedDate > 0 && getLocalDayKey(newLogEntry.date) <= getLocalDayKey(visitedDate)) {
             return;
         }
         cache.setVisitedDate(newLogEntry.date);
+    }
+
+    /**
+     * Returns a sortable key (yyyyMMdd) of the local calendar day of the given time.
+     * Uses the time zone offset valid at the given time (not the current one), so dates
+     * from another DST period are mapped to the correct day.
+     */
+    private static long getLocalDayKey(final long date) {
+        final Calendar calendar = Calendar.getInstance();
+        calendar.setTimeInMillis(date);
+        return calendar.get(Calendar.YEAR) * 10_000L + (calendar.get(Calendar.MONTH) + 1) * 100L + calendar.get(Calendar.DAY_OF_MONTH);
     }
 
     private static void adaptCacheCommonsAfterLogging(final Geocache cache, final ILoggingManager loggingManager, @Nullable final LogEntry oldLogEntry, final LogEntry newLogEntry) {
