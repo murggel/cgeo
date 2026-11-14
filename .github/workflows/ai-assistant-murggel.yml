@@ -181,7 +181,7 @@ jobs:
         run: |
           python ai/scripts/prepare_task.py --task "$TASK" --number "$NUMBER" --repository "$REPOSITORY" \
             --instructions="$INSTRUCTIONS" --branch="$REVIEW_BRANCH" --base="$REVIEW_BASE" \
-            --previous-report="$PREVIOUS_REPORT" \
+            --previous-report="$PREVIOUS_REPORT" --issue-snapshot ai/issues \
             --output-dir "$RUNNER_TEMP" --github-output "$GITHUB_OUTPUT"
 
       - name: Run Copilot
@@ -229,6 +229,15 @@ jobs:
           if-no-files-found: error
           retention-days: 3
 
+      - name: Upload issue snapshot
+        if: env.TASK == 'analyze-issue' || env.TASK == 'review-pr'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: issue-snapshot
+          path: ai/issues/
+          if-no-files-found: ignore
+          retention-days: 3
+
   run-claude:
     name: Run ${{ needs.validate.outputs.task }}${{ needs.validate.outputs.number && format(' {0}#{1}', needs.validate.outputs.repository, needs.validate.outputs.number) || '' }}${{ needs.validate.outputs.branch && format(' {0}', needs.validate.outputs.branch) || '' }} with Claude Code
     needs: validate
@@ -273,7 +282,7 @@ jobs:
         run: |
           python ai/scripts/prepare_task.py --task "$TASK" --number "$NUMBER" --repository "$REPOSITORY" \
             --instructions="$INSTRUCTIONS" --branch="$REVIEW_BRANCH" --base="$REVIEW_BASE" \
-            --previous-report="$PREVIOUS_REPORT" \
+            --previous-report="$PREVIOUS_REPORT" --issue-snapshot ai/issues \
             --output-dir "$RUNNER_TEMP" --github-output "$GITHUB_OUTPUT"
 
       - name: Run Claude Code
@@ -319,6 +328,15 @@ jobs:
           if-no-files-found: error
           retention-days: 3
 
+      - name: Upload issue snapshot
+        if: env.TASK == 'analyze-issue' || env.TASK == 'review-pr'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: issue-snapshot
+          path: ai/issues/
+          if-no-files-found: ignore
+          retention-days: 3
+
   publish-report:
     name: Commit report${{ needs.validate.outputs.number && format(' {0}#{1}', needs.validate.outputs.repository, needs.validate.outputs.number) || '' }}${{ needs.validate.outputs.branch && format(' {0}', needs.validate.outputs.branch) || '' }}
     needs:
@@ -356,6 +374,15 @@ jobs:
           name: report
           path: ${{ runner.temp }}/report
 
+      - name: Download issue snapshot
+        if: env.TASK == 'analyze-issue' || env.TASK == 'review-pr'
+        # Missing when the snapshot could not be created; the report is committed anyway.
+        continue-on-error: true
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: issue-snapshot
+          path: ${{ runner.temp }}/issue-snapshot
+
       - name: Commit and push report
         run: |
           source="$RUNNER_TEMP/report/report.md"
@@ -375,6 +402,21 @@ jobs:
             *) message="Add ${PROVIDER^} smoke-test report" ;;
           esac
           report_path="$REQUEST_DIR/report.md"
+
+          # The refreshed snapshot of open upstream issues is committed with the report.
+          # Only regular files with the expected names are accepted.
+          snapshot="$RUNNER_TEMP/issue-snapshot"
+          snapshot_dir="ai/issues"
+          if [[ -f "$snapshot/snapshot.json" && -f "$snapshot/index.md" ]]; then
+            if find "$snapshot" -mindepth 1 \( ! -type f -o ! -regex '.*/\(snapshot\.json\|index\.md\|issue-[0-9]+\.md\)' \) | grep -q .; then
+              echo "::warning::Issue snapshot contains unexpected entries; it is not committed."
+              snapshot=""
+            else
+              message="$message and update issue snapshot"
+            fi
+          else
+            snapshot=""
+          fi
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -403,6 +445,17 @@ jobs:
 
             cp "$source" "$report_path"
             git add -- "$report_path"
+
+            if [[ -n "$snapshot" ]]; then
+              if [[ -L ai || -L "$snapshot_dir" ]]; then
+                echo "::error::$snapshot_dir is a symbolic link; refusing to write the issue snapshot."
+                exit 1
+              fi
+              rm -rf -- "$snapshot_dir"
+              mkdir -p -- "$snapshot_dir"
+              cp -- "$snapshot"/* "$snapshot_dir"/
+              git add --all -- "$snapshot_dir"
+            fi
             if git diff --cached --quiet; then
               echo "The report is unchanged; no commit is needed."
               exit 0

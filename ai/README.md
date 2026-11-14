@@ -18,6 +18,7 @@ The AI only reads. It cannot change code, post comments, or submit reviews.
 8. [Glossary](#glossary)
 9. [How it is kept safe](#how-it-is-kept-safe)
 10. [Maintenance](#maintenance)
+11. [Issue snapshot](#issue-snapshot)
 
 ## Quick start
 
@@ -63,8 +64,8 @@ Copy the folder you need to `ai/requests/` and replace `XXX` and `00X` in the fo
 
 | Task | What it does | Claude | Copilot |
 |---|---|---|---|
-| `analyze-issue` | Reads the issue with all comments and the current c:geo source code, then explains the probable cause and a possible fix. | yes | yes |
-| `review-pr` | Reads a pull request (description, changes, existing reviews and comments) and the exact code of the PR, then lists concrete problems. | yes | yes |
+| `analyze-issue` | Reads the issue with all comments and the current c:geo source code, then explains the probable cause and a possible fix. Also lists other open issues that make sense to handle in the same change. | yes | yes |
+| `review-pr` | Reads a pull request (description, changes, existing reviews and comments) and the exact code of the PR, then lists concrete problems and the open issues the PR fixes (referenced ones and further ones it finds). | yes | yes |
 | `review-branch` | Reviews a branch of `murggel/cgeo` that has no pull request yet, against `master` or `release` of `cgeo/cgeo`. Same checks as `review-pr`, plus a draft PR description. | yes | yes |
 | `smoke-test` | Sends a tiny "are you there?" prompt. Use it to check that the setup works. Can optionally copy an issue description into the report. | yes | yes |
 
@@ -200,10 +201,11 @@ The file is checked strictly. It is rejected if it has unknown or duplicate keys
 
 1. **Validate.** The workflow looks for the one `request.yml` that was added or changed in your push and checks it. A push must contain exactly one such file. Moving or deleting request files does not start a new AI run.
 2. **Prepare.** It downloads the current c:geo source code (`cgeo/cgeo`, branch `master`) and, for a review, the exact code of the pull request. It also downloads the issue or PR text and comments from GitHub.
+   For an issue analysis or PR review it also updates the [issue snapshot](#issue-snapshot) in `ai/issues/`, so that the AI can look for related issues.
    For a branch review it downloads the branch from `murggel/cgeo` and the chosen base from `cgeo/cgeo`, finds the commit where the branch started (merge base) and builds the diff and the list of commit messages with git.
 3. **Ask the AI.** Claude or Copilot reads these files and writes its answer. It can only use read-only tools.
 4. **Check the answer.** The answer must not be empty, not larger than 512 KiB and must not look like it contains a password or token. Otherwise the run fails and nothing is saved.
-5. **Save.** A separate step commits the answer as `report.md` next to your `request.yml` and pushes it to `dev/ai-workflows`.
+5. **Save.** A separate step commits the answer as `report.md` next to your `request.yml` and pushes it to `dev/ai-workflows`. For an issue analysis or PR review the updated issue snapshot is committed in the same commit.
 
 Good to know:
 
@@ -312,7 +314,8 @@ There is no automatic fallback from one provider to the other. You always choose
 - **Untrusted input:** issue texts, PR texts, comments, PR code, and branch code and commit messages are treated as untrusted. They are marked as such for the AI. Symbolic links are deleted from the downloaded c:geo, PR and branch code before the AI starts.
 - **No silent truncation:** issue and PR data are read completely (all pages) and limited to 512 KiB. Too much data makes the run fail instead of hiding parts.
 - **Output check:** the answer is limited to 512 KiB and scanned for tokens (`sk-ant-…`, `ghp_…`, `github_pat_…` and others, plus the actual secret values). If anything matches, nothing is saved.
-- **Safe saving:** the save job writes only into the validated request folder and refuses symbolic links on the way.
+- **Safe saving:** the save job writes only into the validated request folder and `ai/issues/`, and refuses symbolic links on the way. The issue snapshot is only committed if it consists of regular files named `snapshot.json`, `index.md` and `issue-<number>.md`.
+- **Issue snapshot:** the stored issue texts are untrusted like all other issue data, and the AI is told so.
 - **Pinned dependencies:** all GitHub actions are pinned to full commit SHAs, Copilot CLI to an exact version, Python packages to exact versions with hashes.
 - **Reports are untrusted too:** a report is derived from third-party text. Read it critically and do not feed it into other automation unchecked. A report named by `previous` is only passed as a file that the AI is told to treat as untrusted data and to verify against the code.
 
@@ -327,6 +330,8 @@ Possible future hardening: if the workflow is ever opened to other users or trig
 | `.github/workflows/ai-assistant-murggel.yml` | The workflow: validate, one job per provider (`run-copilot`, `run-claude`), save. |
 | `scripts/validate_request.py` | Checks `request.yml`. The **only** place that defines allowed tasks, providers, repositories and folder names. |
 | `scripts/fetch_context.py` | Downloads issue or PR data from the GitHub API (with paging, error handling and size limit) and formats the branch-review context. |
+| `scripts/issue_snapshot.py` | Creates and updates the snapshot of all open upstream issues in `issues/`. |
+| `issues/` | The issue snapshot, written by the workflow. Do not edit by hand. |
 | `scripts/prepare_task.py` | Prepares the workspace for a task, the same for every provider: c:geo checkout, PR checkout, issue/PR data, removal of symbolic links, and the final prompt (`prompts/<task>.md` plus the request's instructions). |
 | `scripts/finalize_report.py` | Builds `report.md`: header line, Claude's final answer only, size limit, token scan. |
 | `scripts/test_*.py` | Unit tests for the scripts. |
@@ -360,3 +365,33 @@ python -m unittest discover --start-directory ai/scripts --pattern 'test_*.py' -
 ```
 
 On Windows `cmd` use double quotes: `--pattern "test_*.py"`. Tests that need symbolic links are skipped where the system does not allow creating them; on GitHub they run. The workflow runs all tests before every request.
+
+## Issue snapshot
+
+The AI has no network access, so it cannot search GitHub itself. To still find related issues, `ai/issues/` holds a copy of all open issues of `cgeo/cgeo`:
+
+| File | Content |
+|---|---|
+| `index.md` | One line per open issue: number, labels, title, last update, number of comments. The AI searches it with `Grep`. |
+| `issue-<number>.md` | Description and all comments of one issue, in the same format as `ai-context/issue-context.md`. The AI reads it for every candidate. |
+| `snapshot.json` | Time of the last update and the data of the index; used for the next update. |
+
+How it stays current:
+
+- Before every `analyze-issue` and `review-pr` run, `prepare_task.py` asks GitHub only for issues changed since the last update (`since` parameter, with 10 minutes overlap). Changed issues are rewritten, closed ones are deleted. The AI therefore sees the current state of every issue it reads.
+- The save job commits the updated snapshot together with the report.
+- If the update fails (for example because of the API rate limit), the run continues with the existing snapshot. The report header then says `issue snapshot: stale` or, if there is none yet, `issue snapshot: missing`.
+- Analysis and review get 10 more agent turns for the search.
+
+Create the first snapshot locally, because a full download needs one request per issue with comments and can exceed the 1,000 requests per hour that the workflow token may use. A personal access token without any scopes is enough (5,000 requests per hour):
+
+```bash
+git switch dev/ai-workflows
+git pull --rebase origin dev/ai-workflows
+GH_API_TOKEN=<token> python ai/scripts/issue_snapshot.py
+git add ai/issues
+git commit -m "Add issue snapshot"
+git push origin dev/ai-workflows
+```
+
+`python ai/scripts/issue_snapshot.py --full` downloads everything again, for example if the snapshot got out of step. Without a token the script works too, but GitHub then allows only 60 requests per hour.
