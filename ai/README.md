@@ -198,6 +198,25 @@ previous: review-001
 - The provider may differ from the earlier one. The report header says `previous: <folder>`.
 - Smoke tests do not accept `previous`.
 
+### Verifying candidate issues
+
+Issue analyses and reviews list candidate issues from the [issue snapshot](#issue-snapshot), judged only from its short summaries. To have them checked against the full, current issues, push a follow-up request with `previous` and `verify`:
+
+```yaml
+# ai/requests/issue-18829/analysis-002/request.yml
+task: analyze-issue
+provider: claude
+issue: 18829
+previous: analysis-001
+verify: all             # or a list: [18830, 18841]
+```
+
+- `all` takes every issue linked in the earlier report (`https://github.com/cgeo/cgeo/issues/<number>`), except the analyzed issue or PR itself. A list names the issues yourself, for example to drop candidates you already rejected or to add one.
+- At most 15 issues. With `all`, only the first 15 links are used and the run shows a warning.
+- Before the AI starts, each issue is downloaded with description, all comments, state and labels to `ai-context/candidates/issue-<number>.md`. An issue that cannot be downloaded (for example a wrong number) gets a short note instead.
+- The AI adds a section "Verification of candidate issues": current state, verdict (confirmed, partially confirmed, rejected) with reasoning, and the updated recommendation, for reviews the final `fixes #` list.
+- Works for `analyze-issue`, `review-pr` and `review-branch`; `verify` without `previous` is rejected. The report header says `verify: <n> issues`, and the run gets 10 more agent turns.
+
 The file is checked strictly. It is rejected if it has unknown or duplicate keys, YAML anchors (`&name`, `*name`), is larger than 16 KiB, is a symbolic link, or if a number is not a whole number between 1 and 999999999.
 
 ## What happens after the push
@@ -388,7 +407,7 @@ How the summary is built (by rules in `scripts/issue_snapshot.py`, without AI):
 How the AI uses it:
 
 - `analyze-issue` lists open issues that make sense to handle together, `review-pr` and `review-branch` list the issues the change fixes. `review-branch` also puts `fixes #` lines into the draft PR description.
-- The AI only sees the summary. Each listed issue is marked *to be verified*, with a link; check the full issue on GitHub before you rely on it.
+- The AI only sees the summary. Each listed issue is marked *to be verified*, with a link. Check the full issue on GitHub, or let a follow-up request [verify the candidates](#verifying-candidate-issues).
 - These tasks get 10 more agent turns for the search. The report header names the snapshot date, or `outdated` if it is older than 14 days, or `missing`.
 
 How it stays current:

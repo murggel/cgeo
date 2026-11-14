@@ -10,6 +10,8 @@ Branch reviews name a branch of the fork and a base branch of the upstream
 repository. Analyses and reviews may carry free-text ``instructions`` that are added to
 the prompt; the workflow passes them on unchanged. They may also name an earlier
 request of the same subject as ``previous``, whose report the new run builds on.
+A follow-up request may also name candidate issues to ``verify``: ``all`` (the
+issues linked in the previous report) or a list of issue numbers.
 refresh-issues runs no AI and therefore names no provider.
 """
 
@@ -29,6 +31,8 @@ import yaml
 MAX_REQUEST_BYTES = 16_384
 MAX_NUMBER = 999_999_999
 MAX_INSTRUCTIONS_CHARS = 4_000
+# verify: candidate issues whose full text is downloaded for a follow-up request.
+MAX_VERIFY_ISSUES = 15
 # Tabs and line breaks are fine; other control characters are not.
 FORBIDDEN_CHARACTERS = re.compile("[\x00-\x08\x0b-\x1f\x7f]")
 # review-branch: branch names of the fork, restricted to safe characters.
@@ -57,7 +61,7 @@ TASKS = {
     "analyze-issue": TaskRule(
         providers=frozenset({"claude", "copilot"}),
         required_keys=frozenset({"issue"}),
-        optional_keys=frozenset({"instructions", "previous"}),
+        optional_keys=frozenset({"instructions", "previous", "verify"}),
         subject=re.compile(rf"issue-{NUMBER}{DESCRIPTION}"),
         request_id=re.compile(rf"analysis-[0-9]{{3}}{DESCRIPTION}"),
         layout="ai/requests/issue-<number>[-description]/analysis-NNN[-description]/request.yml",
@@ -65,7 +69,7 @@ TASKS = {
     "review-pr": TaskRule(
         providers=frozenset({"claude", "copilot"}),
         required_keys=frozenset({"pr"}),
-        optional_keys=frozenset({"instructions", "previous"}),
+        optional_keys=frozenset({"instructions", "previous", "verify"}),
         subject=re.compile(rf"(?:pr-{NUMBER}|issue-[1-9][0-9]{{0,8}}){DESCRIPTION}"),
         request_id=re.compile(rf"review(?:-pr)?-[0-9]{{3}}{DESCRIPTION}"),
         layout="ai/requests/(pr|issue)-<number>[-description]/review[-pr]-NNN[-description]/request.yml",
@@ -73,7 +77,7 @@ TASKS = {
     "review-branch": TaskRule(
         providers=frozenset({"claude", "copilot"}),
         required_keys=frozenset({"branch", "base"}),
-        optional_keys=frozenset({"instructions", "previous"}),
+        optional_keys=frozenset({"instructions", "previous", "verify"}),
         subject=re.compile(rf"branch-[A-Za-z0-9_-]+"),
         request_id=re.compile(rf"review-[0-9]{{3}}{DESCRIPTION}"),
         layout="ai/requests/branch-<description>/review-NNN[-description]/request.yml",
@@ -108,9 +112,10 @@ class Request:
     branch: str = ""
     base: str = ""
     previous_report: str = ""
+    verify: str = ""
 
     def outputs(self) -> dict[str, str]:
-        return {
+        outputs = {
             "request_dir": self.path.parent.as_posix(),
             "task": self.task,
             "provider": self.provider,
@@ -121,6 +126,9 @@ class Request:
             "base": self.base,
             "previous_report": self.previous_report,
         }
+        if self.verify:
+            outputs["verify"] = self.verify
+        return outputs
 
     def summary(self) -> str:
         lines = [f"- Task: {self.task}"]
@@ -136,6 +144,8 @@ class Request:
             lines.append(f"- Additional instructions: {len(self.instructions)} characters")
         if self.previous_report:
             lines.append(f"- Previous report: {self.previous_report}")
+        if self.verify:
+            lines.append(f"- Verify candidate issues: {self.verify}")
         lines.append(f"- Request: {self.path.as_posix()}")
         return "\n".join(lines)
 
@@ -281,6 +291,25 @@ def _previous_report(request: dict[str, Any], root: Path, path: PurePosixPath) -
     return report.as_posix()
 
 
+def _verify(request: dict[str, Any]) -> str:
+    """Return 'all' or the comma-separated issue numbers named by ``verify``."""
+    if "verify" not in request:
+        return ""
+    if "previous" not in request:
+        raise ValueError("verify needs previous: it checks the candidates of an earlier report")
+    value = request["verify"]
+    if value == "all":
+        return "all"
+    if not isinstance(value, list) or not 1 <= len(value) <= MAX_VERIFY_ISSUES or any(
+            isinstance(item, bool) or not isinstance(item, int) or not 1 <= item <= MAX_NUMBER
+            for item in value) or len(set(value)) != len(value):
+        raise ValueError(
+            f"verify must be 'all' or a list of 1 to {MAX_VERIFY_ISSUES} different issue numbers "
+            "(e.g. verify: [18830, 18841])"
+        )
+    return ",".join(str(item) for item in value)
+
+
 def write_github_output(path: Path, outputs: dict[str, str]) -> None:
     """Append outputs to $GITHUB_OUTPUT; multi-line values use a random delimiter."""
     with path.open("a", encoding="utf-8") as stream:
@@ -345,7 +374,7 @@ def validate_request(request_path: str | PurePosixPath, root: Path = Path(".")) 
 
     branch, base = _branch(request)
     return Request(path, task, provider, number, repository, _instructions(request), branch, base,
-                   _previous_report(request, root, path))
+                   _previous_report(request, root, path), _verify(request))
 
 
 def main(argv: list[str] | None = None) -> int:

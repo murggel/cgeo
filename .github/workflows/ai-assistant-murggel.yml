@@ -44,6 +44,7 @@ jobs:
       branch: ${{ steps.request.outputs.branch }}
       base: ${{ steps.request.outputs.base }}
       previous_report: ${{ steps.request.outputs.previous_report }}
+      verify: ${{ steps.request.outputs.verify }}
 
     steps:
       - name: Check out request branch
@@ -178,10 +179,11 @@ jobs:
           REVIEW_BRANCH: ${{ needs.validate.outputs.branch }}
           REVIEW_BASE: ${{ needs.validate.outputs.base }}
           PREVIOUS_REPORT: ${{ needs.validate.outputs.previous_report }}
+          VERIFY: ${{ needs.validate.outputs.verify }}
         run: |
           python ai/scripts/prepare_task.py --task "$TASK" --number "$NUMBER" --repository "$REPOSITORY" \
             --instructions="$INSTRUCTIONS" --branch="$REVIEW_BRANCH" --base="$REVIEW_BASE" \
-            --previous-report="$PREVIOUS_REPORT" --issue-snapshot ai/issues \
+            --previous-report="$PREVIOUS_REPORT" --issue-snapshot ai/issues --verify="$VERIFY" \
             --output-dir "$RUNNER_TEMP" --github-output "$GITHUB_OUTPUT"
 
       - name: Run Copilot
@@ -270,10 +272,11 @@ jobs:
           REVIEW_BRANCH: ${{ needs.validate.outputs.branch }}
           REVIEW_BASE: ${{ needs.validate.outputs.base }}
           PREVIOUS_REPORT: ${{ needs.validate.outputs.previous_report }}
+          VERIFY: ${{ needs.validate.outputs.verify }}
         run: |
           python ai/scripts/prepare_task.py --task "$TASK" --number "$NUMBER" --repository "$REPOSITORY" \
             --instructions="$INSTRUCTIONS" --branch="$REVIEW_BRANCH" --base="$REVIEW_BASE" \
-            --previous-report="$PREVIOUS_REPORT" --issue-snapshot ai/issues \
+            --previous-report="$PREVIOUS_REPORT" --issue-snapshot ai/issues --verify="$VERIFY" \
             --output-dir "$RUNNER_TEMP" --github-output "$GITHUB_OUTPUT"
 
       - name: Run Claude Code
