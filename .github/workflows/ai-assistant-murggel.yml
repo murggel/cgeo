@@ -229,15 +229,6 @@ jobs:
           if-no-files-found: error
           retention-days: 3
 
-      - name: Upload issue snapshot
-        if: env.TASK == 'analyze-issue' || env.TASK == 'review-pr'
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: issue-snapshot
-          path: ai/issues/
-          if-no-files-found: ignore
-          retention-days: 3
-
   run-claude:
     name: Run ${{ needs.validate.outputs.task }}${{ needs.validate.outputs.number && format(' {0}#{1}', needs.validate.outputs.repository, needs.validate.outputs.number) || '' }}${{ needs.validate.outputs.branch && format(' {0}', needs.validate.outputs.branch) || '' }} with Claude Code
     needs: validate
@@ -328,15 +319,6 @@ jobs:
           if-no-files-found: error
           retention-days: 3
 
-      - name: Upload issue snapshot
-        if: env.TASK == 'analyze-issue' || env.TASK == 'review-pr'
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: issue-snapshot
-          path: ai/issues/
-          if-no-files-found: ignore
-          retention-days: 3
-
   publish-report:
     name: Commit report${{ needs.validate.outputs.number && format(' {0}#{1}', needs.validate.outputs.repository, needs.validate.outputs.number) || '' }}${{ needs.validate.outputs.branch && format(' {0}', needs.validate.outputs.branch) || '' }}
     needs:
@@ -374,15 +356,6 @@ jobs:
           name: report
           path: ${{ runner.temp }}/report
 
-      - name: Download issue snapshot
-        if: env.TASK == 'analyze-issue' || env.TASK == 'review-pr'
-        # Missing when the snapshot could not be created; the report is committed anyway.
-        continue-on-error: true
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          name: issue-snapshot
-          path: ${{ runner.temp }}/issue-snapshot
-
       - name: Commit and push report
         run: |
           source="$RUNNER_TEMP/report/report.md"
@@ -402,21 +375,6 @@ jobs:
             *) message="Add ${PROVIDER^} smoke-test report" ;;
           esac
           report_path="$REQUEST_DIR/report.md"
-
-          # The refreshed snapshot of open upstream issues is committed with the report.
-          # Only regular files with the expected names are accepted.
-          snapshot="$RUNNER_TEMP/issue-snapshot"
-          snapshot_dir="ai/issues"
-          if [[ -f "$snapshot/snapshot.json" && -f "$snapshot/index.md" ]]; then
-            if find "$snapshot" -mindepth 1 \( ! -type f -o ! -regex '.*/\(snapshot\.json\|index\.md\|issue-[0-9]+\.md\)' \) | grep -q .; then
-              echo "::warning::Issue snapshot contains unexpected entries; it is not committed."
-              snapshot=""
-            else
-              message="$message and update issue snapshot"
-            fi
-          else
-            snapshot=""
-          fi
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -445,17 +403,6 @@ jobs:
 
             cp "$source" "$report_path"
             git add -- "$report_path"
-
-            if [[ -n "$snapshot" ]]; then
-              if [[ -L ai || -L "$snapshot_dir" ]]; then
-                echo "::error::$snapshot_dir is a symbolic link; refusing to write the issue snapshot."
-                exit 1
-              fi
-              rm -rf -- "$snapshot_dir"
-              mkdir -p -- "$snapshot_dir"
-              cp -- "$snapshot"/* "$snapshot_dir"/
-              git add --all -- "$snapshot_dir"
-            fi
             if git diff --cached --quiet; then
               echo "The report is unchanged; no commit is needed."
               exit 0
@@ -471,4 +418,90 @@ jobs:
           done
 
           echo "::error::Could not push the report after 3 attempts. It is still available for 3 days as the 'report' artifact."
+          exit 1
+
+  refresh-issues:
+    name: Create issue snapshot of cgeo/cgeo
+    needs: validate
+    if: needs.validate.outputs.task == 'refresh-issues'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    # Runs no AI; it only reads public issues and commits the summary.
+    permissions:
+      contents: write
+      issues: read
+    env:
+      BRANCH: dev/ai-workflows
+      REQUEST_DIR: ${{ needs.validate.outputs.request_dir }}
+      REPOSITORY: ${{ needs.validate.outputs.repository }}
+
+    steps:
+      - name: Check out request branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          sparse-checkout: /ai/
+          sparse-checkout-cone-mode: false
+          persist-credentials: true
+
+      - name: Set up Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+
+      - name: Create snapshot
+        env:
+          GH_API_TOKEN: ${{ github.token }}
+        run: |
+          python ai/scripts/issue_snapshot.py --repository "$REPOSITORY" \
+            --directory "$RUNNER_TEMP/issues" --report "$RUNNER_TEMP/report.md"
+          if (( $(du -cb "$RUNNER_TEMP/issues"/* | tail -n1 | cut -f1) > 4 * 1024 * 1024 )); then
+            echo "::error::Issue snapshot exceeds 4 MiB."
+            exit 1
+          fi
+
+      - name: Commit and push snapshot
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          snapshot_dir="ai/issues"
+          report_path="$REQUEST_DIR/report.md"
+
+          # Always build on the latest branch state; retry up to three
+          # times if someone pushes in between.
+          for attempt in 1 2 3; do
+            git fetch --quiet --no-tags --depth=1 origin "$BRANCH"
+            git checkout --quiet --force -B publish FETCH_HEAD
+
+            for path in ai "$snapshot_dir" "$(dirname "$REQUEST_DIR")" "$REQUEST_DIR" "$report_path"; do
+              if [[ -L "$path" ]]; then
+                echo "::error::$path is a symbolic link; refusing to write."
+                exit 1
+              fi
+            done
+            if [[ ! -d "$REQUEST_DIR" ]]; then
+              echo "::error::$REQUEST_DIR no longer exists on $BRANCH."
+              exit 1
+            fi
+
+            rm -rf -- "$snapshot_dir"
+            mkdir -p -- "$snapshot_dir"
+            cp -- "$RUNNER_TEMP/issues/issues.md" "$RUNNER_TEMP/issues/snapshot.json" "$snapshot_dir"/
+            cp -- "$RUNNER_TEMP/report.md" "$report_path"
+            git add --all -- "$snapshot_dir" "$report_path"
+            if git diff --cached --quiet; then
+              echo "The snapshot is unchanged; no commit is needed."
+              exit 0
+            fi
+            git commit --quiet -m "Update issue snapshot of $REPOSITORY"
+
+            if git push --quiet origin "HEAD:$BRANCH"; then
+              printf '## Issue snapshot committed\n\n%s\n' "$(tail -n1 "$RUNNER_TEMP/report.md")" >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            echo "::warning::Push attempt $attempt failed; retrying."
+            sleep $((attempt * 3))
+          done
+
+          echo "::error::Could not push the issue snapshot after 3 attempts."
           exit 1

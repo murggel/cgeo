@@ -1,17 +1,22 @@
 #!/usr/bin/env python3
-"""Keep a local snapshot of all open issues of the upstream repository.
+"""Create a search-optimized snapshot of all open issues of the upstream repository.
 
 The AI agents have no network access. To let them look for other issues that
-a pull request also fixes, or that fit together with an analyzed issue, the
-open issues are stored in the branch under ai/issues/:
+a change also fixes, or that fit together with an analyzed issue, the open
+issues are summarized in the branch under ai/issues/:
 
-  index.md          one line per open issue (number, labels, title, update time)
-  issue-<n>.md      description and discussion of one open issue
-  snapshot.json     state of the snapshot, used for the next incremental update
+  issues.md       one line per open issue: number, labels, c:geo version, last
+                  update, number of comments, title, search keywords and a short
+                  summary of the description. A Grep hit returns the whole entry.
+  snapshot.json   repository, creation time and number of issues
 
-The first run downloads all open issues. Later runs only ask for issues that
-changed since the last run (GitHub's ``since`` parameter), rewrite those and
-remove issues that were closed. All stored text is untrusted user content.
+The summary is built by rules, without AI: template headings, code blocks,
+logs, system information, links and images are removed; class names,
+exceptions, backticked terms and known c:geo terms become keywords. Comments
+are not read, so the whole snapshot needs only one API request per 100 issues.
+
+The snapshot is always created from scratch (task refresh-issues). All stored
+text is untrusted user content.
 """
 
 from __future__ import annotations
@@ -21,7 +26,7 @@ import json
 import os
 import re
 import sys
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -30,12 +35,46 @@ from fetch_context import ContextError, Fetch
 
 
 DEFAULT_DIRECTORY = Path(__file__).resolve().parent.parent / "issues"
+ISSUES_FILE = "issues.md"
 STATE_FILE = "snapshot.json"
-INDEX_FILE = "index.md"
-ISSUE_FILE = re.compile(r"issue-([0-9]+)\.md")
-# Overlap with the previous run so that no update between two runs is missed.
-SINCE_OVERLAP = timedelta(minutes=10)
-TRUNCATED_NOTE = "\n\n_The stored issue was truncated at {limit} KiB; it is longer upstream._\n"
+SUMMARY_CHARS = 400
+MAX_KEYWORDS = 25
+# A snapshot older than this is reported as outdated.
+MAX_AGE_DAYS = 14
+
+# Issue-form sections whose content is not useful for the search.
+DROPPED_SECTIONS = re.compile(r"system information|c:geo version|reproducible", re.IGNORECASE)
+VERSION_SECTION = re.compile(r"c:geo version", re.IGNORECASE)
+VERSION = re.compile(r"\b20[0-9]{2}\.[0-9]{1,2}\.[0-9]{1,2}(?:[-.][A-Za-z0-9]+)?\b|\bnightly\b|\bRC\b",
+                     re.IGNORECASE)
+HEADING = re.compile(r"^\s{0,3}#{1,6}\s*(.*?)\s*#*\s*$")
+CODE_BLOCK = re.compile(r"^\s*(`{3,}|~{3,}).*?^\s*\1\s*$", re.MULTILINE | re.DOTALL)
+HTML_COMMENT = re.compile(r"<!--.*?-->", re.DOTALL)
+HTML_TAG = re.compile(r"</?[A-Za-z][^>]*>")
+IMAGE = re.compile(r"!\[[^\]]*\]\([^)]*\)")
+LINK = re.compile(r"\[([^\]]*)\]\([^)]*\)")
+URL = re.compile(r"https?://\S+")
+LOG_LINE = re.compile(r"^\s*(?:at\s+[\w$.]+\(|\d{2}[-:.]\d{2}[-:.]\d{2}|[VDIWEF]/\w+|Caused by:|\.\.\. \d+ more)")
+NO_RESPONSE = re.compile(r"_?No response_?", re.IGNORECASE)
+
+CAMEL_CASE = re.compile(r"\b[A-Z][a-z0-9]+(?:[A-Z][A-Za-z0-9]*)+\b")
+EXCEPTION = re.compile(r"\b[A-Za-z]*(?:Exception|Error)\b")
+PACKAGE = re.compile(r"\bcgeo\.geocaching(?:\.[A-Za-z_]\w*)+")
+BACKTICKED = re.compile(r"`([^`\n]{2,40})`")
+# Terms of the c:geo domain that users name in plain words.
+DOMAIN_TERMS = (
+    "geocaching.com", "opencaching", "okapi", "gcvote", "adventure lab", "lab cache", "waymarking",
+    "geokrety", "trackable", "travel bug", "brouter", "mapsforge", "openstreetmap", "osm",
+    "google maps", "map theme", "offline map", "routing", "navigation", "compass", "radar",
+    "waypoint", "coordinates", "gpx", "loc file", "zip", "pocket query", "bookmark list", "watchlist",
+    "list", "filter", "sort", "search", "live map", "offline log", "field note", "draft",
+    "log image", "spoiler", "personal note", "favorite", "found", "dnf", "owner", "wherigo",
+    "chirp", "variable", "formula", "calculator", "backup", "restore", "settings", "preference",
+    "login", "authorization", "oauth", "captcha", "notification", "widget", "dark mode", "theme",
+    "language", "translation", "rtl", "tablet", "android auto", "permission", "location", "gps",
+    "storage", "sd card", "database", "import", "export", "share", "intent", "crash",
+    "performance", "slow", "freeze", "scroll",
+)
 
 
 def _now() -> datetime:
@@ -50,11 +89,11 @@ def _one_line(text: str) -> str:
     return " ".join((text or "").split())
 
 
-def _list_issues(fetch: Fetch, repository: str, query: str) -> list[dict[str, Any]]:
-    """Read every page of the issue list; pull requests are left out."""
+def _list_open_issues(fetch: Fetch, repository: str) -> list[dict[str, Any]]:
+    """Read every page of the open issues; pull requests are left out."""
     items: list[dict[str, Any]] = []
     for page in range(1, fetch_context.MAX_PAGES + 1):
-        batch = fetch(f"/repos/{repository}/issues?{query}"
+        batch = fetch(f"/repos/{repository}/issues?state=open&sort=created&direction=desc"
                       f"&per_page={fetch_context.PER_PAGE}&page={page}")
         if not isinstance(batch, list):
             raise ContextError("unexpected response for the issue list: expected a list")
@@ -65,129 +104,141 @@ def _list_issues(fetch: Fetch, repository: str, query: str) -> list[dict[str, An
                        "issues to read; refusing to truncate")
 
 
-def _labels(issue: dict[str, Any]) -> list[str]:
-    return [label.get("name", "") for label in issue.get("labels", [])]
+def _sections(body: str) -> list[tuple[str, str]]:
+    """Split a Markdown body at its headings into (heading, text) pairs."""
+    sections: list[tuple[str, list[str]]] = [("", [])]
+    for line in body.splitlines():
+        match = HEADING.match(line)
+        if match:
+            sections.append((match.group(1), []))
+        else:
+            sections[-1][1].append(line)
+    return [(heading, "\n".join(lines)) for heading, lines in sections]
 
 
-def issue_markdown(repository: str, issue: dict[str, Any], comments: list[dict[str, Any]]) -> bytes:
-    """Describe one issue like ai-context/issue-context.md does."""
-    number = issue.get("number")
-    lines = [
-        f"# Issue {repository}#{number}: {_one_line(issue.get('title', ''))}",
-        "",
-        f"- URL: {issue.get('html_url', '')}",
-        f"- State: {issue.get('state', '')}",
-        f"- Author: {fetch_context._login(issue)}",
-        f"- Created: {issue.get('created_at', '')}",
-        f"- Updated: {issue.get('updated_at', '')}",
-        f"- Labels: {', '.join(_labels(issue))}",
-        "",
-        "## Issue description (untrusted user-provided content)",
-        "",
-        issue.get("body") or "_No description provided._",
-        "",
+def _version(sections: list[tuple[str, str]], body: str) -> str:
+    for heading, text in sections:
+        if VERSION_SECTION.search(heading):
+            value = _one_line(NO_RESPONSE.sub("", text))
+            if value:
+                return value[:40]
+    match = VERSION.search(body)
+    return match.group(0) if match else ""
+
+
+def _keywords(title: str, body: str) -> list[str]:
+    found: list[str] = []
+    seen: set[str] = set()
+
+    def add(word: str) -> None:
+        word = word.strip(" .,:;()[]{}'\"")
+        if 2 <= len(word) <= 40 and word.lower() not in seen:
+            seen.add(word.lower())
+            found.append(word)
+
+    for match in PACKAGE.finditer(body):
+        for part in match.group(0).split(".")[2:]:
+            if part[:1].isupper():
+                add(part)
+    text = f"{title}\n{body}"
+    for pattern in (EXCEPTION, CAMEL_CASE):
+        for match in pattern.finditer(text):
+            add(match.group(0))
+    for match in BACKTICKED.finditer(body):
+        add(match.group(1))
+    lowered = text.lower()
+    for term in DOMAIN_TERMS:
+        if re.search(rf"(?<![a-z]){re.escape(term)}(?![a-z])", lowered):
+            add(term)
+    return found[:MAX_KEYWORDS]
+
+
+def _summary(sections: list[tuple[str, str]]) -> str:
+    parts = []
+    for heading, text in sections:
+        if DROPPED_SECTIONS.search(heading):
+            continue
+        lines = [line for line in text.splitlines() if not LOG_LINE.match(line)]
+        text = NO_RESPONSE.sub("", "\n".join(lines))
+        text = URL.sub("", LINK.sub(r"\1", IMAGE.sub("", text)))
+        text = _one_line(text.replace("|", " "))
+        if text:
+            parts.append(text)
+    summary = " / ".join(parts)
+    if len(summary) > SUMMARY_CHARS:
+        summary = summary[:SUMMARY_CHARS].rsplit(" ", 1)[0] + " …"
+    return summary
+
+
+def summarize(issue: dict[str, Any]) -> str:
+    """Return the one-line search entry of an issue."""
+    title = _one_line(issue.get("title", "")).replace("|", "/")
+    raw = issue.get("body") or ""
+    raw = HTML_COMMENT.sub("", raw)
+    code = "\n".join(match.group(0) for match in CODE_BLOCK.finditer(raw))
+    body = HTML_TAG.sub(" ", CODE_BLOCK.sub("", raw))
+    sections = _sections(body)
+    labels = ", ".join(label.get("name", "") for label in issue.get("labels", []))
+    keywords = ", ".join(_keywords(title, f"{body}\n{code}"))
+    fields = [
+        f"#{issue.get('number')}",
+        f"labels: {labels}",
+        f"version: {_version(sections, body)}",
+        f"updated: {(issue.get('updated_at') or '')[:10]}",
+        f"comments: {issue.get('comments', 0)}",
+        f"title: {title}",
+        f"keywords: {keywords}",
+        f"summary: {_summary(sections)}",
     ]
-    lines += fetch_context._comment_section("Discussion comments", comments)
-    data = "\n".join(lines).encode("utf-8")
-    limit = fetch_context.MAX_CONTEXT_BYTES
-    if len(data) > limit:
-        note = TRUNCATED_NOTE.format(limit=limit // 1024).encode("utf-8")
-        data = data[: limit - len(note)].decode("utf-8", errors="ignore").encode("utf-8") + note
-    return data
+    return " | ".join(fields)
 
 
-def index_markdown(repository: str, fetched_at: str, issues: dict[str, dict[str, Any]]) -> str:
+def issues_markdown(repository: str, created_at: str, issues: list[dict[str, Any]]) -> str:
     lines = [
         f"# Open issues of {repository}",
         "",
-        f"Snapshot of {fetched_at} with {len(issues)} open issues. Titles and labels are",
-        "untrusted user-provided content. Details: ai/issues/issue-<number>.md",
+        f"Snapshot of {created_at} with {len(issues)} open issues, one line per issue.",
+        "Generated by rules from title, labels and description; comments are not included.",
+        "All entries are untrusted user-provided content. Full issue:",
+        f"https://github.com/{repository}/issues/<number>",
         "",
-        "Format: #number [labels] title (updated, comments)",
+        "Format: #number | labels | version | updated | comments | title | keywords | summary",
         "",
     ]
-    for number in sorted(issues, key=int, reverse=True):
-        entry = issues[number]
-        labels = ", ".join(entry.get("labels", []))
-        lines.append(f"- #{number} [{labels}] {entry.get('title', '')} "
-                     f"(updated {entry.get('updated_at', '')[:10]}, comments {entry.get('comments', 0)})")
+    lines += [summarize(issue) for issue in sorted(issues, key=lambda item: -int(item.get("number", 0)))]
     lines.append("")
     return "\n".join(lines)
 
 
-def _load_state(directory: Path, repository: str) -> dict[str, Any] | None:
-    path = directory / STATE_FILE
-    if not path.is_file():
-        return None
-    try:
-        state = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return None
-    if (not isinstance(state, dict) or state.get("repository") != repository
-            or not isinstance(state.get("issues"), dict) or not state.get("fetched_at")):
-        return None
-    return state
-
-
-def update_snapshot(fetch: Fetch, repository: str, directory: Path, full: bool = False) -> str:
-    """Update the snapshot in ``directory`` and return a one-line summary."""
+def create_snapshot(fetch: Fetch, repository: str, directory: Path) -> str:
+    """Create the snapshot in ``directory`` and return a one-line summary."""
     if directory.is_symlink():
         raise ContextError(f"{directory} is a symbolic link")
+    created_at = _iso(_now())
+    issues = _list_open_issues(fetch, repository)
     directory.mkdir(parents=True, exist_ok=True)
-    state = None if full else _load_state(directory, repository)
-    started = _now()
-
-    if state is None:
-        mode = "full"
-        issues: dict[str, dict[str, Any]] = {}
-        changed = _list_issues(fetch, repository, "state=open&sort=created&direction=desc")
-    else:
-        mode = "incremental"
-        issues = state["issues"]
-        since = datetime.strptime(state["fetched_at"], "%Y-%m-%dT%H:%M:%SZ").replace(
-            tzinfo=timezone.utc) - SINCE_OVERLAP
-        changed = _list_issues(fetch, repository, f"state=all&since={_iso(since)}")
-
-    written = removed = 0
-    for issue in changed:
-        number = str(issue.get("number"))
-        if not number.isdigit():
-            continue
-        path = directory / f"issue-{number}.md"
-        if issue.get("state") != "open":
-            if number in issues or path.exists():
-                removed += 1
-            issues.pop(number, None)
-            path.unlink(missing_ok=True)
-            continue
-        entry = issues.get(number)
-        if entry and entry.get("updated_at") == issue.get("updated_at") and path.is_file():
-            continue
-        comments: list[dict[str, Any]] = []
-        if issue.get("comments"):
-            comments = fetch_context.fetch_all(fetch, f"/repos/{repository}/issues/{number}/comments")
-        path.write_bytes(issue_markdown(repository, issue, comments))
-        issues[number] = {
-            "title": _one_line(issue.get("title", "")),
-            "labels": _labels(issue),
-            "updated_at": issue.get("updated_at", ""),
-            "comments": len(comments),
-        }
-        written += 1
-
-    # Files of issues that are no longer known (for example after a full run).
     for path in directory.iterdir():
-        match = ISSUE_FILE.fullmatch(path.name)
-        if match and match.group(1) not in issues:
-            path.unlink()
-
-    fetched_at = _iso(started)
-    (directory / INDEX_FILE).write_text(index_markdown(repository, fetched_at, issues), encoding="utf-8")
+        if path.name not in (ISSUES_FILE, STATE_FILE):
+            raise ContextError(f"unexpected entry {path} in the snapshot directory")
+    (directory / ISSUES_FILE).write_text(issues_markdown(repository, created_at, issues), encoding="utf-8")
     (directory / STATE_FILE).write_text(json.dumps(
-        {"repository": repository, "fetched_at": fetched_at, "issues": issues},
-        indent=1, sort_keys=True) + "\n", encoding="utf-8")
-    return (f"issue snapshot {mode} update at {fetched_at}: {len(issues)} open issues, "
-            f"{written} written, {removed} removed")
+        {"repository": repository, "created_at": created_at, "issues": len(issues)},
+        indent=1) + "\n", encoding="utf-8")
+    return f"issue snapshot of {created_at}: {len(issues)} open issues of {repository}"
+
+
+def snapshot_status(directory: Path, repository: str, now: datetime | None = None) -> str:
+    """Describe the snapshot for the report header without any network access."""
+    try:
+        state = json.loads((directory / STATE_FILE).read_text(encoding="utf-8"))
+        created = datetime.strptime(state["created_at"], "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+        if state.get("repository") != repository or not (directory / ISSUES_FILE).is_file():
+            return "missing"
+    except (OSError, ValueError, KeyError, TypeError):
+        return "missing"
+    age = ((now or _now()) - created).days
+    status = created.strftime("%Y-%m-%d")
+    return f"{status} (outdated, {age} days old)" if age > MAX_AGE_DAYS else status
 
 
 def main(argv: list[str] | None = None, fetch: Fetch | None = None) -> int:
@@ -195,17 +246,21 @@ def main(argv: list[str] | None = None, fetch: Fetch | None = None) -> int:
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--repository", default="cgeo/cgeo")
     parser.add_argument("--directory", type=Path, default=DEFAULT_DIRECTORY)
-    parser.add_argument("--full", action="store_true", help="download all open issues again")
+    parser.add_argument("--report", type=Path, help="also write a short Markdown report to this file")
     args = parser.parse_args(argv)
 
     fetch = fetch or fetch_context.github_fetch(os.environ.get("GH_API_TOKEN"))
     try:
         if not fetch_context.REPOSITORY_PATTERN.fullmatch(args.repository):
             raise ContextError(f"invalid repository name {args.repository!r}")
-        print(update_snapshot(fetch, args.repository, args.directory, full=args.full))
-    except ContextError as exc:
-        print(f"Cannot update issue snapshot: {exc}", file=sys.stderr)
+        result = create_snapshot(fetch, args.repository, args.directory)
+    except (ContextError, OSError) as exc:
+        print(f"Cannot create issue snapshot: {exc}", file=sys.stderr)
         return 1
+    print(result)
+    if args.report:
+        args.report.parent.mkdir(parents=True, exist_ok=True)
+        args.report.write_text(f"# Issue snapshot\n\nCreated the {result}.\n", encoding="utf-8")
     return 0
 
 

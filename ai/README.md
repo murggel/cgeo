@@ -57,6 +57,7 @@ Ready-made request files are in [`templates/`](templates/). They use the same fo
 - Pull-request review: [`templates/pr-XXX/review-00X/`](templates/pr-XXX/review-00X/request.yml)
 - Branch review: [`templates/branch-XXX/review-00X/`](templates/branch-XXX/review-00X/request.yml)
 - Smoke test: [`templates/smoke-test/XXX/`](templates/smoke-test/XXX/request.yml)
+- Issue snapshot: [`templates/issue-snapshot/XXX/`](templates/issue-snapshot/XXX/request.yml)
 
 Copy the folder you need to `ai/requests/` and replace `XXX` and `00X` in the folder names as described in [Where the request goes](#where-the-request-goes).
 
@@ -64,9 +65,10 @@ Copy the folder you need to `ai/requests/` and replace `XXX` and `00X` in the fo
 
 | Task | What it does | Claude | Copilot |
 |---|---|---|---|
-| `analyze-issue` | Reads the issue with all comments and the current c:geo source code, then explains the probable cause and a possible fix. Also lists other open issues that make sense to handle in the same change. | yes | yes |
-| `review-pr` | Reads a pull request (description, changes, existing reviews and comments) and the exact code of the PR, then lists concrete problems and the open issues the PR fixes (referenced ones and further ones it finds). | yes | yes |
-| `review-branch` | Reviews a branch of `murggel/cgeo` that has no pull request yet, against `master` or `release` of `cgeo/cgeo`. Same checks as `review-pr`, plus a draft PR description. | yes | yes |
+| `analyze-issue` | Reads the issue with all comments and the current c:geo source code, then explains the probable cause and a possible fix. Also lists other open issues that make sense to handle in the same change (from the [issue snapshot](#issue-snapshot)). | yes | yes |
+| `review-pr` | Reads a pull request (description, changes, existing reviews and comments) and the exact code of the PR, then lists concrete problems and the open issues the PR fixes (referenced ones and further ones from the [issue snapshot](#issue-snapshot)). | yes | yes |
+| `review-branch` | Reviews a branch of `murggel/cgeo` that has no pull request yet, against `master` or `release` of `cgeo/cgeo`. Same checks as `review-pr`, including fixed issues, plus a draft PR description with `fixes #` lines. | yes | yes |
+| `refresh-issues` | Creates the [issue snapshot](#issue-snapshot) of all open `cgeo/cgeo` issues from scratch. Runs no AI and needs no provider. Started automatically every two weeks. | – | – |
 | `smoke-test` | Sends a tiny "are you there?" prompt. Use it to check that the setup works. Can optionally copy an issue description into the report. | yes | yes |
 
 ## Where the request goes
@@ -95,6 +97,7 @@ Rules:
 - Pull-request review: `ai/requests/pr-<number>[-description]/review-NNN[-description]/request.yml`
 - Branch review: `ai/requests/branch-<description>/review-NNN[-description]/request.yml` (the description is free, the branch name itself goes into `request.yml`)
 - Smoke test: `ai/requests/smoke-test/<name>/request.yml`
+- Issue snapshot: `ai/requests/issue-snapshot/<name>/request.yml`, for example the date `2026-11-15`
 - `NNN` is a three-digit sequence number (`001`, `002`, …). Use a new number for every new request so old reports are never overwritten.
 - The number in the folder name must be the same as the number in `request.yml`.
 - Folder names may only contain letters `A–Z a–z`, digits `0–9`, `_` and `-`. No dots, no spaces.
@@ -201,11 +204,11 @@ The file is checked strictly. It is rejected if it has unknown or duplicate keys
 
 1. **Validate.** The workflow looks for the one `request.yml` that was added or changed in your push and checks it. A push must contain exactly one such file. Moving or deleting request files does not start a new AI run.
 2. **Prepare.** It downloads the current c:geo source code (`cgeo/cgeo`, branch `master`) and, for a review, the exact code of the pull request. It also downloads the issue or PR text and comments from GitHub.
-   For an issue analysis or PR review it also updates the [issue snapshot](#issue-snapshot) in `ai/issues/`, so that the AI can look for related issues.
+   The [issue snapshot](#issue-snapshot) in `ai/issues/` is part of the checkout; it is not updated here.
    For a branch review it downloads the branch from `murggel/cgeo` and the chosen base from `cgeo/cgeo`, finds the commit where the branch started (merge base) and builds the diff and the list of commit messages with git.
 3. **Ask the AI.** Claude or Copilot reads these files and writes its answer. It can only use read-only tools.
 4. **Check the answer.** The answer must not be empty, not larger than 512 KiB and must not look like it contains a password or token. Otherwise the run fails and nothing is saved.
-5. **Save.** A separate step commits the answer as `report.md` next to your `request.yml` and pushes it to `dev/ai-workflows`. For an issue analysis or PR review the updated issue snapshot is committed in the same commit.
+5. **Save.** A separate step commits the answer as `report.md` next to your `request.yml` and pushes it to `dev/ai-workflows`.
 
 Good to know:
 
@@ -314,8 +317,8 @@ There is no automatic fallback from one provider to the other. You always choose
 - **Untrusted input:** issue texts, PR texts, comments, PR code, and branch code and commit messages are treated as untrusted. They are marked as such for the AI. Symbolic links are deleted from the downloaded c:geo, PR and branch code before the AI starts.
 - **No silent truncation:** issue and PR data are read completely (all pages) and limited to 512 KiB. Too much data makes the run fail instead of hiding parts.
 - **Output check:** the answer is limited to 512 KiB and scanned for tokens (`sk-ant-…`, `ghp_…`, `github_pat_…` and others, plus the actual secret values). If anything matches, nothing is saved.
-- **Safe saving:** the save job writes only into the validated request folder and `ai/issues/`, and refuses symbolic links on the way. The issue snapshot is only committed if it consists of regular files named `snapshot.json`, `index.md` and `issue-<number>.md`.
-- **Issue snapshot:** the stored issue texts are untrusted like all other issue data, and the AI is told so.
+- **Safe saving:** the save job writes only into the validated request folder and refuses symbolic links on the way. The `refresh-issues` job, which runs no AI, additionally writes only `ai/issues/issues.md` and `ai/issues/snapshot.json`.
+- **Issue snapshot:** the summaries are untrusted like all other issue data, and the AI is told so. The AI gets no network access to read issues itself.
 - **Pinned dependencies:** all GitHub actions are pinned to full commit SHAs, Copilot CLI to an exact version, Python packages to exact versions with hashes.
 - **Reports are untrusted too:** a report is derived from third-party text. Read it critically and do not feed it into other automation unchecked. A report named by `previous` is only passed as a file that the AI is told to treat as untrusted data and to verify against the code.
 
@@ -330,7 +333,7 @@ Possible future hardening: if the workflow is ever opened to other users or trig
 | `.github/workflows/ai-assistant-murggel.yml` | The workflow: validate, one job per provider (`run-copilot`, `run-claude`), save. |
 | `scripts/validate_request.py` | Checks `request.yml`. The **only** place that defines allowed tasks, providers, repositories and folder names. |
 | `scripts/fetch_context.py` | Downloads issue or PR data from the GitHub API (with paging, error handling and size limit) and formats the branch-review context. |
-| `scripts/issue_snapshot.py` | Creates and updates the snapshot of all open upstream issues in `issues/`. |
+| `scripts/issue_snapshot.py` | Creates the search snapshot of all open upstream issues in `issues/` (task `refresh-issues`). |
 | `issues/` | The issue snapshot, written by the workflow. Do not edit by hand. |
 | `scripts/prepare_task.py` | Prepares the workspace for a task, the same for every provider: c:geo checkout, PR checkout, issue/PR data, removal of symbolic links, and the final prompt (`prompts/<task>.md` plus the request's instructions). |
 | `scripts/finalize_report.py` | Builds `report.md`: header line, Claude's final answer only, size limit, token scan. |
@@ -368,30 +371,38 @@ On Windows `cmd` use double quotes: `--pattern "test_*.py"`. Tests that need sym
 
 ## Issue snapshot
 
-The AI has no network access, so it cannot search GitHub itself. To still find related issues, `ai/issues/` holds a copy of all open issues of `cgeo/cgeo`:
+The AI has no network access, so it cannot search GitHub itself. To still find related issues, `ai/issues/` holds a search snapshot of all open issues of `cgeo/cgeo`:
 
 | File | Content |
 |---|---|
-| `index.md` | One line per open issue: number, labels, title, last update, number of comments. The AI searches it with `Grep`. |
-| `issue-<number>.md` | Description and all comments of one issue, in the same format as `ai-context/issue-context.md`. The AI reads it for every candidate. |
-| `snapshot.json` | Time of the last update and the data of the index; used for the next update. |
+| `issues.md` | One line per open issue: number, labels, c:geo version, last update, number of comments, title, keywords and a short summary. The AI searches it with `Grep`; every hit returns the whole entry. |
+| `snapshot.json` | Repository, creation time and number of issues. |
+
+How the summary is built (by rules in `scripts/issue_snapshot.py`, without AI):
+
+- Only title, labels and description are used, no comments. The whole snapshot therefore needs only one API request per 100 issues and takes a few seconds.
+- Removed: issue-form headings, `_No response_`, HTML comments, code blocks, log and stack-trace lines, the sections *System information*, *Reproducible* and *c:geo Version*, images and URLs.
+- Kept: the c:geo version (from the form or a version number in the text) and the first 400 characters of the remaining text.
+- Keywords: class names from `cgeo.geocaching…` paths, exceptions, CamelCase names, terms in backticks and known c:geo terms (for example *live map*, *offline log*, *GPX*, *opencaching*). At most 25 per issue.
+
+How the AI uses it:
+
+- `analyze-issue` lists open issues that make sense to handle together, `review-pr` and `review-branch` list the issues the change fixes. `review-branch` also puts `fixes #` lines into the draft PR description.
+- The AI only sees the summary. Each listed issue is marked *to be verified*, with a link; check the full issue on GitHub before you rely on it.
+- These tasks get 10 more agent turns for the search. The report header names the snapshot date, or `outdated` if it is older than 14 days, or `missing`.
 
 How it stays current:
 
-- Before every `analyze-issue` and `review-pr` run, `prepare_task.py` asks GitHub only for issues changed since the last update (`since` parameter, with 10 minutes overlap). Changed issues are rewritten, closed ones are deleted. The AI therefore sees the current state of every issue it reads.
-- The save job commits the updated snapshot together with the report.
-- If the update fails (for example because of the API rate limit), the run continues with the existing snapshot. The report header then says `issue snapshot: stale` or, if there is none yet, `issue snapshot: missing`.
-- Analysis and review get 10 more agent turns for the search.
+- The snapshot is never updated during an analysis or review.
+- The task `refresh-issues` creates it from scratch. A scheduled Claude Code task pushes such a request every two weeks (on the 1st and 15th of each month); you can also push one yourself at any time:
 
-Create the first snapshot locally, because a full download needs one request per issue with comments and can exceed the 1,000 requests per hour that the workflow token may use. A personal access token without any scopes is enough (5,000 requests per hour):
+  ```bash
+  mkdir -p ai/requests/issue-snapshot/$(date +%F)
+  printf 'task: refresh-issues\n' > ai/requests/issue-snapshot/$(date +%F)/request.yml
+  git add ai/requests/issue-snapshot
+  git commit -m "Request issue snapshot"
+  git push origin dev/ai-workflows
+  ```
 
-```bash
-git switch dev/ai-workflows
-git pull --rebase origin dev/ai-workflows
-GH_API_TOKEN=<token> python ai/scripts/issue_snapshot.py
-git add ai/issues
-git commit -m "Add issue snapshot"
-git push origin dev/ai-workflows
-```
-
-`python ai/scripts/issue_snapshot.py --full` downloads everything again, for example if the snapshot got out of step. Without a token the script works too, but GitHub then allows only 60 requests per hour.
+- The job commits `ai/issues/` and a one-line `report.md` in the request folder.
+- Locally the script works too: `GH_API_TOKEN=<token> python ai/scripts/issue_snapshot.py` (without a token GitHub allows 60 requests per hour, which is enough as well).

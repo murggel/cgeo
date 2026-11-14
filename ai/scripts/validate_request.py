@@ -10,6 +10,7 @@ Branch reviews name a branch of the fork and a base branch of the upstream
 repository. Analyses and reviews may carry free-text ``instructions`` that are added to
 the prompt; the workflow passes them on unchanged. They may also name an earlier
 request of the same subject as ``previous``, whose report the new run builds on.
+refresh-issues runs no AI and therefore names no provider.
 """
 
 from __future__ import annotations
@@ -77,6 +78,14 @@ TASKS = {
         request_id=re.compile(rf"review-[0-9]{{3}}{DESCRIPTION}"),
         layout="ai/requests/branch-<description>/review-NNN[-description]/request.yml",
     ),
+    "refresh-issues": TaskRule(
+        providers=frozenset(),
+        required_keys=frozenset(),
+        optional_keys=frozenset(),
+        subject=re.compile("issue-snapshot"),
+        request_id=NAME,
+        layout="ai/requests/issue-snapshot/<name>/request.yml",
+    ),
     "smoke-test": TaskRule(
         providers=frozenset({"claude", "copilot"}),
         required_keys=frozenset(),
@@ -114,7 +123,9 @@ class Request:
         }
 
     def summary(self) -> str:
-        lines = [f"- Task: {self.task}", f"- Provider: {self.provider}"]
+        lines = [f"- Task: {self.task}"]
+        if self.provider:
+            lines.append(f"- Provider: {self.provider}")
         if self.task == "review-pr":
             lines.append(f"- Pull request: {self.repository}#{self.number}")
         elif self.task == "review-branch":
@@ -297,13 +308,16 @@ def validate_request(request_path: str | PurePosixPath, root: Path = Path(".")) 
         raise ValueError(f"task must be one of: {', '.join(sorted(TASKS))}")
     rule = TASKS[task]
 
-    provider = request.get("provider")
-    if not isinstance(provider, str) or provider not in rule.providers:
-        raise ValueError(
-            f"provider for task '{task}' must be one of: {', '.join(sorted(rule.providers))}"
-        )
-
-    required_keys = {"task", "provider"} | rule.required_keys
+    if rule.providers:
+        provider = request.get("provider")
+        if not isinstance(provider, str) or provider not in rule.providers:
+            raise ValueError(
+                f"provider for task '{task}' must be one of: {', '.join(sorted(rule.providers))}"
+            )
+        required_keys = {"task", "provider"} | rule.required_keys
+    else:
+        provider = ""
+        required_keys = {"task"} | rule.required_keys
     allowed_keys = required_keys | rule.optional_keys
     missing = sorted(required_keys - request.keys())
     unexpected = sorted(request.keys() - allowed_keys)

@@ -19,7 +19,7 @@ Provide repository-aware analysis of an issue in the upstream c:geo project with
 4. Trace the relevant code path far enough to distinguish a confirmed cause from a plausible hypothesis.
 5. Recommend the smallest maintainable change consistent with existing c:geo patterns.
 6. Suggest focused unit, instrumentation, or manual tests as appropriate.
-7. Search the open-issue snapshot in `ai/issues/` for issues that the same change could resolve or that touch the same code, read each candidate's `issue-<number>.md`, and list only those with a verified benefit of handling them together.
+7. Search the open-issue snapshot `ai/issues/issues.md` for issues that the same change could resolve or that touch the same code. Judge candidates from their entry and the code only, list those with a concrete benefit of handling them together, and mark them as to be verified.
 
 ## Boundaries
 

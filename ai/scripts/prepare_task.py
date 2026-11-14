@@ -11,10 +11,10 @@ Every task also gets <output-dir>/prompt.md: the task prompt from ai/prompts/
 plus, if the request has them, a follow-up section for the previous report
 (copied to ai-context/previous-report.md) and the requester's additional instructions.
 
-With --issue-snapshot, analyze-issue and review-pr first bring the snapshot of all
-open upstream issues (see issue_snapshot.py) up to date, so that the agent can look
-for related issues without network access. A failed update only leaves the
-snapshot as it was.
+With --issue-snapshot, analyze-issue, review-pr and review-branch name the state of
+the snapshot of all open upstream issues (see issue_snapshot.py) in the report
+header and get extra turns to search it. The snapshot is not updated here; that
+is the task refresh-issues.
 
 Symbolic links are removed from all checkouts: untrusted code could use
 them to point the agent at files outside the workspace.
@@ -37,7 +37,7 @@ from fetch_context import ContextError, Fetch
 # Upper limit of agent turns per task (used by Claude).
 MAX_TURNS = {"analyze-issue": 30, "review-pr": 30, "review-branch": 30, "smoke-test": 2}
 # Tasks that search the issue snapshot for related issues, and the extra turns they get for it.
-SNAPSHOT_TASKS = frozenset({"analyze-issue", "review-pr"})
+SNAPSHOT_TASKS = frozenset({"analyze-issue", "review-pr", "review-branch"})
 SNAPSHOT_EXTRA_TURNS = 10
 # Tasks whose request may contain additional instructions or a previous report (see validate_request.py).
 INSTRUCTION_TASKS = frozenset({"analyze-issue", "review-pr", "review-branch"})
@@ -253,13 +253,10 @@ def prepare(
     max_turns = MAX_TURNS[task]
     if issue_snapshot_dir is not None and task in SNAPSHOT_TASKS:
         snapshot = issue_snapshot_dir if issue_snapshot_dir.is_absolute() else workspace / issue_snapshot_dir
-        try:
-            print(issue_snapshot.update_snapshot(fetch, repository, snapshot))
-            header += " | issue snapshot: updated"
-        except (ContextError, OSError) as exc:
-            print(f"::warning::Issue snapshot not updated: {exc}")
-            header += " | issue snapshot: " + ("stale" if (snapshot / issue_snapshot.INDEX_FILE).is_file()
-                                               else "missing")
+        status = issue_snapshot.snapshot_status(snapshot, repository)
+        if status == "missing" or "outdated" in status:
+            print(f"::warning::Issue snapshot {status}; push a refresh-issues request.")
+        header += f" | issue snapshot: {status}"
         max_turns += SNAPSHOT_EXTRA_TURNS
 
     if instructions:
@@ -298,7 +295,7 @@ def main(argv: list[str] | None = None, fetch: Fetch | None = None, git: Git = r
     parser.add_argument("--previous-report", default="",
                         help="report of an earlier request, relative to the workspace")
     parser.add_argument("--issue-snapshot", type=Path, default=None,
-                        help="analyze-issue, review-pr: directory of the open-issue snapshot to update")
+                        help="analyze-issue, review-pr, review-branch: directory of the open-issue snapshot")
     parser.add_argument("--github-output", type=Path, help="append the step outputs to this file")
     args = parser.parse_args(argv)
 
