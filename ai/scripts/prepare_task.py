@@ -21,7 +21,7 @@ verify-issues:  the same checkout and context as for its target (issue, PR or
                (ai-context/candidates/); its optional report is copied to
                ai-context/previous-report.md.
 
-cleanup-issues: upstream/ checkout and the full text of the snapshot issues selected
+cleanup-issues: upstream/ checkout with full history (for fix_history.py) and the full text of the snapshot issues selected
                by issue_cleanup.select (ai-context/candidates/); the output
                'candidates' names them for recording the results.
 
@@ -177,8 +177,9 @@ def write_bounded(path: Path, text: str) -> None:
     path.write_bytes(fetch_context.bounded(text))
 
 
-def clone_upstream(git: Git, repository: str, target: Path) -> str:
-    git(["clone", "--quiet", "--depth", "1", "--branch", "master",
+def clone_upstream(git: Git, repository: str, target: Path, full_history: bool = False) -> str:
+    depth = [] if full_history else ["--depth", "1"]
+    git(["clone", "--quiet", *depth, "--branch", "master",
          f"https://github.com/{repository}.git", str(target)])
     return git(["-C", str(target), "rev-parse", "HEAD"])
 
@@ -393,7 +394,8 @@ def prepare(
         header = (f"task: {task} | upstream: {repository}@{sha} | "
                   f"branch: {BRANCH_REPOSITORY}:{branch}@{head} | base: {base}@{merge_base}")
     elif task == "cleanup-issues":
-        sha = clone_upstream(git, repository, upstream)
+        # fix_history.py searches the history for the pull requests of fixed issues.
+        sha = clone_upstream(git, repository, upstream, full_history=True)
         header = f"task: cleanup-issues | upstream: {repository}@{sha}"
         if labels:
             header += f" | labels: {', '.join(labels)}"

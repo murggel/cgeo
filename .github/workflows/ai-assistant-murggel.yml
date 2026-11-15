@@ -288,6 +288,24 @@ jobs:
               --output "$RUNNER_TEMP/report$suffix.md"
           done
 
+      - name: Find fixing pull requests
+        # cleanup-issues: replaces the fix-evidence block and the [fix-pr #n] placeholders.
+        if: env.TASK == 'cleanup-issues'
+        env:
+          GH_API_TOKEN: ${{ github.token }}
+          CANDIDATES: ${{ steps.prepare.outputs.candidates }}
+        run: |
+          read -ra batches <<< "${CANDIDATES//;/ }"
+          for index in "${!batches[@]}"; do
+            suffix=""
+            (( index > 0 )) && suffix="-$((index + 1))"
+            report="$RUNNER_TEMP/report$suffix.md"
+            [[ -f "$report" && ! -L "$report" ]] || continue
+            python ai/scripts/fix_history.py --report "$report" --upstream upstream \
+              --issues ai/issues --checked "${batches[$index]}" \
+              || echo "::warning::Pull requests for $(basename "$report") could not be looked up."
+          done
+
       - name: Upload report
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -391,6 +409,24 @@ jobs:
             --header "$HEADER | provider: claude | workflow: ${GITHUB_SHA}" \
             --secret-env CLAUDE_CODE_OAUTH_TOKEN --secret-env GITHUB_TOKEN \
             --output "$RUNNER_TEMP/report.md"
+
+      - name: Find fixing pull requests
+        # cleanup-issues: replaces the fix-evidence block and the [fix-pr #n] placeholders.
+        if: env.TASK == 'cleanup-issues'
+        env:
+          GH_API_TOKEN: ${{ github.token }}
+          CANDIDATES: ${{ steps.prepare.outputs.candidates }}
+        run: |
+          read -ra batches <<< "${CANDIDATES//;/ }"
+          for index in "${!batches[@]}"; do
+            suffix=""
+            (( index > 0 )) && suffix="-$((index + 1))"
+            report="$RUNNER_TEMP/report$suffix.md"
+            [[ -f "$report" && ! -L "$report" ]] || continue
+            python ai/scripts/fix_history.py --report "$report" --upstream upstream \
+              --issues ai/issues --checked "${batches[$index]}" \
+              || echo "::warning::Pull requests for $(basename "$report") could not be looked up."
+          done
 
       - name: Upload report
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

@@ -378,6 +378,7 @@ Possible future hardening: if the workflow is ever opened to other users or trig
 | `scripts/validate_request.py` | Checks `request.yml`. The **only** place that defines allowed tasks, providers, repositories and folder names. |
 | `scripts/fetch_context.py` | Downloads issue or PR data from the GitHub API (with paging, error handling and size limit) and formats the branch-review context. |
 | `scripts/issue_cleanup.py` | Selects the issues for `cleanup-issues` and records their results in `issues/cleanup.json`. |
+| `scripts/fix_history.py` | Finds the pull requests of the issues that `cleanup-issues` considers fixed and names them in the report and the closing comments. |
 | `scripts/issue_snapshot.py` | Creates the search snapshot of all open upstream issues in `issues/` (task `refresh-issues`) and preselects matching issues for `preselect`. |
 | `issues/` | The issue snapshot, written by the workflow. Do not edit by hand. |
 | `scripts/prepare_task.py` | Prepares the workspace for a task, the same for every provider: c:geo checkout, PR checkout, issue/PR data, removal of symbolic links, and the final prompt (`prompts/<task>.md` plus the request's instructions). |
@@ -478,7 +479,8 @@ How it works:
    - *Waiting for information:* the last substantive comment asks the reporter for something, the reporter has not answered, and that comment is at least `waiting_months` (default 6) old. The label *Feedback required* means feedback from other developers and is no reason on its own.
    - *Keep open:* everything else and every case of doubt. Age alone and unimplemented feature requests are no reason to close.
 4. **Report:** `ai/issues/cleanup/<name>.md`, grouped by category, with reason, confidence and a closing comment in English for each issue you could close. Issues to keep open are only listed by number. The AI closes nothing.
-5. **Results:** a machine-readable block at the end of the report (`#<number> <category>`) is recorded in `ai/issues/cleanup.json`. Only issues the run actually checked are accepted. If the block is missing, the report is still saved and a warning is shown.
+5. **Fixing pull requests (by rules, without AI):** for each *probably fixed* issue the AI names a file and a short piece of code that only the fix introduced. `scripts/fix_history.py` searches the full history of `cgeo/cgeo` for the first commit that added this code (`git log --follow -S`) and looks up its pull request (GitHub API, otherwise the `(#<number>)` at the end of a squash commit). The report gets a section with pull request, commit and date per issue, and the closing comment says "This was changed in #<PR>." The result is a hint: the first commit with the code is not always the fix. If the commit is older than the issue, the closing comment does not name it.
+6. **Results:** a machine-readable block at the end of the report (`#<number> <category>`) is recorded in `ai/issues/cleanup.json`. Only issues the run actually checked are accepted. If the block is missing, the report is still saved and a warning is shown.
 
 Costs: Copilot charges per prompt, not per text size, so more issues per run are cheaper than more runs. Above about 25 to 30 issues the checks get less thorough.
 
