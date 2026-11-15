@@ -215,7 +215,7 @@ preselect: true          # 5 issues; or a number from 1 to 10
 - Off by default. `preselect: false` is the same as leaving it out.
 - The matches are found by rules, not by AI: terms from the issue, PR or branch (title, class names, exceptions, backticked terms, known c:geo terms) are compared with the snapshot. Rare terms count more, and an issue needs at least two matching terms. The analyzed issue itself is left out.
 - The full texts land in `ai-context/candidates/issue-<number>.md`. The AI judges them with their full text and marks them `verified (full text)`; issues it finds by searching the snapshot itself stay `to be verified`.
-- Costs more input for the AI (a few thousand tokens per issue) and gives 5 more agent turns. The report header says `preselected: <n>`.
+- Costs more input for the AI (a few thousand tokens per issue) and gives one more agent turn per downloaded issue. The report header says `preselected: <n>`.
 - Available for `analyze-issue`, `review-pr` and `review-branch`.
 
 ### Verifying candidate issues
@@ -236,7 +236,7 @@ issues: unverified       # or all, or a list: [18830, 18841]
 - At most 10 issues. The target issue or PR is left out. With `unverified` or `all` and more matches, the first 10 are used and the run shows a warning.
 - The run prepares the same code and context as an analysis or review of the target and downloads each issue with description, all comments, state and labels. An issue that cannot be downloaded gets a short note instead.
 - The report contains one verdict per issue (current state, confirmed or rejected with reasons from the issue text and the code) and the updated recommendation, for PRs and branches the final `fixes #` list.
-- `instructions` are allowed. The report header says `verify: <n> issues` and `report: <folder>`.
+- `instructions` are allowed. The run gets one more agent turn per issue. The report header says `verify: <n> issues` and `report: <folder>`.
 
 ## What happens after the push
 

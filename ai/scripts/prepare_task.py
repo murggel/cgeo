@@ -53,7 +53,8 @@ SNAPSHOT_EXTRA_TURNS = 10
 # verify-issues and preselection: at most this many issues are downloaded in full.
 MAX_VERIFY_ISSUES = 10
 MAX_PRESELECT = 10
-PRESELECT_EXTRA_TURNS = 5
+# Extra agent turns per downloaded candidate issue (preselection and verify-issues).
+CANDIDATE_EXTRA_TURNS = 1
 # Tasks whose request may contain additional instructions or a previous report (see validate_request.py).
 INSTRUCTION_TASKS = frozenset({"analyze-issue", "review-pr", "review-branch", "verify-issues"})
 # The subject each task works on; verify-issues names it with --verify-target.
@@ -351,6 +352,7 @@ def prepare(
     if candidates:
         fetch_candidates(fetch, repository, candidates, context / "candidates")
         header += f" | verify: {len(candidates)} issues"
+        max_turns += CANDIDATE_EXTRA_TURNS * len(candidates)
     if issue_snapshot_dir is not None and task in SNAPSHOT_TASKS:
         snapshot = issue_snapshot_dir if issue_snapshot_dir.is_absolute() else workspace / issue_snapshot_dir
         status = issue_snapshot.snapshot_status(snapshot, repository)
@@ -369,7 +371,7 @@ def prepare(
                 # Before the requester's instructions, which stay the last word on the report form.
                 head, marker, tail = prompt.partition(INSTRUCTIONS_SECTION.split("\n<requester")[0])
                 prompt = head + section + marker + tail if marker else prompt + section
-                max_turns += PRESELECT_EXTRA_TURNS
+                max_turns += CANDIDATE_EXTRA_TURNS * len(selected)
 
     if instructions:
         header += " | instructions: yes"
