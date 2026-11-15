@@ -1,0 +1,19 @@
+# Copy this template to ai/requests/<subject>/verify-NNN/request.yml, in the folder of the issue,
+# PR or branch the issues belong to, e.g. ai/requests/issue-18829/verify-001/request.yml.
+# Verifies candidate issues against their full, current text and the code (at most 10 issues).
+task: verify-issues
+provider: claude # copilot
+# The target: exactly one of issue, pr, or branch with base (must match the folder).
+issue: 18829
+# pr: 18854
+# branch: feature/issue-18829-rtl
+# base: master
+# Optional: the earlier request in the same folder whose report proposed the issues.
+report: analysis-001
+# unverified: the issues marked "to be verified" in that report; all: every issue it links;
+# or a list of issue numbers (no report needed).
+issues: unverified
+# issues: [18830, 18841]
+# Optional: additional instructions (max. 4000 characters).
+# instructions: |
+#   Answer in German.

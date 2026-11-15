@@ -45,6 +45,8 @@ jobs:
       base: ${{ steps.request.outputs.base }}
       previous_report: ${{ steps.request.outputs.previous_report }}
       verify: ${{ steps.request.outputs.verify }}
+      verify_target: ${{ steps.request.outputs.verify_target }}
+      preselect: ${{ steps.request.outputs.preselect }}
 
     steps:
       - name: Check out request branch
@@ -180,10 +182,13 @@ jobs:
           REVIEW_BASE: ${{ needs.validate.outputs.base }}
           PREVIOUS_REPORT: ${{ needs.validate.outputs.previous_report }}
           VERIFY: ${{ needs.validate.outputs.verify }}
+          VERIFY_TARGET: ${{ needs.validate.outputs.verify_target }}
+          PRESELECT: ${{ needs.validate.outputs.preselect }}
         run: |
           python ai/scripts/prepare_task.py --task "$TASK" --number "$NUMBER" --repository "$REPOSITORY" \
             --instructions="$INSTRUCTIONS" --branch="$REVIEW_BRANCH" --base="$REVIEW_BASE" \
-            --previous-report="$PREVIOUS_REPORT" --issue-snapshot ai/issues --verify="$VERIFY" \
+            --previous-report="$PREVIOUS_REPORT" --issue-snapshot ai/issues \
+            --verify="$VERIFY" --verify-target="$VERIFY_TARGET" --preselect="$PRESELECT" \
             --output-dir "$RUNNER_TEMP" --github-output "$GITHUB_OUTPUT"
 
       - name: Run Copilot
@@ -273,10 +278,13 @@ jobs:
           REVIEW_BASE: ${{ needs.validate.outputs.base }}
           PREVIOUS_REPORT: ${{ needs.validate.outputs.previous_report }}
           VERIFY: ${{ needs.validate.outputs.verify }}
+          VERIFY_TARGET: ${{ needs.validate.outputs.verify_target }}
+          PRESELECT: ${{ needs.validate.outputs.preselect }}
         run: |
           python ai/scripts/prepare_task.py --task "$TASK" --number "$NUMBER" --repository "$REPOSITORY" \
             --instructions="$INSTRUCTIONS" --branch="$REVIEW_BRANCH" --base="$REVIEW_BASE" \
-            --previous-report="$PREVIOUS_REPORT" --issue-snapshot ai/issues --verify="$VERIFY" \
+            --previous-report="$PREVIOUS_REPORT" --issue-snapshot ai/issues \
+            --verify="$VERIFY" --verify-target="$VERIFY_TARGET" --preselect="$PRESELECT" \
             --output-dir "$RUNNER_TEMP" --github-output "$GITHUB_OUTPUT"
 
       - name: Run Claude Code
@@ -375,6 +383,7 @@ jobs:
             analyze-issue) message="Add ${PROVIDER^} analysis report for issue #$NUMBER" ;;
             review-pr) message="Add ${PROVIDER^} review report for PR #$NUMBER" ;;
             review-branch) message="Add ${PROVIDER^} review report for branch $REVIEW_BRANCH" ;;
+            verify-issues) message="Add ${PROVIDER^} issue verification for ${NUMBER:+#$NUMBER}${REVIEW_BRANCH}" ;;
             *) message="Add ${PROVIDER^} smoke-test report" ;;
           esac
           report_path="$REQUEST_DIR/report.md"

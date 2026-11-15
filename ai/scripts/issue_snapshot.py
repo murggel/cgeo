@@ -16,13 +16,15 @@ exceptions, backticked terms and known c:geo terms become keywords. Comments
 are not read, so the whole snapshot needs only one API request per 100 issues.
 
 The snapshot is always created from scratch (task refresh-issues). All stored
-text is untrusted user content.
+text is untrusted user content. preselect() picks the entries that best match
+an issue, PR or branch, for the optional preselection of candidate issues.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 import re
 import sys
@@ -126,7 +128,7 @@ def _version(sections: list[tuple[str, str]], body: str) -> str:
     return match.group(0) if match else ""
 
 
-def _keywords(title: str, body: str) -> list[str]:
+def _keywords(title: str, body: str, limit: int | None = MAX_KEYWORDS) -> list[str]:
     found: list[str] = []
     seen: set[str] = set()
 
@@ -150,7 +152,7 @@ def _keywords(title: str, body: str) -> list[str]:
     for term in DOMAIN_TERMS:
         if re.search(rf"(?<![a-z]){re.escape(term)}(?![a-z])", lowered):
             add(term)
-    return found[:MAX_KEYWORDS]
+    return found if limit is None else found[:limit]
 
 
 def _summary(sections: list[tuple[str, str]]) -> str:
@@ -239,6 +241,68 @@ def snapshot_status(directory: Path, repository: str, now: datetime | None = Non
     age = ((now or _now()) - created).days
     status = created.strftime("%Y-%m-%d")
     return f"{status} (outdated, {age} days old)" if age > MAX_AGE_DAYS else status
+
+
+ENTRY = re.compile(r"^#([1-9][0-9]*) \| ")
+TITLE_WORD = re.compile(r"[A-Za-zÄÖÜäöüß][A-Za-zÄÖÜäöüß-]{3,}")
+STOPWORDS = frozenset("""
+    about after again also and are been before being but can cannot does doesn done down each
+    from have here into issue just like make many more most much need only other over same should
+    some such than that the their them then there these they this those under until very want
+    were what when where which while will with without would your
+    aber alle auch beim bitte dann dass denn dies diese doch eine einen einem einer erst habe
+    haben hier immer jetzt kann keine mehr mich nach nicht noch oder ohne schon sehr sein sind
+    soll statt über und unter viel vom wenn werden wird wurde
+    cgeo c:geo geo fix fixes fixed bug feature support allow add added remove removed change changed
+""".split())
+
+
+def query_terms(title: str, text: str) -> list[str]:
+    """Search terms of an issue, PR or branch: keywords of the text plus the title words."""
+    terms = [term.lower() for term in _keywords(title, text, limit=None)]
+    terms += [word.lower() for word in TITLE_WORD.findall(title) if word.lower() not in STOPWORDS]
+    return list(dict.fromkeys(terms))
+
+
+def preselect(directory: Path, title: str, text: str, exclude: int | None, limit: int) -> list[int]:
+    """Return the snapshot issues that share the most rare terms with the subject.
+
+    A term counts twice in the title or keywords of an entry and once in its
+    summary, weighted by how rare it is in the snapshot. An entry needs at
+    least two matching terms.
+    """
+    try:
+        lines = (directory / ISSUES_FILE).read_text(encoding="utf-8").splitlines()
+    except (OSError, UnicodeError):
+        return []
+    entries = []
+    for line in lines:
+        match = ENTRY.match(line)
+        if not match or int(match.group(1)) == exclude:
+            continue
+        lower = line.lower()
+        head, _, summary = lower.partition(" | summary: ")
+        entries.append((int(match.group(1)), head, summary))
+    if not entries:
+        return []
+    patterns = {term: re.compile(rf"(?<![a-z0-9]){re.escape(term)}(?![a-z0-9])")
+                for term in query_terms(title, text)}
+    hits = {term: [(bool(pattern.search(head)), bool(pattern.search(summary)))
+                   for _, head, summary in entries] for term, pattern in patterns.items()}
+    weights = {}
+    for term, found in hits.items():
+        frequency = sum(1 for in_head, in_summary in found if in_head or in_summary)
+        # Terms in more than a tenth of all issues say little.
+        if 0 < frequency <= max(3, len(entries) // 10):
+            weights[term] = math.log(len(entries) / frequency) + 1
+    scored = []
+    for index, (number, _, _) in enumerate(entries):
+        matched = [(term, hits[term][index]) for term in weights if any(hits[term][index])]
+        if len(matched) >= 2:
+            score = sum(weights[term] * (2 if in_head else 1) for term, (in_head, _) in matched)
+            scored.append((score, number))
+    scored.sort(key=lambda item: (-item[0], -item[1]))
+    return [number for _, number in scored[:limit]]
 
 
 def main(argv: list[str] | None = None, fetch: Fetch | None = None) -> int:

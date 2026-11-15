@@ -57,6 +57,7 @@ Ready-made request files are in [`templates/`](templates/). They use the same fo
 - Pull-request review: [`templates/pr-XXX/review-00X/`](templates/pr-XXX/review-00X/request.yml)
 - Branch review: [`templates/branch-XXX/review-00X/`](templates/branch-XXX/review-00X/request.yml)
 - Smoke test: [`templates/smoke-test/XXX/`](templates/smoke-test/XXX/request.yml)
+- Issue verification: [`templates/issue-XXX/verify-00X/`](templates/issue-XXX/verify-00X/request.yml)
 - Issue snapshot: [`templates/issue-snapshot/XXX/`](templates/issue-snapshot/XXX/request.yml)
 
 Copy the folder you need to `ai/requests/` and replace `XXX` and `00X` in the folder names as described in [Where the request goes](#where-the-request-goes).
@@ -68,6 +69,7 @@ Copy the folder you need to `ai/requests/` and replace `XXX` and `00X` in the fo
 | `analyze-issue` | Reads the issue with all comments and the current c:geo source code, then explains the probable cause and a possible fix. Also lists other open issues that make sense to handle in the same change (from the [issue snapshot](#issue-snapshot)). | yes | yes |
 | `review-pr` | Reads a pull request (description, changes, existing reviews and comments) and the exact code of the PR, then lists concrete problems and the open issues the PR fixes (referenced ones and further ones from the [issue snapshot](#issue-snapshot)). | yes | yes |
 | `review-branch` | Reviews a branch of `murggel/cgeo` that has no pull request yet, against `master` or `release` of `cgeo/cgeo`. Same checks as `review-pr`, including fixed issues, plus a draft PR description with `fixes #` lines. | yes | yes |
+| `verify-issues` | Checks candidate issues of an earlier report (or a list of issues) against their full, current text and the code. See [Verifying candidate issues](#verifying-candidate-issues). | yes | yes |
 | `refresh-issues` | Creates the [issue snapshot](#issue-snapshot) of all open `cgeo/cgeo` issues from scratch. Runs no AI and needs no provider. Started automatically every two weeks. | – | – |
 | `smoke-test` | Sends a tiny "are you there?" prompt. Use it to check that the setup works. Can optionally copy an issue description into the report. | yes | yes |
 
@@ -97,6 +99,7 @@ Rules:
 - Pull-request review: `ai/requests/pr-<number>[-description]/review-NNN[-description]/request.yml`
 - Branch review: `ai/requests/branch-<description>/review-NNN[-description]/request.yml` (the description is free, the branch name itself goes into `request.yml`)
 - Smoke test: `ai/requests/smoke-test/<name>/request.yml`
+- Issue verification: `ai/requests/<issue-, pr- or branch-folder>/verify-NNN[-description]/request.yml`
 - Issue snapshot: `ai/requests/issue-snapshot/<name>/request.yml`, for example the date `2026-11-15`
 - `NNN` is a three-digit sequence number (`001`, `002`, …). Use a new number for every new request so old reports are never overwritten.
 - The number in the folder name must be the same as the number in `request.yml`.
@@ -198,26 +201,42 @@ previous: review-001
 - The provider may differ from the earlier one. The report header says `previous: <folder>`.
 - Smoke tests do not accept `previous`.
 
-### Verifying candidate issues
+### Preselecting candidate issues
 
-Issue analyses and reviews list candidate issues from the [issue snapshot](#issue-snapshot), judged only from its short summaries. To have them checked against the full, current issues, push a follow-up request with `previous` and `verify`:
+Analyses and reviews find related or fixed issues by searching the [issue snapshot](#issue-snapshot), which only has short summaries. With `preselect` the run also downloads the full text of the best matches before the AI starts:
 
 ```yaml
-# ai/requests/issue-18829/analysis-002/request.yml
 task: analyze-issue
 provider: claude
 issue: 18829
-previous: analysis-001
-verify: all             # or a list: [18830, 18841]
+preselect: true          # 5 issues; or a number from 1 to 10
 ```
 
-- `all` takes every issue linked in the earlier report (`https://github.com/cgeo/cgeo/issues/<number>`), except the analyzed issue or PR itself. A list names the issues yourself, for example to drop candidates you already rejected or to add one.
-- At most 15 issues. With `all`, only the first 15 links are used and the run shows a warning.
-- Before the AI starts, each issue is downloaded with description, all comments, state and labels to `ai-context/candidates/issue-<number>.md`. An issue that cannot be downloaded (for example a wrong number) gets a short note instead.
-- The AI adds a section "Verification of candidate issues": current state, verdict (confirmed, partially confirmed, rejected) with reasoning, and the updated recommendation, for reviews the final `fixes #` list.
-- Works for `analyze-issue`, `review-pr` and `review-branch`; `verify` without `previous` is rejected. The report header says `verify: <n> issues`, and the run gets 10 more agent turns.
+- Off by default. `preselect: false` is the same as leaving it out.
+- The matches are found by rules, not by AI: terms from the issue, PR or branch (title, class names, exceptions, backticked terms, known c:geo terms) are compared with the snapshot. Rare terms count more, and an issue needs at least two matching terms. The analyzed issue itself is left out.
+- The full texts land in `ai-context/candidates/issue-<number>.md`. The AI judges them with their full text and marks them `verified (full text)`; issues it finds by searching the snapshot itself stay `to be verified`.
+- Costs more input for the AI (a few thousand tokens per issue) and gives 5 more agent turns. The report header says `preselected: <n>`.
+- Available for `analyze-issue`, `review-pr` and `review-branch`.
 
-The file is checked strictly. It is rejected if it has unknown or duplicate keys, YAML anchors (`&name`, `*name`), is larger than 16 KiB, is a symbolic link, or if a number is not a whole number between 1 and 999999999.
+### Verifying candidate issues
+
+Candidates marked `to be verified` were judged from their summary only. The task `verify-issues` checks them against their full, current text and the code, without repeating the analysis or review:
+
+```yaml
+# ai/requests/issue-18829/verify-001/request.yml
+task: verify-issues
+provider: claude
+issue: 18829             # the target: issue, pr, or branch with base
+report: analysis-001     # the request whose report proposed the issues
+issues: unverified       # or all, or a list: [18830, 18841]
+```
+
+- Store it in the folder of the issue, PR or branch, with the folder name `verify-NNN[-description]`. The target must match the folder (`issue-<n>` with `issue`, `pr-<n>` with `pr`, `branch-…` with `branch` and `base`).
+- `unverified` takes the issues on lines marked `to be verified` in the report, `all` every issue the report links. Both need `report`. A list names the issues yourself and works without a report, for example "does PR 18854 fix #18830?".
+- At most 10 issues. The target issue or PR is left out. With `unverified` or `all` and more matches, the first 10 are used and the run shows a warning.
+- The run prepares the same code and context as an analysis or review of the target and downloads each issue with description, all comments, state and labels. An issue that cannot be downloaded gets a short note instead.
+- The report contains one verdict per issue (current state, confirmed or rejected with reasons from the issue text and the code) and the updated recommendation, for PRs and branches the final `fixes #` list.
+- `instructions` are allowed. The report header says `verify: <n> issues` and `report: <folder>`.
 
 ## What happens after the push
 
@@ -352,7 +371,7 @@ Possible future hardening: if the workflow is ever opened to other users or trig
 | `.github/workflows/ai-assistant-murggel.yml` | The workflow: validate, one job per provider (`run-copilot`, `run-claude`), save. |
 | `scripts/validate_request.py` | Checks `request.yml`. The **only** place that defines allowed tasks, providers, repositories and folder names. |
 | `scripts/fetch_context.py` | Downloads issue or PR data from the GitHub API (with paging, error handling and size limit) and formats the branch-review context. |
-| `scripts/issue_snapshot.py` | Creates the search snapshot of all open upstream issues in `issues/` (task `refresh-issues`). |
+| `scripts/issue_snapshot.py` | Creates the search snapshot of all open upstream issues in `issues/` (task `refresh-issues`) and preselects matching issues for `preselect`. |
 | `issues/` | The issue snapshot, written by the workflow. Do not edit by hand. |
 | `scripts/prepare_task.py` | Prepares the workspace for a task, the same for every provider: c:geo checkout, PR checkout, issue/PR data, removal of symbolic links, and the final prompt (`prompts/<task>.md` plus the request's instructions). |
 | `scripts/finalize_report.py` | Builds `report.md`: header line, Claude's final answer only, size limit, token scan. |
@@ -407,7 +426,7 @@ How the summary is built (by rules in `scripts/issue_snapshot.py`, without AI):
 How the AI uses it:
 
 - `analyze-issue` lists open issues that make sense to handle together, `review-pr` and `review-branch` list the issues the change fixes. `review-branch` also puts `fixes #` lines into the draft PR description.
-- The AI only sees the summary. Each listed issue is marked *to be verified*, with a link. Check the full issue on GitHub, or let a follow-up request [verify the candidates](#verifying-candidate-issues).
+- The AI only sees the summary. Each listed issue is marked *to be verified*, with a link. Check the full issue on GitHub, [preselect](#preselecting-candidate-issues) the best matches in full text, or let a [`verify-issues`](#verifying-candidate-issues) request check them.
 - These tasks get 10 more agent turns for the search. The report header names the snapshot date, or `outdated` if it is older than 14 days, or `missing`.
 
 How it stays current:

@@ -11,8 +11,6 @@ issue: 17573
 #   Answer in German.
 # Optional: build on the committed report of an earlier request in the same directory.
 # previous: analysis-001
-# Optional, only together with previous: download the full, current text of candidate issues
-# from the earlier report and let the AI verify them. "all" takes every issue linked in that
-# report; a list names the issues to verify (at most 15).
-# verify: all
-# verify: [18830, 18841]
+# Optional: rule-based preselection of candidate issues from the issue snapshot. Their full text is
+# downloaded so the AI can judge them directly. true means 5 issues, a number 1 to 10. Off by default.
+# preselect: true

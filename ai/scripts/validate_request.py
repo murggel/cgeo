@@ -10,8 +10,9 @@ Branch reviews name a branch of the fork and a base branch of the upstream
 repository. Analyses and reviews may carry free-text ``instructions`` that are added to
 the prompt; the workflow passes them on unchanged. They may also name an earlier
 request of the same subject as ``previous``, whose report the new run builds on.
-A follow-up request may also name candidate issues to ``verify``: ``all`` (the
-issues linked in the previous report) or a list of issue numbers.
+Analyses and reviews may switch on the rule-based ``preselect`` of candidate
+issues. verify-issues names its target (issue, pr or branch with base), the
+``issues`` to verify and optionally the ``report`` they come from.
 refresh-issues runs no AI and therefore names no provider.
 """
 
@@ -31,8 +32,11 @@ import yaml
 MAX_REQUEST_BYTES = 16_384
 MAX_NUMBER = 999_999_999
 MAX_INSTRUCTIONS_CHARS = 4_000
-# verify: candidate issues whose full text is downloaded for a follow-up request.
-MAX_VERIFY_ISSUES = 15
+# verify-issues: at most this many issues are verified.
+MAX_VERIFY_ISSUES = 10
+# preselect: true means DEFAULT_PRESELECT issues, a number at most MAX_PRESELECT.
+DEFAULT_PRESELECT = 5
+MAX_PRESELECT = 10
 # Tabs and line breaks are fine; other control characters are not.
 FORBIDDEN_CHARACTERS = re.compile("[\x00-\x08\x0b-\x1f\x7f]")
 # review-branch: branch names of the fork, restricted to safe characters.
@@ -61,7 +65,7 @@ TASKS = {
     "analyze-issue": TaskRule(
         providers=frozenset({"claude", "copilot"}),
         required_keys=frozenset({"issue"}),
-        optional_keys=frozenset({"instructions", "previous", "verify"}),
+        optional_keys=frozenset({"instructions", "previous", "preselect"}),
         subject=re.compile(rf"issue-{NUMBER}{DESCRIPTION}"),
         request_id=re.compile(rf"analysis-[0-9]{{3}}{DESCRIPTION}"),
         layout="ai/requests/issue-<number>[-description]/analysis-NNN[-description]/request.yml",
@@ -69,7 +73,7 @@ TASKS = {
     "review-pr": TaskRule(
         providers=frozenset({"claude", "copilot"}),
         required_keys=frozenset({"pr"}),
-        optional_keys=frozenset({"instructions", "previous", "verify"}),
+        optional_keys=frozenset({"instructions", "previous", "preselect"}),
         subject=re.compile(rf"(?:pr-{NUMBER}|issue-[1-9][0-9]{{0,8}}){DESCRIPTION}"),
         request_id=re.compile(rf"review(?:-pr)?-[0-9]{{3}}{DESCRIPTION}"),
         layout="ai/requests/(pr|issue)-<number>[-description]/review[-pr]-NNN[-description]/request.yml",
@@ -77,10 +81,18 @@ TASKS = {
     "review-branch": TaskRule(
         providers=frozenset({"claude", "copilot"}),
         required_keys=frozenset({"branch", "base"}),
-        optional_keys=frozenset({"instructions", "previous", "verify"}),
+        optional_keys=frozenset({"instructions", "previous", "preselect"}),
         subject=re.compile(rf"branch-[A-Za-z0-9_-]+"),
         request_id=re.compile(rf"review-[0-9]{{3}}{DESCRIPTION}"),
         layout="ai/requests/branch-<description>/review-NNN[-description]/request.yml",
+    ),
+    "verify-issues": TaskRule(
+        providers=frozenset({"claude", "copilot"}),
+        required_keys=frozenset({"issues"}),
+        optional_keys=frozenset({"issue", "pr", "branch", "base", "report", "instructions"}),
+        subject=re.compile(rf"(?:issue-{NUMBER}|pr-(?P<pr>[1-9][0-9]{{0,8}})|branch-[A-Za-z0-9_-]+?){DESCRIPTION}"),
+        request_id=re.compile(rf"verify-[0-9]{{3}}{DESCRIPTION}"),
+        layout="ai/requests/(issue|pr)-<number>[-description] or branch-<description>/verify-NNN[-description]/request.yml",
     ),
     "refresh-issues": TaskRule(
         providers=frozenset(),
@@ -113,6 +125,8 @@ class Request:
     base: str = ""
     previous_report: str = ""
     verify: str = ""
+    verify_target: str = ""
+    preselect: int = 0
 
     def outputs(self) -> dict[str, str]:
         outputs = {
@@ -126,17 +140,21 @@ class Request:
             "base": self.base,
             "previous_report": self.previous_report,
         }
+        # Only when set, so that the outputs of other requests stay unchanged.
         if self.verify:
             outputs["verify"] = self.verify
+            outputs["verify_target"] = self.verify_target
+        if self.preselect:
+            outputs["preselect"] = str(self.preselect)
         return outputs
 
     def summary(self) -> str:
         lines = [f"- Task: {self.task}"]
         if self.provider:
             lines.append(f"- Provider: {self.provider}")
-        if self.task == "review-pr":
+        if self.task == "review-pr" or self.verify_target == "pr":
             lines.append(f"- Pull request: {self.repository}#{self.number}")
-        elif self.task == "review-branch":
+        elif self.task == "review-branch" or self.verify_target == "branch":
             lines.append(f"- Branch: {self.branch} (base: {self.repository}:{self.base})")
         elif self.number is not None:
             lines.append(f"- Issue: {self.repository}#{self.number}")
@@ -145,7 +163,9 @@ class Request:
         if self.previous_report:
             lines.append(f"- Previous report: {self.previous_report}")
         if self.verify:
-            lines.append(f"- Verify candidate issues: {self.verify}")
+            lines.append(f"- Issues to verify: {self.verify}")
+        if self.preselect:
+            lines.append(f"- Preselect candidate issues: {self.preselect}")
         lines.append(f"- Request: {self.path.as_posix()}")
         return "\n".join(lines)
 
@@ -266,21 +286,22 @@ def _branch(request: dict[str, Any]) -> tuple[str, str]:
     return branch, base
 
 
-def _previous_report(request: dict[str, Any], root: Path, path: PurePosixPath) -> str:
+def _previous_report(request: dict[str, Any], root: Path, path: PurePosixPath,
+                     key: str = "previous") -> str:
     """Return the report of the earlier request named by ``previous``, if any.
 
     The report must already be part of the pushed commit, so a report that is
     still being generated fails here instead of being silently left out.
     """
-    if "previous" not in request:
+    if key not in request:
         return ""
-    previous = request["previous"]
+    previous = request[key]
     if not isinstance(previous, str) or not NAME.fullmatch(previous):
         raise ValueError(
-            "previous must be the folder name of an earlier request in the same directory (e.g. review-001)"
+            f"{key} must be the folder name of an earlier request in the same directory (e.g. review-001)"
         )
     if previous == path.parent.name:
-        raise ValueError("previous must not name the request itself")
+        raise ValueError(f"{key} must not name the request itself")
     report = path.parent.parent / previous / "report.md"
     _reject_symlinks(root, report)
     if not root.joinpath(*report.parts).is_file():
@@ -291,23 +312,42 @@ def _previous_report(request: dict[str, Any], root: Path, path: PurePosixPath) -
     return report.as_posix()
 
 
-def _verify(request: dict[str, Any]) -> str:
-    """Return 'all' or the comma-separated issue numbers named by ``verify``."""
-    if "verify" not in request:
-        return ""
-    if "previous" not in request:
-        raise ValueError("verify needs previous: it checks the candidates of an earlier report")
-    value = request["verify"]
-    if value == "all":
-        return "all"
+def _preselect(request: dict[str, Any]) -> int:
+    if "preselect" not in request:
+        return 0
+    value = request["preselect"]
+    if value is True:
+        return DEFAULT_PRESELECT
+    if value is False:
+        return 0
+    if not isinstance(value, int) or not 1 <= value <= MAX_PRESELECT:
+        raise ValueError(f"preselect must be true, false or a number from 1 to {MAX_PRESELECT}")
+    return value
+
+
+def _verify(request: dict[str, Any], subject: str) -> tuple[str, str]:
+    """verify-issues: return the issues to verify and the target (issue, pr or branch)."""
+    targets = [key for key in ("issue", "pr", "branch") if key in request]
+    if len(targets) != 1:
+        raise ValueError("verify-issues needs exactly one target: issue, pr, or branch with base")
+    target = targets[0]
+    if (target == "branch") != ("base" in request):
+        raise ValueError("base is required with branch and only allowed with branch")
+    if not subject.startswith(f"{target}-"):
+        raise ValueError(f"a verify-issues request for a {target} must be stored under ai/requests/{target}-...")
+    value = request["issues"]
+    if value in ("unverified", "all"):
+        if "report" not in request:
+            raise ValueError(f"issues: {value} needs report, the request whose report names the issues")
+        return value, target
     if not isinstance(value, list) or not 1 <= len(value) <= MAX_VERIFY_ISSUES or any(
             isinstance(item, bool) or not isinstance(item, int) or not 1 <= item <= MAX_NUMBER
             for item in value) or len(set(value)) != len(value):
         raise ValueError(
-            f"verify must be 'all' or a list of 1 to {MAX_VERIFY_ISSUES} different issue numbers "
-            "(e.g. verify: [18830, 18841])"
+            f"issues must be 'unverified', 'all' or a list of 1 to {MAX_VERIFY_ISSUES} different "
+            "issue numbers (e.g. issues: [18830, 18841])"
         )
-    return ",".join(str(item) for item in value)
+    return ",".join(str(item) for item in value), target
 
 
 def write_github_output(path: Path, outputs: dict[str, str]) -> None:
@@ -353,7 +393,7 @@ def validate_request(request_path: str | PurePosixPath, root: Path = Path(".")) 
     if missing or unexpected:
         raise ValueError(f"wrong keys (missing={missing}, unexpected={unexpected})")
 
-    number_key = "pr" if task == "review-pr" else "issue"
+    number_key = "pr" if task == "review-pr" or (task == "verify-issues" and "pr" in request) else "issue"
     number = _number(request, number_key) if number_key in request else None
 
     if "repository" in request and number is None:
@@ -365,16 +405,22 @@ def validate_request(request_path: str | PurePosixPath, root: Path = Path(".")) 
     subject_match = rule.subject.fullmatch(subject)
     if subject_match is None or rule.request_id.fullmatch(request_id) is None:
         raise ValueError(f"'{task}' requests must be stored as {rule.layout}")
-    if "number" in rule.subject.groupindex and subject_match["number"] is not None \
-            and int(subject_match["number"]) != number:
-        raise ValueError(
-            f"directory '{subject}' refers to {number_key} {subject_match['number']}, "
-            f"but the request specifies {number_key} {number}"
-        )
+    verify = verify_target = ""
+    if task == "verify-issues":
+        verify, verify_target = _verify(request, subject)
+    for group in ("number", "pr"):
+        if group in rule.subject.groupindex and subject_match[group] is not None \
+                and int(subject_match[group]) != number:
+            raise ValueError(
+                f"directory '{subject}' refers to {number_key} {subject_match[group]}, "
+                f"but the request specifies {number_key} {number}"
+            )
 
     branch, base = _branch(request)
+    report_key = "report" if task == "verify-issues" else "previous"
     return Request(path, task, provider, number, repository, _instructions(request), branch, base,
-                   _previous_report(request, root, path), _verify(request))
+                   _previous_report(request, root, path, report_key), verify, verify_target,
+                   _preselect(request))
 
 
 def main(argv: list[str] | None = None) -> int:
