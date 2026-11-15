@@ -15,13 +15,13 @@ Categories:
 - keep-open: everything else, and every case of doubt.
 Use the age (creation date, last activity, reported version) as a hint: old reports about reworked code deserve a closer look, but age alone is never a reason to close. Feature requests are not closed just because nobody implemented them. Recommend closing only with concrete evidence from the issue text, the discussion or the code.
 
-Output (Markdown only), grouped by category, not one section per issue:
+Output (Markdown only), grouped by category, not one section per issue. Start directly with the summary, without an introductory sentence or a note on what you are reading. Link every issue as a Markdown link, for example [#447](https://github.com/cgeo/cgeo/issues/447), so that the maintainer can open it with one click:
 1. Summary: how many issues were checked and how many can probably be closed, per category.
 2. One section per category "Probably fixed", "Duplicates", "No longer applicable", "Waiting for information", in this order, leaving out empty ones. For each issue one entry:
-   - link https://github.com/cgeo/cgeo/issues/<number> and title
+   - the link [#<number>](https://github.com/cgeo/cgeo/issues/<number>) followed by the title
    - reason in one or two sentences with the evidence (code reference, other issue, unanswered question with its date), and confidence (high / medium / low)
    - a closing comment in English that the maintainer can post: short, friendly, naming the reason and inviting the reporter to reopen or comment if the problem persists
-3. "Keep open": only the issue numbers as links, comma-separated; add a short reason only where a later look seems worthwhile.
+3. "Keep open": only the issue links in the same form, comma-separated; add a short reason only where a later look seems worthwhile.
 4. Result block: at the very end, a fenced block with the info string cleanup-result and exactly one line per checked issue in the form "#<number> <category>", using the category keys fixed, duplicate, obsolete, waiting or keep-open:
    ```cleanup-result
    #12345 fixed
