@@ -28,11 +28,15 @@ cleanup:
   #   max_batches: copilot only: up to this many batches in one night, as far
   #                as the Copilot quota below allows (leave out: 1)
   auto:
-    - days: 1-20
-      weekdays: [tue]
-      provider: claude
+    # Temporary rule for the test run of 2026-11-15; remove afterwards.
+    - days: [15]
+      provider: copilot
+    # Friday 3:00 suits Claude: the weekly limit resets on Friday at 5:00.
     - days: 1-20
       weekdays: [fri]
+      provider: claude
+    - days: 1-20
+      weekdays: [tue]
       provider: copilot
     - days: 21-31
       provider: copilot

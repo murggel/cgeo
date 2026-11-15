@@ -498,7 +498,7 @@ With `provider: auto` the workflow chooses provider, number of issues and number
 
 The default plan:
 
-- Days 1–20: Claude on Tuesdays, Copilot on Fridays, one run of 20 issues each.
+- Days 1–20: Claude on Fridays (the Claude weekly limit resets on Friday at 5:00), Copilot on Tuesdays, one run of 20 issues each.
 - Days 21–31: Copilot every night, up to 5 batches, as far as the quota allows. Unused premium requests expire at the end of the month, so they are used for the cleanup.
 
 How a night runs:
