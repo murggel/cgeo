@@ -60,6 +60,8 @@ SNAPSHOT_EXTRA_TURNS = 10
 # verify-issues and preselection: at most this many issues are downloaded in full.
 MAX_VERIFY_ISSUES = 10
 MAX_PRESELECT = 10
+# cleanup-issues: at most this many batches (one agent run each) per request.
+MAX_BATCHES = 10
 # Extra agent turns per downloaded candidate issue (preselection and verify-issues).
 CANDIDATE_EXTRA_TURNS = 1
 # Tasks whose request may contain additional instructions or a previous report (see validate_request.py).
@@ -130,7 +132,8 @@ CLEANUP_SECTION = """\
 
 ## Issues to check
 
-Today is {today}. Check these issues: {numbers}.
+Today is {today}. "waiting" needs an unanswered question to the reporter that is at least
+{waiting_months} months old. Check these issues: {numbers}.
 """
 
 VERIFY_SECTION = """\
@@ -287,6 +290,9 @@ def prepare(
     cleanup_count: int = 0,
     labels: tuple[str, ...] | list[str] = (),
     today: date | None = None,
+    batches: int = 1,
+    skip_days: int = issue_cleanup.SKIP_DAYS,
+    waiting_months: int = 6,
 ) -> dict[str, str]:
     """Prepare the workspace and return the step outputs."""
     # git -C resolves relative paths against the -C directory, not the current one.
@@ -318,16 +324,24 @@ def prepare(
             raise PrepareError("cleanup-issues needs the issue snapshot; push a refresh-issues request first")
         if not 1 <= cleanup_count <= issue_cleanup.MAX_COUNT:
             raise PrepareError(f"cleanup-issues checks 1 to {issue_cleanup.MAX_COUNT} issues")
+        if not 1 <= batches <= MAX_BATCHES:
+            raise PrepareError(f"cleanup-issues runs 1 to {MAX_BATCHES} batches")
         today = today or date.today()
         state = issue_cleanup.load_state(snapshot / issue_cleanup.STATE_FILE)
         try:
-            candidates = issue_cleanup.select(snapshot, state, cleanup_count, list(labels), today)
+            candidates = issue_cleanup.select(snapshot, state, cleanup_count * batches, list(labels),
+                                              today, skip_days)
         except issue_cleanup.CleanupError as exc:
             raise PrepareError(str(exc)) from exc
         if not candidates:
             raise PrepareError("no issues to check: all matching issues were checked recently")
-        prompt = build_prompt(task, instructions, prompts_dir, extra=CLEANUP_SECTION.format(
-            today=today.isoformat(), numbers=", ".join(f"#{item}" for item in candidates)))
+        # One prompt per batch; fewer batches if there are not enough issues.
+        batch_lists = [candidates[index:index + cleanup_count]
+                       for index in range(0, len(candidates), cleanup_count)]
+        batch_prompts = [build_prompt(task, instructions, prompts_dir, extra=CLEANUP_SECTION.format(
+            today=today.isoformat(), waiting_months=waiting_months,
+            numbers=", ".join(f"#{item}" for item in batch))) for batch in batch_lists]
+        prompt = batch_prompts[0]
     elif task == "verify-issues":
         report_text = read_previous_report(workspace / previous_report) if previous_report else ""
         candidates = candidate_numbers(verify, report_text, number)
@@ -380,7 +394,7 @@ def prepare(
                   f"branch: {BRANCH_REPOSITORY}:{branch}@{head} | base: {base}@{merge_base}")
     elif task == "cleanup-issues":
         sha = clone_upstream(git, repository, upstream)
-        header = f"task: cleanup-issues | upstream: {repository}@{sha} | issues: {len(candidates)}"
+        header = f"task: cleanup-issues | upstream: {repository}@{sha}"
         if labels:
             header += f" | labels: {', '.join(labels)}"
     elif task == "smoke-test":
@@ -425,6 +439,12 @@ def prepare(
     prompt_file = output_dir / "prompt.md"
     prompt_file.parent.mkdir(parents=True, exist_ok=True)
     prompt_file.write_text(prompt, encoding="utf-8")
+    prompt_files = [prompt_file]
+    if task == "cleanup-issues":
+        for index, text in enumerate(batch_prompts[1:], start=2):
+            path = output_dir / f"prompt-{index}.md"
+            path.write_text(text, encoding="utf-8")
+            prompt_files.append(path)
 
     for directory in (upstream, pr_head, branch_head):
         if directory.is_dir():
@@ -434,7 +454,9 @@ def prepare(
     outputs = {"header": header, "max_turns": str(max_turns), "appendix": appendix,
                "prompt_file": str(prompt_file)}
     if task == "cleanup-issues":
-        outputs["candidates"] = ",".join(str(item) for item in candidates)
+        # Batches are separated by ';'; the header of each report names its batch.
+        outputs["candidates"] = ";".join(",".join(str(item) for item in batch) for batch in batch_lists)
+        outputs["prompt_files"] = " ".join(str(path) for path in prompt_files)
     return outputs
 
 
@@ -473,6 +495,12 @@ def main(argv: list[str] | None = None, fetch: Fetch | None = None, git: Git = r
     parser.add_argument("--verify-target", default="", help="verify-issues: issue, pr or branch")
     parser.add_argument("--count", type=lambda text: int(text) if text else 0, default=0,
                         help="cleanup-issues: number of issues to check")
+    parser.add_argument("--batches", type=lambda text: int(text) if text else 1, default=1,
+                        help="cleanup-issues: number of batches of --count issues")
+    parser.add_argument("--skip-days", type=lambda text: int(text) if text else issue_cleanup.SKIP_DAYS,
+                        default=issue_cleanup.SKIP_DAYS, help="cleanup-issues: pause for checked issues")
+    parser.add_argument("--waiting-months", type=lambda text: int(text) if text else 6, default=6,
+                        help="cleanup-issues: minimum age of an unanswered question")
     parser.add_argument("--labels", default="",
                         help="cleanup-issues: JSON list of labels; only issues with one of them")
     parser.add_argument("--preselect", type=lambda text: int(text) if text else 0, default=0,
@@ -491,7 +519,9 @@ def main(argv: list[str] | None = None, fetch: Fetch | None = None, git: Git = r
                           branch=args.branch, base=args.base, previous_report=args.previous_report,
                           issue_snapshot_dir=args.issue_snapshot, preselect=args.preselect,
                           verify=args.verify, verify_target=args.verify_target,
-                          cleanup_count=args.count, labels=parse_labels(args.labels))
+                          cleanup_count=args.count, labels=parse_labels(args.labels),
+                          batches=args.batches, skip_days=args.skip_days,
+                          waiting_months=args.waiting_months)
     except (PrepareError, ContextError) as exc:
         print(f"Cannot prepare task: {exc}", file=sys.stderr)
         return 1

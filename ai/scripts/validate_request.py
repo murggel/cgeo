@@ -37,8 +37,7 @@ MAX_NUMBER = 999_999_999
 MAX_INSTRUCTIONS_CHARS = 4_000
 # verify-issues: at most this many issues are verified.
 MAX_VERIFY_ISSUES = 10
-# cleanup-issues: issues per run and label filter.
-DEFAULT_CLEANUP_COUNT = 20
+# cleanup-issues: issues per run (default from ai/settings.yml) and label filter.
 MAX_CLEANUP_COUNT = 30
 MAX_LABELS = 10
 LABEL_PATTERN = re.compile(r"[^\x00-\x1f\x7f,]{1,50}")
@@ -103,7 +102,8 @@ TASKS = {
         layout="ai/requests/(issue|pr)-<number>[-description] or branch-<description>/verify-NNN[-description]/request.yml",
     ),
     "cleanup-issues": TaskRule(
-        providers=frozenset({"claude", "copilot"}),
+        # auto: the workflow chooses by ai/settings.yml and the Copilot quota.
+        providers=frozenset({"auto", "claude", "copilot"}),
         required_keys=frozenset(),
         optional_keys=frozenset({"count", "labels", "instructions"}),
         subject=re.compile("cleanup"),
@@ -164,8 +164,8 @@ class Request:
             outputs["verify_target"] = self.verify_target
         if self.preselect:
             outputs["preselect"] = str(self.preselect)
-        if self.cleanup_count:
-            outputs["count"] = str(self.cleanup_count)
+        if self.task == "cleanup-issues":
+            outputs["count"] = str(self.cleanup_count or "")
             outputs["labels"] = json.dumps(list(self.labels))
         return outputs
 
@@ -351,8 +351,9 @@ def _preselect(request: dict[str, Any]) -> int:
 
 
 def _cleanup(request: dict[str, Any]) -> tuple[int, tuple[str, ...]]:
-    count = request.get("count", DEFAULT_CLEANUP_COUNT)
-    if isinstance(count, bool) or not isinstance(count, int) or not 1 <= count <= MAX_CLEANUP_COUNT:
+    count = request.get("count", 0)
+    if "count" in request and (isinstance(count, bool) or not isinstance(count, int)
+                               or not 1 <= count <= MAX_CLEANUP_COUNT):
         raise ValueError(f"count must be a number from 1 to {MAX_CLEANUP_COUNT}")
     labels = request.get("labels", [])
     if not isinstance(labels, list) or len(labels) > MAX_LABELS or any(

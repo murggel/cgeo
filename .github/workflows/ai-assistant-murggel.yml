@@ -37,7 +37,8 @@ jobs:
     outputs:
       request_dir: ${{ steps.request.outputs.request_dir }}
       task: ${{ steps.request.outputs.task }}
-      provider: ${{ steps.request.outputs.provider }}
+      # For cleanup-issues the provider comes from ai/settings.yml (empty: skip the run).
+      provider: ${{ steps.resolve.outputs.provider }}
       number: ${{ steps.request.outputs.number }}
       repository: ${{ steps.request.outputs.repository }}
       instructions: ${{ steps.request.outputs.instructions }}
@@ -47,8 +48,11 @@ jobs:
       verify: ${{ steps.request.outputs.verify }}
       verify_target: ${{ steps.request.outputs.verify_target }}
       preselect: ${{ steps.request.outputs.preselect }}
-      count: ${{ steps.request.outputs.count }}
+      count: ${{ steps.resolve.outputs.count }}
       labels: ${{ steps.request.outputs.labels }}
+      batches: ${{ steps.resolve.outputs.batches }}
+      skip_days: ${{ steps.resolve.outputs.skip_days }}
+      waiting_months: ${{ steps.resolve.outputs.waiting_months }}
 
     steps:
       - name: Check out request branch
@@ -131,12 +135,36 @@ jobs:
           fi
           printf '## AI request validated\n\n%s\n' "$result" >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Resolve provider and cleanup settings
+        id: resolve
+        if: steps.request.outputs.task != ''
+        env:
+          TASK: ${{ steps.request.outputs.task }}
+          PROVIDER: ${{ steps.request.outputs.provider }}
+          COUNT: ${{ steps.request.outputs.count }}
+          # Read-only access to the owner's billing data, only for the Copilot quota.
+          COPILOT_BILLING_TOKEN: ${{ secrets.COPILOT_BILLING_TOKEN }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          if [[ "$TASK" != "cleanup-issues" ]]; then
+            echo "provider=$PROVIDER" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if ! result=$(python ai/scripts/settings.py resolve --provider "$PROVIDER" --count "$COUNT" \
+              --user "$OWNER" --github-output "$GITHUB_OUTPUT" 2>&1); then
+            echo "::error::$result"
+            exit 1
+          fi
+          printf '## Cleanup plan\n\n%s\n' "$result" >> "$GITHUB_STEP_SUMMARY"
+          echo "::notice::$result"
+
   run-copilot:
     name: Run ${{ needs.validate.outputs.task }}${{ needs.validate.outputs.number && format(' {0}#{1}', needs.validate.outputs.repository, needs.validate.outputs.number) || '' }}${{ needs.validate.outputs.branch && format(' {0}', needs.validate.outputs.branch) || '' }} with GitHub Copilot
     needs: validate
     if: needs.validate.outputs.provider == 'copilot'
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    # Cleanup requests may run several batches.
+    timeout-minutes: 90
     outputs:
       # cleanup-issues: the issues this run checked, for recording the results.
       candidates: ${{ steps.prepare.outputs.candidates }}
@@ -191,37 +219,49 @@ jobs:
           PRESELECT: ${{ needs.validate.outputs.preselect }}
           COUNT: ${{ needs.validate.outputs.count }}
           LABELS: ${{ needs.validate.outputs.labels }}
+          BATCHES: ${{ needs.validate.outputs.batches }}
+          SKIP_DAYS: ${{ needs.validate.outputs.skip_days }}
+          WAITING_MONTHS: ${{ needs.validate.outputs.waiting_months }}
         run: |
           python ai/scripts/prepare_task.py --task "$TASK" --number "$NUMBER" --repository "$REPOSITORY" \
             --instructions="$INSTRUCTIONS" --branch="$REVIEW_BRANCH" --base="$REVIEW_BASE" \
             --previous-report="$PREVIOUS_REPORT" --issue-snapshot ai/issues \
             --verify="$VERIFY" --verify-target="$VERIFY_TARGET" --preselect="$PRESELECT" \
-            --count="$COUNT" --labels="$LABELS" \
+            --count="$COUNT" --labels="$LABELS" --batches="$BATCHES" \
+            --skip-days="$SKIP_DAYS" --waiting-months="$WAITING_MONTHS" \
             --output-dir "$RUNNER_TEMP" --github-output "$GITHUB_OUTPUT"
 
       - name: Run Copilot
         env:
           COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
           PROMPT_FILE: ${{ steps.prepare.outputs.prompt_file }}
+          # cleanup-issues: one prompt per batch; otherwise empty.
+          PROMPT_FILES: ${{ steps.prepare.outputs.prompt_files }}
         run: |
           model_args=()
           if [[ "$TASK" == "smoke-test" ]]; then
             model_args=(--model="$SMOKE_TEST_MODEL")
           fi
-          copilot -p "$(cat "$PROMPT_FILE")" "${model_args[@]}" \
-            --add-dir "$GITHUB_WORKSPACE" \
-            --available-tools='view,grep,glob' \
-            --deny-tool='write' \
-            --deny-tool='shell' \
-            --deny-tool='url' \
-            --no-ask-user \
-            --secret-env-vars COPILOT_GITHUB_TOKEN \
-            -s > "$RUNNER_TEMP/response.md"
+          read -ra prompts <<< "${PROMPT_FILES:-$PROMPT_FILE}"
+          for index in "${!prompts[@]}"; do
+            suffix=""
+            (( index > 0 )) && suffix="-$((index + 1))"
+            copilot -p "$(cat "${prompts[$index]}")" "${model_args[@]}" \
+              --add-dir "$GITHUB_WORKSPACE" \
+              --available-tools='view,grep,glob' \
+              --deny-tool='write' \
+              --deny-tool='shell' \
+              --deny-tool='url' \
+              --no-ask-user \
+              --secret-env-vars COPILOT_GITHUB_TOKEN \
+              -s > "$RUNNER_TEMP/response$suffix.md"
+          done
 
       - name: Create report
         env:
           HEADER: ${{ steps.prepare.outputs.header }}
           APPENDIX: ${{ steps.prepare.outputs.appendix }}
+          CANDIDATES: ${{ steps.prepare.outputs.candidates }}
           COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
           GITHUB_TOKEN: ${{ github.token }}
         run: |
@@ -229,18 +269,30 @@ jobs:
           if [[ "$TASK" == "smoke-test" ]]; then
             model=" | model: $SMOKE_TEST_MODEL"
           fi
-          python ai/scripts/finalize_report.py \
-            --copilot-output "$RUNNER_TEMP/response.md" \
-            ${APPENDIX:+--append "$APPENDIX"} \
-            --header "$HEADER | provider: copilot ${COPILOT_CLI_VERSION}${model} | workflow: ${GITHUB_SHA}" \
-            --secret-env COPILOT_GITHUB_TOKEN --secret-env GITHUB_TOKEN \
-            --output "$RUNNER_TEMP/report.md"
+          read -ra batches <<< "${CANDIDATES//;/ }"
+          total=${#batches[@]}
+          for response in "$RUNNER_TEMP"/response*.md; do
+            name=$(basename "$response")
+            suffix=${name#response}
+            suffix=${suffix%.md}
+            batch=""
+            if (( total > 1 )); then
+              number=${suffix#-}
+              batch=" | batch: ${number:-1}/$total"
+            fi
+            python ai/scripts/finalize_report.py \
+              --copilot-output "$response" \
+              ${APPENDIX:+--append "$APPENDIX"} \
+              --header "$HEADER$batch | provider: copilot ${COPILOT_CLI_VERSION}${model} | workflow: ${GITHUB_SHA}" \
+              --secret-env COPILOT_GITHUB_TOKEN --secret-env GITHUB_TOKEN \
+              --output "$RUNNER_TEMP/report$suffix.md"
+          done
 
       - name: Upload report
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: report
-          path: ${{ runner.temp }}/report.md
+          path: ${{ runner.temp }}/report*.md
           if-no-files-found: error
           retention-days: 3
 
@@ -293,12 +345,16 @@ jobs:
           PRESELECT: ${{ needs.validate.outputs.preselect }}
           COUNT: ${{ needs.validate.outputs.count }}
           LABELS: ${{ needs.validate.outputs.labels }}
+          BATCHES: ${{ needs.validate.outputs.batches }}
+          SKIP_DAYS: ${{ needs.validate.outputs.skip_days }}
+          WAITING_MONTHS: ${{ needs.validate.outputs.waiting_months }}
         run: |
           python ai/scripts/prepare_task.py --task "$TASK" --number "$NUMBER" --repository "$REPOSITORY" \
             --instructions="$INSTRUCTIONS" --branch="$REVIEW_BRANCH" --base="$REVIEW_BASE" \
             --previous-report="$PREVIOUS_REPORT" --issue-snapshot ai/issues \
             --verify="$VERIFY" --verify-target="$VERIFY_TARGET" --preselect="$PRESELECT" \
-            --count="$COUNT" --labels="$LABELS" \
+            --count="$COUNT" --labels="$LABELS" --batches="$BATCHES" \
+            --skip-days="$SKIP_DAYS" --waiting-months="$WAITING_MONTHS" \
             --output-dir "$RUNNER_TEMP" --github-output "$GITHUB_OUTPUT"
 
       - name: Run Claude Code
@@ -340,7 +396,7 @@ jobs:
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: report
-          path: ${{ runner.temp }}/report.md
+          path: ${{ runner.temp }}/report*.md
           if-no-files-found: error
           retention-days: 3
 
@@ -384,15 +440,22 @@ jobs:
 
       - name: Commit and push report
         run: |
-          source="$RUNNER_TEMP/report/report.md"
-          if [[ -L "$source" || ! -f "$source" ]]; then
-            echo "::error::Downloaded report is missing or not a regular file."
-            exit 1
-          fi
-          if (( $(wc -c < "$source") > MAX_REPORT_BYTES )); then
-            echo "::error::Report exceeds the 512 KiB limit."
-            exit 1
-          fi
+          # report.md, and for cleanup batches report-2.md, report-3.md, ...
+          read -ra checked <<< "${CANDIDATES//;/ }"
+          sources=("$RUNNER_TEMP/report/report.md")
+          for (( batch = 2; batch <= ${#checked[@]}; batch++ )); do
+            sources+=("$RUNNER_TEMP/report/report-$batch.md")
+          done
+          for source in "${sources[@]}"; do
+            if [[ -L "$source" || ! -f "$source" ]]; then
+              echo "::error::Downloaded report $(basename "$source") is missing or not a regular file."
+              exit 1
+            fi
+            if (( $(wc -c < "$source") > MAX_REPORT_BYTES )); then
+              echo "::error::Report $(basename "$source") exceeds the 512 KiB limit."
+              exit 1
+            fi
+          done
 
           case "$TASK" in
             analyze-issue) message="Add ${PROVIDER^} analysis report for issue #$NUMBER" ;;
@@ -402,10 +465,14 @@ jobs:
             cleanup-issues) message="Add ${PROVIDER^} issue cleanup report ${REQUEST_DIR##*/}" ;;
             *) message="Add ${PROVIDER^} smoke-test report" ;;
           esac
-          report_path="$REQUEST_DIR/report.md"
-          # Cleanup reports live next to the snapshot; their results go to ai/issues/cleanup.json.
+          report_paths=("$REQUEST_DIR/report.md")
+          # Cleanup reports live next to the snapshot (one per batch); their results go to
+          # ai/issues/cleanup.json.
           if [[ "$TASK" == "cleanup-issues" ]]; then
-            report_path="ai/issues/cleanup/${REQUEST_DIR##*/}.md"
+            report_paths=("ai/issues/cleanup/${REQUEST_DIR##*/}.md")
+            for (( batch = 2; batch <= ${#checked[@]}; batch++ )); do
+              report_paths+=("ai/issues/cleanup/${REQUEST_DIR##*/}-$batch.md")
+            done
           fi
 
           git config user.name "github-actions[bot]"
@@ -419,38 +486,37 @@ jobs:
 
             # No path component may be a symlink; otherwise the bot
             # could write outside the request directory.
-            IFS=/ read -ra parts <<< "$report_path"
-            path=""
-            for part in "${parts[@]}"; do
-              path="${path:+$path/}$part"
-              if [[ -L "$path" ]]; then
-                echo "::error::$path is a symbolic link; refusing to write the report."
-                exit 1
-              fi
+            for report_path in "${report_paths[@]}" ai/issues/cleanup.json; do
+              IFS=/ read -ra parts <<< "$report_path"
+              path=""
+              for part in "${parts[@]}"; do
+                path="${path:+$path/}$part"
+                if [[ -L "$path" ]]; then
+                  echo "::error::$path is a symbolic link; refusing to write the report."
+                  exit 1
+                fi
+              done
             done
             if [[ ! -d "$REQUEST_DIR" ]]; then
               echo "::error::$REQUEST_DIR no longer exists on $BRANCH. The report is still available as the 'report' artifact."
               exit 1
             fi
 
-            if [[ "$TASK" == "cleanup-issues" ]]; then
-              if [[ -L ai/issues/cleanup.json ]]; then
-                echo "::error::ai/issues/cleanup.json is a symbolic link; refusing to write."
-                exit 1
-              fi
+            for index in "${!report_paths[@]}"; do
+              report_path="${report_paths[$index]}"
               mkdir -p -- "${report_path%/*}"
-            fi
-            cp "$source" "$report_path"
-            git add -- "$report_path"
-            if [[ "$TASK" == "cleanup-issues" ]]; then
-              # A missing or broken result block keeps the report but records nothing.
-              if python3 ai/scripts/issue_cleanup.py apply --report "$report_path" --issues ai/issues \
-                  --checked "$CANDIDATES" --date "$(date -u +%F)"; then
-                git add -- ai/issues/cleanup.json
-              else
-                echo "::warning::Cleanup results were not recorded; see the report."
+              cp "${sources[$index]}" "$report_path"
+              git add -- "$report_path"
+              if [[ "$TASK" == "cleanup-issues" ]]; then
+                # A missing or broken result block keeps the report but records nothing.
+                if python3 ai/scripts/issue_cleanup.py apply --report "$report_path" --issues ai/issues \
+                    --checked "${checked[$index]}" --date "$(date -u +%F)"; then
+                  git add -- ai/issues/cleanup.json
+                else
+                  echo "::warning::Cleanup results of $report_path were not recorded; see the report."
+                fi
               fi
-            fi
+            done
             if git diff --cached --quiet; then
               echo "The report is unchanged; no commit is needed."
               exit 0
@@ -458,7 +524,8 @@ jobs:
             git commit --quiet -m "$message"
 
             if git push --quiet origin "HEAD:$BRANCH"; then
-              printf '## Report committed\n\n- Report: %s\n' "$report_path" >> "$GITHUB_STEP_SUMMARY"
+              printf '## Report committed\n\n' >> "$GITHUB_STEP_SUMMARY"
+              printf -- '- Report: %s\n' "${report_paths[@]}" >> "$GITHUB_STEP_SUMMARY"
               exit 0
             fi
             echo "::warning::Push attempt $attempt failed; retrying."

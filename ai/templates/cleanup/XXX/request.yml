@@ -2,8 +2,10 @@
 # Checks open cgeo/cgeo issues from the issue snapshot and recommends which ones can be closed.
 # The report goes to ai/issues/cleanup/<name>.md, the results to ai/issues/cleanup.json.
 task: cleanup-issues
-provider: copilot # claude
-# Optional: number of issues to check (default 20, at most 30).
+# auto: provider, number of issues and batches follow ai/settings.yml and the Copilot quota
+# (the scheduled task uses this); claude or copilot: one run with that provider.
+provider: copilot # auto, claude
+# Optional: number of issues to check (default from ai/settings.yml, at most 30).
 # count: 20
 # Optional: only issues with at least one of these labels.
 # labels: [Bug, Unverified]

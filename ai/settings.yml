@@ -1,0 +1,48 @@
+# Settings of the AI workflow. Read and checked by ai/scripts/settings.py;
+# a mistake makes the next run fail with an explanation.
+#
+# Dates and weekdays refer to this time zone.
+timezone: Europe/Berlin
+
+snapshot:
+  # Days of the month on which the scheduled task renews the issue snapshot.
+  days: [1, 15]
+
+cleanup:
+  # Issues per cleanup run (or per batch), if a request does not set count. 1 to 30.
+  count: 20
+  # Issues checked by a cleanup run are skipped for this many days,
+  # unless they have had activity since.
+  skip_days: 183
+  # "Waiting for information" needs an unanswered question to the reporter
+  # that is at least this many months old.
+  waiting_months: 6
+
+  # Plan for requests with "provider: auto", which the scheduled task pushes
+  # every night. The first rule that matches the night is used; if none
+  # matches, no cleanup request is pushed.
+  #   days:        days of the month, e.g. 1-20 or [1, 2, 3]
+  #   weekdays:    mon, tue, wed, thu, fri, sat, sun (leave out: every day)
+  #   provider:    claude or copilot
+  #   count:       issues per run or batch (leave out: count above)
+  #   max_batches: copilot only: up to this many batches in one night, as far
+  #                as the Copilot quota below allows (leave out: 1)
+  auto:
+    - days: 1-20
+      weekdays: [tue]
+      provider: claude
+    - days: 1-20
+      weekdays: [fri]
+      provider: copilot
+    - days: 21-31
+      provider: copilot
+      max_batches: 5
+
+copilot:
+  # Premium requests included per month (Copilot Pro: 300).
+  monthly_requests: 300
+  # Premium requests one Copilot run costs (model multiplier).
+  cost_per_run: 1
+  # Premium requests that must stay free for your own work. A Copilot run of
+  # the plan above only starts if enough is left beyond this reserve.
+  reserve: 30

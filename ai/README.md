@@ -20,6 +20,7 @@ The AI only reads. It cannot change code, post comments, or submit reviews.
 10. [Maintenance](#maintenance)
 11. [Issue snapshot](#issue-snapshot)
 12. [Issue cleanup](#issue-cleanup)
+13. [Settings and schedule](#settings-and-schedule)
 
 ## Quick start
 
@@ -440,7 +441,7 @@ How the AI uses it:
 How it stays current:
 
 - The snapshot is never updated during an analysis or review.
-- The task `refresh-issues` creates it from scratch. A scheduled Claude Code task pushes such a request every two weeks (on the 1st and 15th of each month, at 3:00 Berlin time), waits for the new snapshot and then pushes a [cleanup](#issue-cleanup) request. You can also push one yourself at any time:
+- The task `refresh-issues` creates it from scratch. A scheduled Claude Code task pushes such a request on the days set in [`ai/settings.yml`](#settings-and-schedule) (1st and 15th), at 3:00 Berlin time. You can also push one yourself at any time:
 
   ```bash
   mkdir -p ai/requests/issue-snapshot/$(date +%F)
@@ -462,23 +463,61 @@ How it stays current:
 # ai/requests/cleanup/2026-11-15/request.yml
 task: cleanup-issues
 provider: copilot
-count: 20                  # optional, 1 to 30, default 20
+count: 20                  # optional, 1 to 30, default from ai/settings.yml
 # labels: [Bug, Unverified] # optional: only issues with one of these labels
 ```
 
 How it works:
 
-1. **Selection (by rules, without AI):** from `ai/issues/issues.md`, the issues with the oldest last activity first, optionally only those with one of the `labels`. Issues checked by a cleanup run in the last 6 months are skipped, unless they have had activity since.
+1. **Selection (by rules, without AI):** from `ai/issues/issues.md`, the issues with the oldest last activity first, optionally only those with one of the `labels`. Issues checked by a cleanup run in the last `skip_days` (default 183) are skipped, unless they have had activity since.
 2. **Download:** each selected issue with description, all comments, state and labels.
 3. **Check (AI):** against the full text, the current `cgeo/cgeo` code and the snapshot (for duplicates). Categories:
    - *Probably fixed:* the problem no longer exists in the code, or the feature exists.
    - *Duplicates:* another issue covers the same, which one is named.
    - *No longer applicable:* feature, connector, service or code path was removed or reworked.
-   - *Waiting for information:* the last substantive comment asks the reporter for something, the reporter has not answered, and that comment is at least 6 months old. The label *Feedback required* means feedback from other developers and is no reason on its own.
+   - *Waiting for information:* the last substantive comment asks the reporter for something, the reporter has not answered, and that comment is at least `waiting_months` (default 6) old. The label *Feedback required* means feedback from other developers and is no reason on its own.
    - *Keep open:* everything else and every case of doubt. Age alone and unimplemented feature requests are no reason to close.
 4. **Report:** `ai/issues/cleanup/<name>.md`, grouped by category, with reason, confidence and a closing comment in English for each issue you could close. Issues to keep open are only listed by number. The AI closes nothing.
 5. **Results:** a machine-readable block at the end of the report (`#<number> <category>`) is recorded in `ai/issues/cleanup.json`. Only issues the run actually checked are accepted. If the block is missing, the report is still saved and a warning is shown.
 
 Costs: Copilot charges per prompt, not per text size, so more issues per run are cheaper than more runs. Above about 25 to 30 issues the checks get less thorough.
 
-The scheduled task pushes a cleanup request with `provider: copilot` after each new snapshot (see [How it stays current](#issue-snapshot)).
+With `provider: auto` the workflow chooses provider, number of issues and number of batches from [`ai/settings.yml`](#settings-and-schedule) and the Copilot quota. Several batches give one report each: `<name>.md`, `<name>-2.md`, ...
+
+## Settings and schedule
+
+[`settings.yml`](settings.yml) holds everything you may want to adjust; `scripts/settings.py` reads and checks it. A mistake makes the next run fail with an explanation.
+
+| Setting | Meaning |
+|---|---|
+| `timezone` | Time zone for days and weekdays (`Europe/Berlin`). |
+| `snapshot.days` | Days of the month on which the scheduled task renews the snapshot. |
+| `cleanup.count`, `skip_days`, `waiting_months` | Default issues per cleanup run, pause for checked issues, minimum age of an unanswered question. |
+| `cleanup.auto` | Plan for `provider: auto`: rules with `days`, `weekdays`, `provider`, `count` and `max_batches` (Copilot only). The first rule that matches the night is used. |
+| `copilot.monthly_requests`, `cost_per_run`, `reserve` | Copilot quota per month (Pro: 300), premium requests per run, requests that must stay free for your own work. |
+
+The default plan:
+
+- Days 1–20: Claude on Tuesdays, Copilot on Fridays, one run of 20 issues each.
+- Days 21–31: Copilot every night, up to 5 batches, as far as the quota allows. Unused premium requests expire at the end of the month, so they are used for the cleanup.
+
+How a night runs:
+
+1. A scheduled Claude Code task wakes up every night at 3:00 in a session with this repository and runs `python3 ai/scripts/settings.py tonight`. It pushes a `refresh-issues` request on snapshot days and, after the new snapshot, a `cleanup-issues` request with `provider: auto` if a rule matches. Otherwise it pushes nothing.
+2. The workflow resolves `provider: auto` with `settings.py resolve`: it picks the rule of the night and, for Copilot, reads the premium requests used this month from the GitHub billing API. Available = `monthly_requests` − `reserve` − used; the number of batches is limited by that and by `max_batches`. If nothing is available, the run is skipped. That costs no AI quota, only the request commit; the reason is shown in the run summary.
+3. Claude's quota cannot be read, so Claude rules run as planned. Keep them sparse if you get close to your weekly limit.
+
+The nightly session itself uses a little of your Claude quota, even when it pushes nothing.
+
+### Copilot quota token
+
+The quota check needs the repository secret `COPILOT_BILLING_TOKEN`: a fine-grained personal access token of the account that owns the Copilot subscription.
+
+1. GitHub → **Settings** → **Developer settings** → **Personal access tokens** → **Fine-grained tokens** → **Generate new token**.
+2. Name it, for example *cgeo AI workflow quota*. Choose an expiration date and note it.
+3. **Repository access:** *Public repositories* (the token needs no repository).
+4. **Permissions** → **Account permissions** → **Plan**: *Read-only*. Nothing else.
+5. Generate the token and copy it.
+6. In `murggel/cgeo`: **Settings** → **Secrets and variables** → **Actions** → **New repository secret**, name `COPILOT_BILLING_TOKEN`, paste the token.
+
+The workflow uses it only in the step that resolves the provider, for `GET /users/<owner>/settings/billing/premium_request/usage`. Without the secret, Copilot rules of `provider: auto` are skipped. If the check reports HTTP 403 or 404 although the secret is set, the account may not support this endpoint with fine-grained tokens; then try a classic token with the `user` scope.

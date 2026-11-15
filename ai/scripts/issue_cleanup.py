@@ -90,7 +90,7 @@ def load_state(path: Path) -> dict[str, dict[str, str]]:
 
 
 def select(directory: Path, state: dict[str, dict[str, str]], count: int,
-           labels: list[str], today: date) -> list[int]:
+           labels: list[str], today: date, skip_days: int = SKIP_DAYS) -> list[int]:
     """Pick the issues to check: longest inactive first, recently checked ones skipped."""
     wanted = {label.lower() for label in labels}
     candidates = []
@@ -100,7 +100,7 @@ def select(directory: Path, state: dict[str, dict[str, str]], count: int,
         checked = state.get(str(entry["number"]))
         updated = entry.get("updated", "")
         if checked:
-            recent = checked["date"] >= (today - timedelta(days=SKIP_DAYS)).isoformat()
+            recent = checked["date"] >= (today - timedelta(days=skip_days)).isoformat()
             # Activity after the check makes the issue eligible again.
             if recent and updated <= checked["date"]:
                 continue

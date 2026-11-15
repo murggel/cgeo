@@ -11,7 +11,7 @@ Categories:
 - fixed: the reported problem no longer exists in the current code, or the requested feature exists. Name the code that shows it (file and line range).
 - duplicate: another open or the same issue covers the same problem or request. Name the other issue, normally the older one or the one with the better discussion.
 - obsolete: no longer applicable, for example the feature, connector, service, Android version or code path was removed or reworked so that the report does not apply any more.
-- waiting: the last substantive comment asks the reporter for something (logs, steps to reproduce, testing a nightly or a new version, details), the reporter has not answered since, and that comment is at least six months old. The label "Feedback required" means that feedback from other developers is needed, not from the reporter; it is no reason for this category on its own.
+- waiting: the last substantive comment asks the reporter for something (logs, steps to reproduce, testing a nightly or a new version, details), the reporter has not answered since, and that comment is at least as old as stated at the end of this prompt. The label "Feedback required" means that feedback from other developers is needed, not from the reporter; it is no reason for this category on its own.
 - keep-open: everything else, and every case of doubt.
 Use the age (creation date, last activity, reported version) as a hint: old reports about reworked code deserve a closer look, but age alone is never a reason to close. Feature requests are not closed just because nobody implemented them. Recommend closing only with concrete evidence from the issue text, the discussion or the code.
 
