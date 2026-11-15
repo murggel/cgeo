@@ -235,7 +235,8 @@ issues: unverified       # or all, or a list: [18830, 18841]
 - `unverified` takes the issues on lines marked `to be verified` in the report, `all` every issue the report links. Both need `report`. A list names the issues yourself and works without a report, for example "does PR 18854 fix #18830?".
 - At most 10 issues. The target issue or PR is left out. With `unverified` or `all` and more matches, the first 10 are used and the run shows a warning.
 - The run prepares the same code and context as an analysis or review of the target and downloads each issue with description, all comments, state and labels. An issue that cannot be downloaded gets a short note instead.
-- The report contains one verdict per issue (current state, confirmed or rejected with reasons from the issue text and the code) and the updated recommendation, for PRs and branches the final `fixes #` list.
+- The report contains one verdict per issue (current state, confirmed or rejected with reasons from the issue text and the code), the updated recommendation (for PRs and branches the final `fixes #` list) and a list of issues that could be closed (already fixed, duplicate, no longer applicable, waiting for information), as a recommendation only.
+- The age of an issue (creation date, last activity, version) is taken into account as a hint, also when candidates are searched in the snapshot.
 - `instructions` are allowed. The run gets one more agent turn per issue. The report header says `verify: <n> issues` and `report: <folder>`.
 
 ## What happens after the push
