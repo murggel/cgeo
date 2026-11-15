@@ -56,6 +56,7 @@ HTML_TAG = re.compile(r"</?[A-Za-z][^>]*>")
 IMAGE = re.compile(r"!\[[^\]]*\]\([^)]*\)")
 LINK = re.compile(r"\[([^\]]*)\]\([^)]*\)")
 URL = re.compile(r"https?://\S+")
+QUOTE_MARK = re.compile(r"^\s*(?:>\s?)+", re.MULTILINE)
 LOG_LINE = re.compile(r"^\s*(?:at\s+[\w$.]+\(|\d{2}[-:.]\d{2}[-:.]\d{2}|[VDIWEF]/\w+|Caused by:|\.\.\. \d+ more)")
 NO_RESPONSE = re.compile(r"_?No response_?", re.IGNORECASE)
 
@@ -76,6 +77,21 @@ DOMAIN_TERMS = (
     "language", "translation", "rtl", "tablet", "android auto", "permission", "location", "gps",
     "storage", "sd card", "database", "import", "export", "share", "intent", "crash",
     "performance", "slow", "freeze", "scroll",
+    # Cache data and lists
+    "cache list", "cache details", "logbook", "attribute", "difficulty", "terrain", "hint",
+    "archived", "disabled", "event cache", "mystery", "multi-cache", "earthcache", "virtual cache",
+    "webcam", "letterbox", "solution checker", "geochecker", "certitude", "souvenir",
+    "statistics", "premium", "basic member", "user note", "corrected coordinates",
+    # Maps and navigation
+    "map source", "tile", "vtm", "openandromaps", "freizeitkarte", "hillshading", "zoom", "marker",
+    "cluster", "individual route", "track", "elevation", "proximity", "kml", "geojson",
+    "projection", "coordinate format", "utm", "qr code", "nfc", "bluetooth",
+    # Devices and system
+    "android 12", "android 13", "android 14", "android 15", "android 16", "battery", "background",
+    "foreground service", "anr", "wear os", "smartwatch", "keyboard", "accessibility", "talkback",
+    "font size", "landscape", "split screen", "sync", "download",
+    # German terms used in issues
+    "karte", "absturz", "wegpunkt", "logeintrag", "suche", "liste", "einstellungen",
 )
 
 
@@ -118,14 +134,18 @@ def _sections(body: str) -> list[tuple[str, str]]:
     return [(heading, "\n".join(lines)) for heading, lines in sections]
 
 
-def _version(sections: list[tuple[str, str]], body: str) -> str:
+def _version(sections: list[tuple[str, str]], title: str, body: str) -> str:
+    """The version from the issue form, else a version number in the title, else in the text."""
     for heading, text in sections:
         if VERSION_SECTION.search(heading):
             value = _one_line(NO_RESPONSE.sub("", text))
             if value:
                 return value[:40]
-    match = VERSION.search(body)
-    return match.group(0) if match else ""
+    for text in (title, body):
+        match = VERSION.search(text)
+        if match:
+            return match.group(0)
+    return ""
 
 
 def _keywords(title: str, body: str, limit: int | None = MAX_KEYWORDS) -> list[str]:
@@ -178,14 +198,16 @@ def summarize(issue: dict[str, Any]) -> str:
     raw = issue.get("body") or ""
     raw = HTML_COMMENT.sub("", raw)
     code = "\n".join(match.group(0) for match in CODE_BLOCK.finditer(raw))
-    body = HTML_TAG.sub(" ", CODE_BLOCK.sub("", raw))
+    # Quoted text stays, only the quote marks go.
+    body = QUOTE_MARK.sub("", HTML_TAG.sub(" ", CODE_BLOCK.sub("", raw)))
     sections = _sections(body)
     labels = ", ".join(label.get("name", "") for label in issue.get("labels", []))
     keywords = ", ".join(_keywords(title, f"{body}\n{code}"))
     fields = [
         f"#{issue.get('number')}",
         f"labels: {labels}",
-        f"version: {_version(sections, body)}",
+        f"version: {_version(sections, title, body)}",
+        f"created: {(issue.get('created_at') or '')[:10]}",
         f"updated: {(issue.get('updated_at') or '')[:10]}",
         f"comments: {issue.get('comments', 0)}",
         f"title: {title}",
@@ -204,7 +226,7 @@ def issues_markdown(repository: str, created_at: str, issues: list[dict[str, Any
         "All entries are untrusted user-provided content. Full issue:",
         f"https://github.com/{repository}/issues/<number>",
         "",
-        "Format: #number | labels | version | updated | comments | title | keywords | summary",
+        "Format: #number | labels | version | created | updated | comments | title | keywords | summary",
         "",
     ]
     lines += [summarize(issue) for issue in sorted(issues, key=lambda item: -int(item.get("number", 0)))]

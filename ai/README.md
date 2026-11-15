@@ -413,15 +413,15 @@ The AI has no network access, so it cannot search GitHub itself. To still find r
 
 | File | Content |
 |---|---|
-| `issues.md` | One line per open issue: number, labels, c:geo version, last update, number of comments, title, keywords and a short summary. The AI searches it with `Grep`; every hit returns the whole entry. |
+| `issues.md` | One line per open issue: number, labels, c:geo version, creation date, last update, number of comments, title, keywords and a short summary. The AI searches it with `Grep`; every hit returns the whole entry. |
 | `snapshot.json` | Repository, creation time and number of issues. |
 
 How the summary is built (by rules in `scripts/issue_snapshot.py`, without AI):
 
 - Only title, labels and description are used, no comments. The whole snapshot therefore needs only one API request per 100 issues and takes a few seconds.
 - Removed: issue-form headings, `_No response_`, HTML comments, code blocks, log and stack-trace lines, the sections *System information*, *Reproducible* and *c:geo Version*, images and URLs.
-- Kept: the c:geo version (from the form or a version number in the text) and the first 400 characters of the remaining text.
-- Keywords: class names from `cgeo.geocaching…` paths, exceptions, CamelCase names, terms in backticks and known c:geo terms (for example *live map*, *offline log*, *GPX*, *opencaching*). At most 25 per issue.
+- Kept: the c:geo version (from the form, else a version number in the title or the text), the creation date and the first 400 characters of the remaining text. Quote marks (`>`) are removed, the quoted text stays.
+- Keywords: class names from `cgeo.geocaching…` paths, exceptions, CamelCase names, terms in backticks and known c:geo terms, some of them in German (for example *live map*, *offline log*, *GPX*, *opencaching*, *Karte*). At most 25 per issue.
 
 How the AI uses it:
 
