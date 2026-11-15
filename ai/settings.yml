@@ -35,9 +35,11 @@ cleanup:
     - days: 1-20
       weekdays: [tue]
       provider: copilot
+    # Limited to one batch per night until the quota check counts GitHub AI Credits:
+    # the billing API used now only counts the old premium requests and reports 0.
     - days: 21-31
       provider: copilot
-      max_batches: 5
+      max_batches: 1
 
 copilot:
   # Premium requests included per month (Copilot Pro: 300).
