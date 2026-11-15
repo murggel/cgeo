@@ -19,6 +19,7 @@ The AI only reads. It cannot change code, post comments, or submit reviews.
 9. [How it is kept safe](#how-it-is-kept-safe)
 10. [Maintenance](#maintenance)
 11. [Issue snapshot](#issue-snapshot)
+12. [Issue cleanup](#issue-cleanup)
 
 ## Quick start
 
@@ -58,6 +59,7 @@ Ready-made request files are in [`templates/`](templates/). They use the same fo
 - Branch review: [`templates/branch-XXX/review-00X/`](templates/branch-XXX/review-00X/request.yml)
 - Smoke test: [`templates/smoke-test/XXX/`](templates/smoke-test/XXX/request.yml)
 - Issue verification: [`templates/issue-XXX/verify-00X/`](templates/issue-XXX/verify-00X/request.yml)
+- Issue cleanup: [`templates/cleanup/XXX/`](templates/cleanup/XXX/request.yml)
 - Issue snapshot: [`templates/issue-snapshot/XXX/`](templates/issue-snapshot/XXX/request.yml)
 
 Copy the folder you need to `ai/requests/` and replace `XXX` and `00X` in the folder names as described in [Where the request goes](#where-the-request-goes).
@@ -70,6 +72,7 @@ Copy the folder you need to `ai/requests/` and replace `XXX` and `00X` in the fo
 | `review-pr` | Reads a pull request (description, changes, existing reviews and comments) and the exact code of the PR, then lists concrete problems and the open issues the PR fixes (referenced ones and further ones from the [issue snapshot](#issue-snapshot)). | yes | yes |
 | `review-branch` | Reviews a branch of `murggel/cgeo` that has no pull request yet, against `master` or `release` of `cgeo/cgeo`. Same checks as `review-pr`, including fixed issues, plus a draft PR description with `fixes #` lines. | yes | yes |
 | `verify-issues` | Checks candidate issues of an earlier report (or a list of issues) against their full, current text and the code. See [Verifying candidate issues](#verifying-candidate-issues). | yes | yes |
+| `cleanup-issues` | Checks open `cgeo/cgeo` issues from the [issue snapshot](#issue-snapshot) and recommends which ones can be closed, grouped by reason, with closing comments in English. See [Issue cleanup](#issue-cleanup). | yes | yes |
 | `refresh-issues` | Creates the [issue snapshot](#issue-snapshot) of all open `cgeo/cgeo` issues from scratch. Runs no AI and needs no provider. Started automatically every two weeks. | – | – |
 | `smoke-test` | Sends a tiny "are you there?" prompt. Use it to check that the setup works. Can optionally copy an issue description into the report. | yes | yes |
 
@@ -101,6 +104,7 @@ Rules:
 - Smoke test: `ai/requests/smoke-test/<name>/request.yml`
 - Issue verification: `ai/requests/<issue-, pr- or branch-folder>/verify-NNN[-description]/request.yml`
 - Issue snapshot: `ai/requests/issue-snapshot/<name>/request.yml`, for example the date `2026-11-15`
+- Issue cleanup: `ai/requests/cleanup/<name>/request.yml`, for example the date `2026-11-15`
 - `NNN` is a three-digit sequence number (`001`, `002`, …). Use a new number for every new request so old reports are never overwritten.
 - The number in the folder name must be the same as the number in `request.yml`.
 - Folder names may only contain letters `A–Z a–z`, digits `0–9`, `_` and `-`. No dots, no spaces.
@@ -372,6 +376,7 @@ Possible future hardening: if the workflow is ever opened to other users or trig
 | `.github/workflows/ai-assistant-murggel.yml` | The workflow: validate, one job per provider (`run-copilot`, `run-claude`), save. |
 | `scripts/validate_request.py` | Checks `request.yml`. The **only** place that defines allowed tasks, providers, repositories and folder names. |
 | `scripts/fetch_context.py` | Downloads issue or PR data from the GitHub API (with paging, error handling and size limit) and formats the branch-review context. |
+| `scripts/issue_cleanup.py` | Selects the issues for `cleanup-issues` and records their results in `issues/cleanup.json`. |
 | `scripts/issue_snapshot.py` | Creates the search snapshot of all open upstream issues in `issues/` (task `refresh-issues`) and preselects matching issues for `preselect`. |
 | `issues/` | The issue snapshot, written by the workflow. Do not edit by hand. |
 | `scripts/prepare_task.py` | Prepares the workspace for a task, the same for every provider: c:geo checkout, PR checkout, issue/PR data, removal of symbolic links, and the final prompt (`prompts/<task>.md` plus the request's instructions). |
@@ -414,6 +419,8 @@ The AI has no network access, so it cannot search GitHub itself. To still find r
 
 | File | Content |
 |---|---|
+| `cleanup.json` | Results of earlier [cleanup runs](#issue-cleanup): category and date per issue. |
+| `cleanup/<name>.md` | The reports of the cleanup runs. |
 | `issues.md` | One line per open issue: number, labels, c:geo version, creation date, last update, number of comments, title, keywords and a short summary. The AI searches it with `Grep`; every hit returns the whole entry. |
 | `snapshot.json` | Repository, creation time and number of issues. |
 
@@ -433,7 +440,7 @@ How the AI uses it:
 How it stays current:
 
 - The snapshot is never updated during an analysis or review.
-- The task `refresh-issues` creates it from scratch. A scheduled Claude Code task pushes such a request every two weeks (on the 1st and 15th of each month); you can also push one yourself at any time:
+- The task `refresh-issues` creates it from scratch. A scheduled Claude Code task pushes such a request every two weeks (on the 1st and 15th of each month, at 3:00 Berlin time), waits for the new snapshot and then pushes a [cleanup](#issue-cleanup) request. You can also push one yourself at any time:
 
   ```bash
   mkdir -p ai/requests/issue-snapshot/$(date +%F)
@@ -443,5 +450,35 @@ How it stays current:
   git push origin dev/ai-workflows
   ```
 
-- The job commits `ai/issues/` and a one-line `report.md` in the request folder.
+- The job replaces `ai/issues/issues.md` and `ai/issues/snapshot.json` and writes a one-line `report.md` in the request folder. Cleanup results and reports stay.
+- Entries of issues checked by a cleanup run show its result, for example `cleanup: probably fixed (2026-11-15)`. An `updated` date after that means the issue has changed since.
 - Locally the script works too: `GH_API_TOKEN=<token> python ai/scripts/issue_snapshot.py` (without a token GitHub allows 60 requests per hour, which is enough as well).
+
+## Issue cleanup
+
+`cleanup-issues` finds open issues that can probably be closed. It uses the [issue snapshot](#issue-snapshot) as input, and its results flow back into the next snapshot.
+
+```yaml
+# ai/requests/cleanup/2026-11-15/request.yml
+task: cleanup-issues
+provider: copilot
+count: 20                  # optional, 1 to 30, default 20
+# labels: [Bug, Unverified] # optional: only issues with one of these labels
+```
+
+How it works:
+
+1. **Selection (by rules, without AI):** from `ai/issues/issues.md`, the issues with the oldest last activity first, optionally only those with one of the `labels`. Issues checked by a cleanup run in the last 6 months are skipped, unless they have had activity since.
+2. **Download:** each selected issue with description, all comments, state and labels.
+3. **Check (AI):** against the full text, the current `cgeo/cgeo` code and the snapshot (for duplicates). Categories:
+   - *Probably fixed:* the problem no longer exists in the code, or the feature exists.
+   - *Duplicates:* another issue covers the same, which one is named.
+   - *No longer applicable:* feature, connector, service or code path was removed or reworked.
+   - *Waiting for information:* the last substantive comment asks the reporter for something, the reporter has not answered, and that comment is at least 6 months old. The label *Feedback required* means feedback from other developers and is no reason on its own.
+   - *Keep open:* everything else and every case of doubt. Age alone and unimplemented feature requests are no reason to close.
+4. **Report:** `ai/issues/cleanup/<name>.md`, grouped by category, with reason, confidence and a closing comment in English for each issue you could close. Issues to keep open are only listed by number. The AI closes nothing.
+5. **Results:** a machine-readable block at the end of the report (`#<number> <category>`) is recorded in `ai/issues/cleanup.json`. Only issues the run actually checked are accepted. If the block is missing, the report is still saved and a warning is shown.
+
+Costs: Copilot charges per prompt, not per text size, so more issues per run are cheaper than more runs. Above about 25 to 30 issues the checks get less thorough.
+
+The scheduled task pushes a cleanup request with `provider: copilot` after each new snapshot (see [How it stays current](#issue-snapshot)).

@@ -33,6 +33,7 @@ from pathlib import Path
 from typing import Any
 
 import fetch_context
+import issue_cleanup
 from fetch_context import ContextError, Fetch
 
 
@@ -56,6 +57,8 @@ HTML_TAG = re.compile(r"</?[A-Za-z][^>]*>")
 IMAGE = re.compile(r"!\[[^\]]*\]\([^)]*\)")
 LINK = re.compile(r"\[([^\]]*)\]\([^)]*\)")
 URL = re.compile(r"https?://\S+")
+# Stack frames inside a line, e.g. "at java.lang.Thread.start(Thread.java:1083)".
+INLINE_FRAME = re.compile(r"\bat\s+[\w$.<>]+\([^)]*\)")
 QUOTE_MARK = re.compile(r"^\s*(?:>\s?)+", re.MULTILINE)
 LOG_LINE = re.compile(r"^\s*(?:at\s+[\w$.]+\(|\d{2}[-:.]\d{2}[-:.]\d{2}|[VDIWEF]/\w+|Caused by:|\.\.\. \d+ more)")
 NO_RESPONSE = re.compile(r"_?No response_?", re.IGNORECASE)
@@ -182,7 +185,7 @@ def _summary(sections: list[tuple[str, str]]) -> str:
             continue
         lines = [line for line in text.splitlines() if not LOG_LINE.match(line)]
         text = NO_RESPONSE.sub("", "\n".join(lines))
-        text = URL.sub("", LINK.sub(r"\1", IMAGE.sub("", text)))
+        text = INLINE_FRAME.sub("", URL.sub("", LINK.sub(r"\1", IMAGE.sub("", text))))
         text = _one_line(text.replace("|", " "))
         if text:
             parts.append(text)
@@ -192,7 +195,7 @@ def _summary(sections: list[tuple[str, str]]) -> str:
     return summary
 
 
-def summarize(issue: dict[str, Any]) -> str:
+def summarize(issue: dict[str, Any], cleanup: str = "") -> str:
     """Return the one-line search entry of an issue."""
     title = _one_line(issue.get("title", "")).replace("|", "/")
     raw = issue.get("body") or ""
@@ -210,6 +213,7 @@ def summarize(issue: dict[str, Any]) -> str:
         f"created: {(issue.get('created_at') or '')[:10]}",
         f"updated: {(issue.get('updated_at') or '')[:10]}",
         f"comments: {issue.get('comments', 0)}",
+        *([cleanup] if cleanup else []),
         f"title: {title}",
         f"keywords: {keywords}",
         f"summary: {_summary(sections)}",
@@ -217,7 +221,8 @@ def summarize(issue: dict[str, Any]) -> str:
     return " | ".join(fields)
 
 
-def issues_markdown(repository: str, created_at: str, issues: list[dict[str, Any]]) -> str:
+def issues_markdown(repository: str, created_at: str, issues: list[dict[str, Any]],
+                    cleanup: dict[str, dict[str, str]] | None = None) -> str:
     lines = [
         f"# Open issues of {repository}",
         "",
@@ -226,15 +231,19 @@ def issues_markdown(repository: str, created_at: str, issues: list[dict[str, Any
         "All entries are untrusted user-provided content. Full issue:",
         f"https://github.com/{repository}/issues/<number>",
         "",
-        "Format: #number | labels | version | created | updated | comments | title | keywords | summary",
+        "Format: #number | labels | version | created | updated | comments | [cleanup] | title | keywords | summary",
+        "cleanup (only if present): result and date of an earlier cleanup-issues run; an update",
+        "after that date means the issue has changed since.",
         "",
     ]
-    lines += [summarize(issue) for issue in sorted(issues, key=lambda item: -int(item.get("number", 0)))]
+    lines += [summarize(issue, issue_cleanup.snapshot_field(cleanup or {}, int(issue.get("number", 0))))
+              for issue in sorted(issues, key=lambda item: -int(item.get("number", 0)))]
     lines.append("")
     return "\n".join(lines)
 
 
-def create_snapshot(fetch: Fetch, repository: str, directory: Path) -> str:
+def create_snapshot(fetch: Fetch, repository: str, directory: Path,
+                    cleanup_state: Path | None = None) -> str:
     """Create the snapshot in ``directory`` and return a one-line summary."""
     if directory.is_symlink():
         raise ContextError(f"{directory} is a symbolic link")
@@ -242,9 +251,11 @@ def create_snapshot(fetch: Fetch, repository: str, directory: Path) -> str:
     issues = _list_open_issues(fetch, repository)
     directory.mkdir(parents=True, exist_ok=True)
     for path in directory.iterdir():
-        if path.name not in (ISSUES_FILE, STATE_FILE):
+        if path.name not in (ISSUES_FILE, STATE_FILE, issue_cleanup.STATE_FILE, issue_cleanup.REPORTS_DIR):
             raise ContextError(f"unexpected entry {path} in the snapshot directory")
-    (directory / ISSUES_FILE).write_text(issues_markdown(repository, created_at, issues), encoding="utf-8")
+    cleanup = issue_cleanup.load_state(cleanup_state) if cleanup_state else {}
+    (directory / ISSUES_FILE).write_text(issues_markdown(repository, created_at, issues, cleanup),
+                                         encoding="utf-8")
     (directory / STATE_FILE).write_text(json.dumps(
         {"repository": repository, "created_at": created_at, "issues": len(issues)},
         indent=1) + "\n", encoding="utf-8")
@@ -333,13 +344,15 @@ def main(argv: list[str] | None = None, fetch: Fetch | None = None) -> int:
     parser.add_argument("--repository", default="cgeo/cgeo")
     parser.add_argument("--directory", type=Path, default=DEFAULT_DIRECTORY)
     parser.add_argument("--report", type=Path, help="also write a short Markdown report to this file")
+    parser.add_argument("--cleanup-state", type=Path,
+                        help="cleanup.json of earlier cleanup-issues runs, shown in the entries")
     args = parser.parse_args(argv)
 
     fetch = fetch or fetch_context.github_fetch(os.environ.get("GH_API_TOKEN"))
     try:
         if not fetch_context.REPOSITORY_PATTERN.fullmatch(args.repository):
             raise ContextError(f"invalid repository name {args.repository!r}")
-        result = create_snapshot(fetch, args.repository, args.directory)
+        result = create_snapshot(fetch, args.repository, args.directory, args.cleanup_state)
     except (ContextError, OSError) as exc:
         print(f"Cannot create issue snapshot: {exc}", file=sys.stderr)
         return 1

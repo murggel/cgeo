@@ -21,6 +21,10 @@ verify-issues:  the same checkout and context as for its target (issue, PR or
                (ai-context/candidates/); its optional report is copied to
                ai-context/previous-report.md.
 
+cleanup-issues: upstream/ checkout and the full text of the snapshot issues selected
+               by issue_cleanup.select (ai-context/candidates/); the output
+               'candidates' names them for recording the results.
+
 With --preselect N, analyze-issue, review-pr and review-branch also download the
 full text of the N snapshot issues that best match the context (rule-based, see
 issue_snapshot.preselect) to ai-context/candidates/.
@@ -32,21 +36,24 @@ them to point the agent at files outside the workspace.
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import re
 import subprocess
 import sys
+from datetime import date
 from pathlib import Path
 from typing import Callable
 
 import fetch_context
+import issue_cleanup
 import issue_snapshot
 from fetch_context import ContextError, Fetch
 
 
 # Upper limit of agent turns per task (used by Claude).
 MAX_TURNS = {"analyze-issue": 30, "review-pr": 30, "review-branch": 30, "verify-issues": 30,
-             "smoke-test": 2}
+             "cleanup-issues": 30, "smoke-test": 2}
 # Tasks that search the issue snapshot for related issues, and the extra turns they get for it.
 SNAPSHOT_TASKS = frozenset({"analyze-issue", "review-pr", "review-branch"})
 SNAPSHOT_EXTRA_TURNS = 10
@@ -56,7 +63,8 @@ MAX_PRESELECT = 10
 # Extra agent turns per downloaded candidate issue (preselection and verify-issues).
 CANDIDATE_EXTRA_TURNS = 1
 # Tasks whose request may contain additional instructions or a previous report (see validate_request.py).
-INSTRUCTION_TASKS = frozenset({"analyze-issue", "review-pr", "review-branch", "verify-issues"})
+INSTRUCTION_TASKS = frozenset({"analyze-issue", "review-pr", "review-branch", "verify-issues",
+                               "cleanup-issues"})
 # The subject each task works on; verify-issues names it with --verify-target.
 TARGETS = {"analyze-issue": "issue", "review-pr": "pr", "review-branch": "branch"}
 # review-branch reviews branches of this fork.
@@ -116,6 +124,13 @@ code: probably already fixed (name the code), duplicate (name the issue), no lon
 waiting for information for a long time, or keep open (when in doubt). It is a recommendation for
 the maintainer only. Keep
 searching the snapshot for further candidates as described above; mark those as "to be verified".
+"""
+
+CLEANUP_SECTION = """\
+
+## Issues to check
+
+Today is {today}. Check these issues: {numbers}.
 """
 
 VERIFY_SECTION = """\
@@ -269,6 +284,9 @@ def prepare(
     preselect: int = 0,
     verify: str = "",
     verify_target: str = "",
+    cleanup_count: int = 0,
+    labels: tuple[str, ...] | list[str] = (),
+    today: date | None = None,
 ) -> dict[str, str]:
     """Prepare the workspace and return the step outputs."""
     # git -C resolves relative paths against the -C directory, not the current one.
@@ -292,7 +310,25 @@ def prepare(
     # Build the prompt first so an invalid request fails before any download.
     candidates: list[int] = []
     report_text = ""
-    if task == "verify-issues":
+    snapshot = None
+    if issue_snapshot_dir is not None:
+        snapshot = issue_snapshot_dir if issue_snapshot_dir.is_absolute() else workspace / issue_snapshot_dir
+    if task == "cleanup-issues":
+        if snapshot is None or issue_snapshot.snapshot_status(snapshot, repository) == "missing":
+            raise PrepareError("cleanup-issues needs the issue snapshot; push a refresh-issues request first")
+        if not 1 <= cleanup_count <= issue_cleanup.MAX_COUNT:
+            raise PrepareError(f"cleanup-issues checks 1 to {issue_cleanup.MAX_COUNT} issues")
+        today = today or date.today()
+        state = issue_cleanup.load_state(snapshot / issue_cleanup.STATE_FILE)
+        try:
+            candidates = issue_cleanup.select(snapshot, state, cleanup_count, list(labels), today)
+        except issue_cleanup.CleanupError as exc:
+            raise PrepareError(str(exc)) from exc
+        if not candidates:
+            raise PrepareError("no issues to check: all matching issues were checked recently")
+        prompt = build_prompt(task, instructions, prompts_dir, extra=CLEANUP_SECTION.format(
+            today=today.isoformat(), numbers=", ".join(f"#{item}" for item in candidates)))
+    elif task == "verify-issues":
         report_text = read_previous_report(workspace / previous_report) if previous_report else ""
         candidates = candidate_numbers(verify, report_text, number)
         prompt = build_prompt(task, instructions, prompts_dir, extra=VERIFY_SECTION.format(
@@ -342,6 +378,11 @@ def prepare(
         title = f"{branch.replace('/', ' ').replace('-', ' ')} {commit_log}"
         header = (f"task: {task} | upstream: {repository}@{sha} | "
                   f"branch: {BRANCH_REPOSITORY}:{branch}@{head} | base: {base}@{merge_base}")
+    elif task == "cleanup-issues":
+        sha = clone_upstream(git, repository, upstream)
+        header = f"task: cleanup-issues | upstream: {repository}@{sha} | issues: {len(candidates)}"
+        if labels:
+            header += f" | labels: {', '.join(labels)}"
     elif task == "smoke-test":
         header = "task: smoke-test"
         if number is not None:
@@ -355,10 +396,10 @@ def prepare(
     max_turns = MAX_TURNS[task]
     if candidates:
         fetch_candidates(fetch, repository, candidates, context / "candidates")
-        header += f" | verify: {len(candidates)} issues"
+        if task == "verify-issues":
+            header += f" | verify: {len(candidates)} issues"
         max_turns += CANDIDATE_EXTRA_TURNS * len(candidates)
-    if issue_snapshot_dir is not None and task in SNAPSHOT_TASKS:
-        snapshot = issue_snapshot_dir if issue_snapshot_dir.is_absolute() else workspace / issue_snapshot_dir
+    if snapshot is not None and task in SNAPSHOT_TASKS | {"cleanup-issues"}:
         status = issue_snapshot.snapshot_status(snapshot, repository)
         if status == "missing" or "outdated" in status:
             print(f"::warning::Issue snapshot {status}; push a refresh-issues request.")
@@ -390,8 +431,23 @@ def prepare(
             for path in remove_symlinks(directory):
                 print(f"Removed symbolic link {path.relative_to(workspace).as_posix()}")
 
-    return {"header": header, "max_turns": str(max_turns), "appendix": appendix,
-            "prompt_file": str(prompt_file)}
+    outputs = {"header": header, "max_turns": str(max_turns), "appendix": appendix,
+               "prompt_file": str(prompt_file)}
+    if task == "cleanup-issues":
+        outputs["candidates"] = ",".join(str(item) for item in candidates)
+    return outputs
+
+
+def parse_labels(text: str) -> list[str]:
+    if not text:
+        return []
+    try:
+        labels = json.loads(text)
+    except ValueError:
+        raise PrepareError("--labels must be a JSON list") from None
+    if not isinstance(labels, list) or not all(isinstance(label, str) for label in labels):
+        raise PrepareError("--labels must be a JSON list of strings")
+    return labels
 
 
 def optional_number(text: str) -> int | None:
@@ -415,6 +471,10 @@ def main(argv: list[str] | None = None, fetch: Fetch | None = None, git: Git = r
     parser.add_argument("--verify", default="",
                         help="verify-issues: 'unverified', 'all' or comma-separated issue numbers")
     parser.add_argument("--verify-target", default="", help="verify-issues: issue, pr or branch")
+    parser.add_argument("--count", type=lambda text: int(text) if text else 0, default=0,
+                        help="cleanup-issues: number of issues to check")
+    parser.add_argument("--labels", default="",
+                        help="cleanup-issues: JSON list of labels; only issues with one of them")
     parser.add_argument("--preselect", type=lambda text: int(text) if text else 0, default=0,
                         help="number of snapshot issues to preselect and download (0: off)")
     parser.add_argument("--issue-snapshot", type=Path, default=None,
@@ -430,7 +490,8 @@ def main(argv: list[str] | None = None, fetch: Fetch | None = None, git: Git = r
                           args.output_dir, fetch, git, instructions=args.instructions,
                           branch=args.branch, base=args.base, previous_report=args.previous_report,
                           issue_snapshot_dir=args.issue_snapshot, preselect=args.preselect,
-                          verify=args.verify, verify_target=args.verify_target)
+                          verify=args.verify, verify_target=args.verify_target,
+                          cleanup_count=args.count, labels=parse_labels(args.labels))
     except (PrepareError, ContextError) as exc:
         print(f"Cannot prepare task: {exc}", file=sys.stderr)
         return 1

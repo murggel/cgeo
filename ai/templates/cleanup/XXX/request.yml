@@ -1,0 +1,12 @@
+# Copy this template to ai/requests/cleanup/<name>/request.yml, e.g. ai/requests/cleanup/2026-11-15/request.yml.
+# Checks open cgeo/cgeo issues from the issue snapshot and recommends which ones can be closed.
+# The report goes to ai/issues/cleanup/<name>.md, the results to ai/issues/cleanup.json.
+task: cleanup-issues
+provider: copilot # claude
+# Optional: number of issues to check (default 20, at most 30).
+# count: 20
+# Optional: only issues with at least one of these labels.
+# labels: [Bug, Unverified]
+# Optional: additional instructions (max. 4000 characters).
+# instructions: |
+#   Be strict with "fixed".

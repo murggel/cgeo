@@ -47,6 +47,8 @@ jobs:
       verify: ${{ steps.request.outputs.verify }}
       verify_target: ${{ steps.request.outputs.verify_target }}
       preselect: ${{ steps.request.outputs.preselect }}
+      count: ${{ steps.request.outputs.count }}
+      labels: ${{ steps.request.outputs.labels }}
 
     steps:
       - name: Check out request branch
@@ -135,6 +137,9 @@ jobs:
     if: needs.validate.outputs.provider == 'copilot'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    outputs:
+      # cleanup-issues: the issues this run checked, for recording the results.
+      candidates: ${{ steps.prepare.outputs.candidates }}
     permissions:
       contents: read
       issues: read
@@ -184,11 +189,14 @@ jobs:
           VERIFY: ${{ needs.validate.outputs.verify }}
           VERIFY_TARGET: ${{ needs.validate.outputs.verify_target }}
           PRESELECT: ${{ needs.validate.outputs.preselect }}
+          COUNT: ${{ needs.validate.outputs.count }}
+          LABELS: ${{ needs.validate.outputs.labels }}
         run: |
           python ai/scripts/prepare_task.py --task "$TASK" --number "$NUMBER" --repository "$REPOSITORY" \
             --instructions="$INSTRUCTIONS" --branch="$REVIEW_BRANCH" --base="$REVIEW_BASE" \
             --previous-report="$PREVIOUS_REPORT" --issue-snapshot ai/issues \
             --verify="$VERIFY" --verify-target="$VERIFY_TARGET" --preselect="$PRESELECT" \
+            --count="$COUNT" --labels="$LABELS" \
             --output-dir "$RUNNER_TEMP" --github-output "$GITHUB_OUTPUT"
 
       - name: Run Copilot
@@ -242,6 +250,9 @@ jobs:
     if: needs.validate.outputs.provider == 'claude'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    outputs:
+      # cleanup-issues: the issues this run checked, for recording the results.
+      candidates: ${{ steps.prepare.outputs.candidates }}
     permissions:
       contents: read
       issues: read
@@ -280,11 +291,14 @@ jobs:
           VERIFY: ${{ needs.validate.outputs.verify }}
           VERIFY_TARGET: ${{ needs.validate.outputs.verify_target }}
           PRESELECT: ${{ needs.validate.outputs.preselect }}
+          COUNT: ${{ needs.validate.outputs.count }}
+          LABELS: ${{ needs.validate.outputs.labels }}
         run: |
           python ai/scripts/prepare_task.py --task "$TASK" --number "$NUMBER" --repository "$REPOSITORY" \
             --instructions="$INSTRUCTIONS" --branch="$REVIEW_BRANCH" --base="$REVIEW_BASE" \
             --previous-report="$PREVIOUS_REPORT" --issue-snapshot ai/issues \
             --verify="$VERIFY" --verify-target="$VERIFY_TARGET" --preselect="$PRESELECT" \
+            --count="$COUNT" --labels="$LABELS" \
             --output-dir "$RUNNER_TEMP" --github-output "$GITHUB_OUTPUT"
 
       - name: Run Claude Code
@@ -351,6 +365,7 @@ jobs:
       PROVIDER: ${{ needs.validate.outputs.provider }}
       NUMBER: ${{ needs.validate.outputs.number }}
       REVIEW_BRANCH: ${{ needs.validate.outputs.branch }}
+      CANDIDATES: ${{ needs.run-copilot.outputs.candidates || needs.run-claude.outputs.candidates }}
 
     steps:
       - name: Check out request branch
@@ -384,9 +399,14 @@ jobs:
             review-pr) message="Add ${PROVIDER^} review report for PR #$NUMBER" ;;
             review-branch) message="Add ${PROVIDER^} review report for branch $REVIEW_BRANCH" ;;
             verify-issues) message="Add ${PROVIDER^} issue verification for ${NUMBER:+#$NUMBER}${REVIEW_BRANCH}" ;;
+            cleanup-issues) message="Add ${PROVIDER^} issue cleanup report ${REQUEST_DIR##*/}" ;;
             *) message="Add ${PROVIDER^} smoke-test report" ;;
           esac
           report_path="$REQUEST_DIR/report.md"
+          # Cleanup reports live next to the snapshot; their results go to ai/issues/cleanup.json.
+          if [[ "$TASK" == "cleanup-issues" ]]; then
+            report_path="ai/issues/cleanup/${REQUEST_DIR##*/}.md"
+          fi
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -413,8 +433,24 @@ jobs:
               exit 1
             fi
 
+            if [[ "$TASK" == "cleanup-issues" ]]; then
+              if [[ -L ai/issues/cleanup.json ]]; then
+                echo "::error::ai/issues/cleanup.json is a symbolic link; refusing to write."
+                exit 1
+              fi
+              mkdir -p -- "${report_path%/*}"
+            fi
             cp "$source" "$report_path"
             git add -- "$report_path"
+            if [[ "$TASK" == "cleanup-issues" ]]; then
+              # A missing or broken result block keeps the report but records nothing.
+              if python3 ai/scripts/issue_cleanup.py apply --report "$report_path" --issues ai/issues \
+                  --checked "$CANDIDATES" --date "$(date -u +%F)"; then
+                git add -- ai/issues/cleanup.json
+              else
+                echo "::warning::Cleanup results were not recorded; see the report."
+              fi
+            fi
             if git diff --cached --quiet; then
               echo "The report is unchanged; no commit is needed."
               exit 0
@@ -465,8 +501,12 @@ jobs:
         env:
           GH_API_TOKEN: ${{ github.token }}
         run: |
+          cleanup_args=()
+          if [[ -f ai/issues/cleanup.json && ! -L ai/issues/cleanup.json ]]; then
+            cleanup_args=(--cleanup-state ai/issues/cleanup.json)
+          fi
           python ai/scripts/issue_snapshot.py --repository "$REPOSITORY" \
-            --directory "$RUNNER_TEMP/issues" --report "$RUNNER_TEMP/report.md"
+            --directory "$RUNNER_TEMP/issues" --report "$RUNNER_TEMP/report.md" "${cleanup_args[@]}"
           if (( $(du -cb "$RUNNER_TEMP/issues"/* | tail -n1 | cut -f1) > 4 * 1024 * 1024 )); then
             echo "::error::Issue snapshot exceeds 4 MiB."
             exit 1
@@ -496,11 +536,17 @@ jobs:
               exit 1
             fi
 
-            rm -rf -- "$snapshot_dir"
+            # Only the snapshot files are replaced; cleanup results and reports stay.
+            for file in issues.md snapshot.json; do
+              if [[ -L "$snapshot_dir/$file" ]]; then
+                echo "::error::$snapshot_dir/$file is a symbolic link; refusing to write."
+                exit 1
+              fi
+            done
             mkdir -p -- "$snapshot_dir"
             cp -- "$RUNNER_TEMP/issues/issues.md" "$RUNNER_TEMP/issues/snapshot.json" "$snapshot_dir"/
             cp -- "$RUNNER_TEMP/report.md" "$report_path"
-            git add --all -- "$snapshot_dir" "$report_path"
+            git add -- "$snapshot_dir/issues.md" "$snapshot_dir/snapshot.json" "$report_path"
             if git diff --cached --quiet; then
               echo "The snapshot is unchanged; no commit is needed."
               exit 0

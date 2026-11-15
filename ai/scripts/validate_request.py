@@ -13,12 +13,15 @@ request of the same subject as ``previous``, whose report the new run builds on.
 Analyses and reviews may switch on the rule-based ``preselect`` of candidate
 issues. verify-issues names its target (issue, pr or branch with base), the
 ``issues`` to verify and optionally the ``report`` they come from.
-refresh-issues runs no AI and therefore names no provider.
+refresh-issues runs no AI and therefore names no provider. cleanup-issues
+checks ``count`` open issues from the snapshot, optionally only those with one
+of the given ``labels``.
 """
 
 from __future__ import annotations
 
 import argparse
+import json
 import re
 import sys
 import uuid
@@ -34,6 +37,11 @@ MAX_NUMBER = 999_999_999
 MAX_INSTRUCTIONS_CHARS = 4_000
 # verify-issues: at most this many issues are verified.
 MAX_VERIFY_ISSUES = 10
+# cleanup-issues: issues per run and label filter.
+DEFAULT_CLEANUP_COUNT = 20
+MAX_CLEANUP_COUNT = 30
+MAX_LABELS = 10
+LABEL_PATTERN = re.compile(r"[^\x00-\x1f\x7f,]{1,50}")
 # preselect: true means DEFAULT_PRESELECT issues, a number at most MAX_PRESELECT.
 DEFAULT_PRESELECT = 5
 MAX_PRESELECT = 10
@@ -94,6 +102,14 @@ TASKS = {
         request_id=re.compile(rf"verify-[0-9]{{3}}{DESCRIPTION}"),
         layout="ai/requests/(issue|pr)-<number>[-description] or branch-<description>/verify-NNN[-description]/request.yml",
     ),
+    "cleanup-issues": TaskRule(
+        providers=frozenset({"claude", "copilot"}),
+        required_keys=frozenset(),
+        optional_keys=frozenset({"count", "labels", "instructions"}),
+        subject=re.compile("cleanup"),
+        request_id=NAME,
+        layout="ai/requests/cleanup/<name>/request.yml",
+    ),
     "refresh-issues": TaskRule(
         providers=frozenset(),
         required_keys=frozenset(),
@@ -127,6 +143,8 @@ class Request:
     verify: str = ""
     verify_target: str = ""
     preselect: int = 0
+    cleanup_count: int = 0
+    labels: tuple[str, ...] = ()
 
     def outputs(self) -> dict[str, str]:
         outputs = {
@@ -146,6 +164,9 @@ class Request:
             outputs["verify_target"] = self.verify_target
         if self.preselect:
             outputs["preselect"] = str(self.preselect)
+        if self.cleanup_count:
+            outputs["count"] = str(self.cleanup_count)
+            outputs["labels"] = json.dumps(list(self.labels))
         return outputs
 
     def summary(self) -> str:
@@ -166,6 +187,10 @@ class Request:
             lines.append(f"- Issues to verify: {self.verify}")
         if self.preselect:
             lines.append(f"- Preselect candidate issues: {self.preselect}")
+        if self.cleanup_count:
+            lines.append(f"- Issues to check: {self.cleanup_count}")
+        if self.labels:
+            lines.append(f"- Labels: {', '.join(self.labels)}")
         lines.append(f"- Request: {self.path.as_posix()}")
         return "\n".join(lines)
 
@@ -325,6 +350,18 @@ def _preselect(request: dict[str, Any]) -> int:
     return value
 
 
+def _cleanup(request: dict[str, Any]) -> tuple[int, tuple[str, ...]]:
+    count = request.get("count", DEFAULT_CLEANUP_COUNT)
+    if isinstance(count, bool) or not isinstance(count, int) or not 1 <= count <= MAX_CLEANUP_COUNT:
+        raise ValueError(f"count must be a number from 1 to {MAX_CLEANUP_COUNT}")
+    labels = request.get("labels", [])
+    if not isinstance(labels, list) or len(labels) > MAX_LABELS or any(
+            not isinstance(label, str) or not LABEL_PATTERN.fullmatch(label.strip()) for label in labels):
+        raise ValueError(f"labels must be a list of up to {MAX_LABELS} label names "
+                         "(e.g. labels: [Bug, Unverified]); names must not contain commas")
+    return count, tuple(label.strip() for label in labels)
+
+
 def _verify(request: dict[str, Any], subject: str) -> tuple[str, str]:
     """verify-issues: return the issues to verify and the target (issue, pr or branch)."""
     targets = [key for key in ("issue", "pr", "branch") if key in request]
@@ -418,9 +455,10 @@ def validate_request(request_path: str | PurePosixPath, root: Path = Path(".")) 
 
     branch, base = _branch(request)
     report_key = "report" if task == "verify-issues" else "previous"
+    cleanup_count, labels = _cleanup(request) if task == "cleanup-issues" else (0, ())
     return Request(path, task, provider, number, repository, _instructions(request), branch, base,
                    _previous_report(request, root, path, report_key), verify, verify_target,
-                   _preselect(request))
+                   _preselect(request), cleanup_count, labels)
 
 
 def main(argv: list[str] | None = None) -> int:
