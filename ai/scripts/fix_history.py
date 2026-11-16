@@ -8,21 +8,20 @@ calls fixed, it names the code that shows the fix in a block
     #447 main/src/main/java/cgeo/geocaching/sorting/GeocacheSort.java TARGET_DISTANCE
     ```
 
-(issue, file, a literal piece of that code) and puts the placeholder
-``[fix-pr #447]`` into the closing comment. This script runs without AI on
+(issue, file, a literal piece of that code). This script runs without AI on
 the full upstream clone:
 
 - ``git log --follow -S`` gives the commit that introduced that code,
 - the GitHub API gives the pull request that contains this commit,
 - the block is replaced by a section that lists the result per issue,
-- each placeholder becomes "This was changed in #<PR>." or is removed,
+- placeholders ``[fix-pr #<n>]`` of older prompts are removed: the closing
+  comments do not name the pull request, the maintainer checks it first,
 - the entry of each issue that could be closed gets its assignees from the
   issue snapshot ("assigned: @login" or "unassigned").
 
 The first commit with the code is not always the fix (code can be older than
 the issue, or be reworked later), so the result is a hint for the maintainer.
-A commit older than the issue is reported, but not named in the closing
-comment. The report is AI output and therefore untrusted: file, search text
+A commit older than the issue is marked as probably not the fix. The report is AI output and therefore untrusted: file, search text
 and issue numbers are checked, and git is called without a shell.
 """
 
@@ -78,11 +77,6 @@ class Finding:
     pr_title: str = ""
     merged: str = ""
     older_than_issue: bool = False
-
-    @property
-    def usable(self) -> bool:
-        """True if the closing comment may name the change."""
-        return bool(self.sha) and not self.older_than_issue and not self.note
 
 
 def run_git(upstream: Path) -> Git:
@@ -209,7 +203,7 @@ def render_line(finding: Finding, repository: str) -> str:
         change = f"{commit} (no pull request)"
     line = f"- {issue}: {change}, added {where}."
     if finding.older_than_issue:
-        line += " The code is older than the issue, so this is probably not the fix; the closing comment does not name it."
+        line += " The code is older than the issue, so this is probably not the fix."
     return line
 
 
@@ -220,29 +214,20 @@ def render_section(findings: list[Finding], repository: str) -> str:
     return "\n".join(lines) + "\n"
 
 
-def closing_sentence(finding: Finding | None) -> str:
-    if not finding or not finding.usable:
-        return ""
-    if finding.pr:
-        return f" This was changed in #{finding.pr}."
-    return f" This was changed in commit {finding.sha[:10]}."
-
-
 def link_fixes(report: str, git: Git, fetch: Fetch, repository: str, created: dict[int, str],
                checked: set[int]) -> tuple[str, list[Finding]]:
-    """Return the report with the evidence block and the placeholders replaced."""
+    """Return the report with the evidence block replaced and placeholders removed."""
     try:
         results = issue_cleanup.parse_results(report, checked)
     except issue_cleanup.CleanupError:
         results = {}
     fixed = {number for number, category in results.items() if category == "fixed"}
     findings = [investigate(item, git, fetch, repository, created) for item in parse_evidence(report, fixed)]
-    by_number = {item.evidence.number: item for item in findings}
     section = render_section(findings, repository)
     # A function as replacement, so that untrusted text is never read as a regex template.
     report = EVIDENCE_BLOCK.sub(lambda _: section, report, count=1)
     report = EVIDENCE_BLOCK.sub("", report)
-    report = PLACEHOLDER.sub(lambda match: closing_sentence(by_number.get(int(match.group(1)))), report)
+    report = PLACEHOLDER.sub("", report)
     return re.sub(r"\n{3,}", "\n\n", report), findings
 
 

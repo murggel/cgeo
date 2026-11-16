@@ -24,7 +24,6 @@ Output (Markdown only), grouped by category, not one section per issue. Start di
    - the link [#<number>](https://github.com/cgeo/cgeo/issues/<number>) followed by the title
    - reason in one or two sentences with the evidence (code reference, other issue, unanswered question with its date), and confidence (high / medium / low)
    - a closing comment in English that the maintainer can post: short, friendly, naming the reason and inviting the reporter to reopen or comment if the problem persists
-     For fixed issues, put the placeholder [fix-pr #<number>] at the end of the sentence that names the change, for example "... relative to that centre.[fix-pr #447] Closing as implemented." A script replaces it with a sentence naming the pull request, or removes it.
 3. "Keep open": only the issue links in the same form, comma-separated; add a short reason only where a later look seems worthwhile.
 4. Evidence block: only if there are fixed issues, a fenced block with the info string fix-evidence and one line per fixed issue in the form "#<number> <file> <search text>", with the file relative to the repository root and the search text exactly as it appears in that file:
    ```fix-evidence

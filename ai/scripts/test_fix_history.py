@@ -74,7 +74,8 @@ class FixHistoryTest(unittest.TestCase):
                    {"number": 9, "title": "unmerged", "merged_at": None}])
         text, findings = self.link(report("#447 app/Sort.java TARGET_DISTANCE\n", "#447 fixed\n"), api)
         self.assertEqual(api.paths, [f"/repos/cgeo/cgeo/commits/{self.sha}/pulls"])
-        self.assertIn('centre now. This was changed in #11937. Closing."', text)
+        # The closing comment never names the PR; the maintainer checks it first.
+        self.assertIn('centre now. Closing."', text)
         self.assertIn("[PR #11937](https://github.com/cgeo/cgeo/pull/11937) "
                       '"Sort by \\`target\\` \\[x\\]", merged 2021-10-27', text)
         self.assertIn(f"commit [{self.sha[:10]}]", text)
@@ -85,7 +86,7 @@ class FixHistoryTest(unittest.TestCase):
 
     def test_squash_subject_when_api_fails(self):
         text, _ = self.link(report("#447 app/Sort.java TARGET_DISTANCE\n", "#447 fixed\n"), Api(fail=True))
-        self.assertIn("This was changed in #11937.", text)
+        self.assertIn("[PR #11937](https://github.com/cgeo/cgeo/pull/11937)", text)
         self.assertIn('"fix \\#8981: sort by target", commit', text)
 
     def test_commit_older_than_issue_is_not_in_comment(self):
@@ -136,7 +137,7 @@ class FixHistoryTest(unittest.TestCase):
                                     fetch=Api(fail=True))
         self.assertEqual(code, 0)
         self.assertIn("1 with a pull request", out.getvalue())
-        self.assertIn("This was changed in #11937.", path.read_text(encoding="utf-8"))
+        self.assertIn("[PR #11937]", path.read_text(encoding="utf-8"))
 
 
 class AssigneeTest(unittest.TestCase):
