@@ -386,6 +386,7 @@ Possible future hardening: if the workflow is ever opened to other users or trig
 | `scripts/test_*.py` | Unit tests for the scripts. |
 | `scripts/requirements.txt` | Python dependencies with hashes. |
 | `prompts/`, `skills/` | Instructions for the AI, shared by both providers. |
+| `skills/cgeo-ai-request/` | Not used by the workflow: a skill for interactive Claude sessions that writes, validates and pushes a `request.yml`, follows the run and summarizes the report. Upload it as an account skill in claude.ai (zip the folder) to use it. |
 | `templates/` | Example request files, in the same folder layout as `requests/`. |
 
 ### Adding a task or provider
