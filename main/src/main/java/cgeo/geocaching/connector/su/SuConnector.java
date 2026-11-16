@@ -117,6 +117,11 @@ public class SuConnector extends AbstractConnector implements ISearchByGeocode, 
     }
 
     @Override
+    public void resetLoginStatus() {
+        userInfo = new UserInfo(StringUtils.EMPTY, UNKNOWN_FINDS, UserInfoStatus.NOT_RETRIEVED);
+    }
+
+    @Override
     public int getCachesFound() {
         return userInfo.getFinds();
     }

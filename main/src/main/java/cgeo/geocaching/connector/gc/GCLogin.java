@@ -302,6 +302,15 @@ public class GCLogin extends AbstractLogin {
         return StatusCode.NO_ERROR;
     }
 
+    /**
+     * Forgets the login state and the cached account data without contacting the server,
+     * e.g. after the user removed the credentials.
+     */
+    public void clearLoginData() {
+        clearLoginInfo();
+        setActualUserName(StringUtils.EMPTY);
+    }
+
     private String getResponseBodyOrStatus(final Response response) {
         final String body;
         try {

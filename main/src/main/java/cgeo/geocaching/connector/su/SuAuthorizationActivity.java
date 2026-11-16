@@ -55,6 +55,11 @@ public class SuAuthorizationActivity extends OAuthAuthorizationActivity {
     }
 
     @Override
+    protected int getTokenPublicPrefKeyId() {
+        return tokenPublicPrefKey;
+    }
+
+    @Override
     @NonNull
     protected final String getAuthTitle() {
         return LocalizationUtils.getString(titleResId);

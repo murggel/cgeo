@@ -3,7 +3,6 @@ package cgeo.geocaching.settings;
 import cgeo.geocaching.R;
 import cgeo.geocaching.activity.OAuthAuthorizationActivity.OAuthParameters;
 import cgeo.geocaching.connector.ConnectorFactory;
-import cgeo.geocaching.connector.IConnector;
 import cgeo.geocaching.connector.capability.ILogin;
 import cgeo.geocaching.connector.capability.IOAuthCapability;
 import cgeo.geocaching.connector.oc.OCAuthParams;
@@ -107,13 +106,18 @@ public class OAuthPreference extends AbstractAuthorizationPreference {
         }
 
         Settings.setTokens(oAuthMapping.publicKeyId, null, oAuthMapping.secretKeyId, null);
+        // otherwise the connector keeps reporting the user of the revoked authorization
+        ConnectorFactory.resetLoginStatusByTokenPublicPrefKeyId(oAuthMapping.publicKeyId);
     }
 
     @Override
     @Nullable
     protected String getUserName() {
-        for (final IConnector connector : ConnectorFactory.getConnectors()) {
-            if (connector instanceof IOAuthCapability && connector instanceof ILogin && ((IOAuthCapability) connector).getTokenPublicPrefKeyId() == oAuthMapping.publicKeyId) {
+        if (oAuthMapping.publicKeyId < 0) {
+            return null;
+        }
+        for (final IOAuthCapability connector : ConnectorFactory.getConnectorsByTokenPublicPrefKeyId(oAuthMapping.publicKeyId)) {
+            if (connector instanceof ILogin) {
                 return ((ILogin) connector).getUserName();
             }
         }

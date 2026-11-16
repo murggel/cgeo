@@ -169,6 +169,11 @@ public class OCApiLiveConnector extends OCApiConnector implements ISearchByViewP
     }
 
     @Override
+    public void resetLoginStatus() {
+        userInfo = new UserInfo(StringUtils.EMPTY, UNKNOWN_FINDS, UserInfoStatus.NOT_RETRIEVED, UNKNOWN_FINDS);
+    }
+
+    @Override
     public void increaseCachesFound(final int by) {
         //not supported
     }

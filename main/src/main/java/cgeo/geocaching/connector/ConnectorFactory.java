@@ -4,6 +4,7 @@ import cgeo.geocaching.R;
 import cgeo.geocaching.SearchResult;
 import cgeo.geocaching.connector.al.ALConnector;
 import cgeo.geocaching.connector.capability.ILogin;
+import cgeo.geocaching.connector.capability.IOAuthCapability;
 import cgeo.geocaching.connector.capability.ISearchByFilter;
 import cgeo.geocaching.connector.capability.ISearchByNextPage;
 import cgeo.geocaching.connector.capability.ISearchByViewPort;
@@ -172,6 +173,25 @@ public final class ConnectorFactory {
     public static Collection<ISearchByFilter> getSearchByFilterConnectors(final GeocacheFilterType type) {
         final Collection<ISearchByFilter> result = SEARCH_BY_FILTER_CONNECTOR_MAP.get(type);
         return result == null ? Collections.emptyList() : result;
+    }
+
+    /** the connectors using the OAuth tokens stored under the given public token preference key */
+    @NonNull
+    public static List<IOAuthCapability> getConnectorsByTokenPublicPrefKeyId(final int tokenPublicPrefKeyId) {
+        final List<IOAuthCapability> result = new ArrayList<>();
+        for (final IConnector conn : CONNECTORS) {
+            if (conn instanceof IOAuthCapability && ((IOAuthCapability) conn).getTokenPublicPrefKeyId() == tokenPublicPrefKeyId) {
+                result.add((IOAuthCapability) conn);
+            }
+        }
+        return result;
+    }
+
+    /** drops the cached login data of the connectors using the given OAuth tokens, see {@link IOAuthCapability#resetLoginStatus()} */
+    public static void resetLoginStatusByTokenPublicPrefKeyId(final int tokenPublicPrefKeyId) {
+        for (final IOAuthCapability conn : getConnectorsByTokenPublicPrefKeyId(tokenPublicPrefKeyId)) {
+            conn.resetLoginStatus();
+        }
     }
 
     @NonNull

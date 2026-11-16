@@ -2,6 +2,9 @@ package cgeo.geocaching.activity;
 
 import cgeo.geocaching.Intents;
 import cgeo.geocaching.R;
+import cgeo.geocaching.connector.ConnectorFactory;
+import cgeo.geocaching.connector.capability.ILogin;
+import cgeo.geocaching.connector.capability.IOAuthCapability;
 import cgeo.geocaching.databinding.AuthorizationActivityBinding;
 import cgeo.geocaching.network.Network;
 import cgeo.geocaching.network.OAuth;
@@ -295,12 +298,32 @@ public abstract class OAuthAuthorizationActivity extends AbstractActivity {
             } else {
                 setTokens(oAtoken, oAtokenSecret, true);
                 status = AUTHENTICATED;
+                loginWithNewTokens();
             }
         } catch (final Exception e) {
             Log.e("OAuthAuthorizationActivity.changeToken", e);
         }
 
         changeTokensHandler.sendEmptyMessage(status);
+    }
+
+    /**
+     * Replaces the login data cached for the previous tokens (possibly of another account)
+     * by a fresh login, so that settings and main screen show the newly authorized user.
+     * A failed login (e.g. offline) is no authorization error, it is retried by the next background login.
+     */
+    @WorkerThread
+    private void loginWithNewTokens() {
+        for (final IOAuthCapability connector : ConnectorFactory.getConnectorsByTokenPublicPrefKeyId(getTokenPublicPrefKeyId())) {
+            connector.resetLoginStatus();
+            if (connector instanceof ILogin && connector.isActive()) {
+                try {
+                    ((ILogin) connector).login();
+                } catch (final RuntimeException e) {
+                    Log.w("OAuthAuthorizationActivity: login after authorization failed for " + connector.getName(), e);
+                }
+            }
+        }
     }
 
     private String getUrlPrefix() {
@@ -367,6 +390,9 @@ public abstract class OAuthAuthorizationActivity extends AbstractActivity {
     protected abstract void setTempTokens(@Nullable String tokenPublic, @Nullable String tokenSecret);
 
     protected abstract void setTokens(@Nullable String tokenPublic, @Nullable String tokenSecret, boolean enable);
+
+    /** preference key id of the public token written by {@link #setTokens} */
+    protected abstract int getTokenPublicPrefKeyId();
 
     // get resources from derived class
 

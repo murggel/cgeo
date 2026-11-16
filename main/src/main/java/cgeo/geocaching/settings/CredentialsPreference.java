@@ -5,7 +5,7 @@ import cgeo.geocaching.R;
 import cgeo.geocaching.connector.capability.IAvatar;
 import cgeo.geocaching.connector.capability.ICredentials;
 import cgeo.geocaching.connector.gc.GCConnector;
-import cgeo.geocaching.network.Cookies;
+import cgeo.geocaching.connector.gc.GCLogin;
 import cgeo.geocaching.ui.AvatarUtils;
 import cgeo.geocaching.utils.AndroidRxUtils;
 import cgeo.geocaching.utils.LocalizationUtils;
@@ -133,7 +133,8 @@ public class CredentialsPreference extends AbstractAuthorizationPreference {
     @Override
     protected void revokeAuthorization() {
         if (credentialsMapping == CredentialActivityMapping.GEOCACHING) {
-            Cookies.clearCookies();
+            // also clears the cookies; otherwise user name and finds of the revoked account stay cached
+            GCLogin.getInstance().clearLoginData();
         }
         Settings.setCredentials(credentialsMapping.getConnector(), Credentials.EMPTY);
 
