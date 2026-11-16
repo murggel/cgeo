@@ -7,7 +7,7 @@ from pathlib import Path
 
 import fix_history
 from fetch_context import ContextError
-from fix_history import Evidence, link_fixes, parse_evidence, run_git
+from fix_history import Evidence, add_assignees, assignee_logins, link_fixes, parse_evidence, run_git
 
 
 def report(evidence, results, comment='"Sorted by the search centre now.[fix-pr #447] Closing."'):
@@ -137,6 +137,38 @@ class FixHistoryTest(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertIn("1 with a pull request", out.getvalue())
         self.assertIn("This was changed in #11937.", path.read_text(encoding="utf-8"))
+
+
+class AssigneeTest(unittest.TestCase):
+    REPORT = (
+        "## Probably fixed\n\n"
+        "- [#447](https://github.com/cgeo/cgeo/issues/447) – sorting  \n  - Closing comment: \"Done.\"\n"
+        "- [#448](https://github.com/cgeo/cgeo/issues/448) – map\n\n"
+        "## Duplicates\n\n- **[#449](https://github.com/cgeo/cgeo/issues/449)** – list\n\n"
+        "## Keep open\n\n[#450](https://github.com/cgeo/cgeo/issues/450), "
+        "[#451](https://github.com/cgeo/cgeo/issues/451)\n\n"
+        "- [#451](https://github.com/cgeo/cgeo/issues/451) – kept\n\n"
+        "```cleanup-result\n#447 fixed\n#448 fixed\n#449 duplicate\n#450 keep-open\n#451 keep-open\n```\n"
+    )
+
+    def test_only_issues_to_close(self):
+        assignees = {447: ["moving-bits"], 448: [], 449: ["a", "b"], 450: ["x"], 451: ["y"]}
+        result = add_assignees(self.REPORT, "cgeo/cgeo", assignees, {447, 448, 449, 450, 451})
+        self.assertIn("issues/447) – sorting — assigned: @moving-bits\n", result)
+        self.assertIn("issues/448) – map — unassigned\n", result)
+        self.assertIn("issues/449)** – list — assigned: @a, @b\n", result)
+        self.assertNotIn("@x", result)
+        self.assertNotIn("@y", result)
+        self.assertEqual(result.count("assigned"), 3)
+
+    def test_unknown_issue_or_unchecked_stays(self):
+        result = add_assignees(self.REPORT, "cgeo/cgeo", {448: ["z"]}, {447})
+        self.assertEqual(result, self.REPORT)
+
+    def test_logins_from_snapshot(self):
+        entries = [{"number": 1, "assignees": "a, b-c, bad name, "}, {"number": 2, "assignees": ""},
+                   {"number": 3}]
+        self.assertEqual(assignee_logins(entries), {1: ["a", "b-c"], 2: []})
 
 
 if __name__ == "__main__":

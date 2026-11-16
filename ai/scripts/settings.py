@@ -7,10 +7,12 @@ Commands:
             "cleanup=yes|no" lines.
   resolve   for the workflow: turns a cleanup request into concrete values.
             For "provider: auto" it picks the rule of the night and, for
-            Copilot, checks the premium-request quota of the current month
+            Copilot, checks the GitHub AI Credits of the current month
             (GitHub billing API, token in COPILOT_BILLING_TOKEN). It writes
-            provider (empty: skip), count, batches, skip_days and
-            waiting_months to $GITHUB_OUTPUT.
+            provider (empty: skip), count, batches, skip_days,
+            waiting_months, model and credits to $GITHUB_OUTPUT.
+  credits   for the workflow: only the AI Credits line for the report header
+            of other Copilot runs (written as credits=...; empty if unknown).
 """
 
 from __future__ import annotations
@@ -18,6 +20,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sys
 import urllib.error
 import urllib.request
@@ -36,6 +39,10 @@ PROVIDERS = ("claude", "copilot")
 MAX_COUNT = 30
 MAX_BATCHES = 10
 API_ROOT = "https://api.github.com"
+CREDITS_SKU = "Copilot AI Credits"
+# The API reports "ai-credits" (checked 2026-11); "credits" is accepted as well.
+CREDITS_UNITS = ("ai-credits", "credits")
+MODEL_PATTERN = re.compile(r"[a-z0-9][a-z0-9.-]{0,63}")
 
 
 class SettingsError(Exception):
@@ -62,9 +69,10 @@ class Settings:
     skip_days: int
     waiting_months: int
     rules: tuple[Rule, ...]
-    monthly_requests: int
-    cost_per_run: int
+    monthly_credits: int
+    cost_per_batch: int
     reserve: int
+    cleanup_model: str
 
     def today(self) -> date:
         return datetime.now(self.timezone).date()
@@ -112,7 +120,11 @@ def parse(data: Any) -> Settings:
     snapshot = _mapping(root.get("snapshot", {}), "snapshot", {"days"})
     cleanup = _mapping(root.get("cleanup", {}), "cleanup",
                        {"count", "skip_days", "waiting_months", "auto"})
-    copilot = _mapping(root.get("copilot", {}), "copilot", {"monthly_requests", "cost_per_run", "reserve"})
+    copilot = _mapping(root.get("copilot", {}), "copilot",
+                       {"monthly_credits", "cost_per_batch", "reserve", "cleanup_model"})
+    model = copilot.get("cleanup_model", "")
+    if not isinstance(model, str) or (model and not MODEL_PATTERN.fullmatch(model)):
+        raise SettingsError("copilot.cleanup_model must be a model name like claude-haiku-5.5 (or empty)")
     count = _int(cleanup.get("count", 20), "cleanup.count", 1, MAX_COUNT)
 
     rules = []
@@ -142,9 +154,10 @@ def parse(data: Any) -> Settings:
         skip_days=_int(cleanup.get("skip_days", 183), "cleanup.skip_days", 0, 3650),
         waiting_months=_int(cleanup.get("waiting_months", 6), "cleanup.waiting_months", 1, 120),
         rules=tuple(rules),
-        monthly_requests=_int(copilot.get("monthly_requests", 300), "copilot.monthly_requests", 0, 100000),
-        cost_per_run=_int(copilot.get("cost_per_run", 1), "copilot.cost_per_run", 0, 1000),
-        reserve=_int(copilot.get("reserve", 30), "copilot.reserve", 0, 100000),
+        monthly_credits=_int(copilot.get("monthly_credits", 1500), "copilot.monthly_credits", 0, 1000000),
+        cost_per_batch=_int(copilot.get("cost_per_batch", 100), "copilot.cost_per_batch", 0, 100000),
+        reserve=_int(copilot.get("reserve", 300), "copilot.reserve", 0, 1000000),
+        cleanup_model=model,
     )
 
 
@@ -175,21 +188,55 @@ def billing_fetch(token: str) -> Fetch:
     return fetch
 
 
-def used_premium_requests(fetch: Fetch, user: str, day: date) -> float:
-    """Premium requests used in the month of ``day`` (all products and models)."""
-    data = fetch(f"/users/{user}/settings/billing/premium_request/usage?year={day.year}&month={day.month}")
+def used_ai_credits(fetch: Fetch, user: str, day: date) -> float:
+    """GitHub AI Credits used in the month of ``day`` (all Copilot products and models).
+
+    Raises SettingsError if the response has no usable credit entries, so that
+    Copilot is skipped instead of being run on a wrong count of 0.
+    """
+    data = fetch(f"/users/{user}/settings/billing/ai_credit/usage?year={day.year}&month={day.month}")
     items = data.get("usageItems") if isinstance(data, dict) else None
     if not isinstance(items, list):
         raise SettingsError("unexpected billing API response: no usageItems")
-    return sum(float(item.get("grossQuantity") or 0) for item in items if isinstance(item, dict))
+    credits = [item for item in items if isinstance(item, dict)
+               and item.get("sku") == CREDITS_SKU and item.get("unitType") in CREDITS_UNITS]
+    if not credits:
+        raise SettingsError(f"billing API response has no entries for {CREDITS_SKU!r}")
+    # grossQuantity is the consumption; netQuantity only the part beyond the included credits.
+    try:
+        return round(sum(float(item.get("grossQuantity") or 0) for item in credits), 1)
+    except (TypeError, ValueError):
+        raise SettingsError("unexpected billing API response: grossQuantity is not a number") from None
+
+
+def credits_line(settings: Settings, used: float) -> str:
+    """The AI Credits state for the report header."""
+    return (f"{used:g} of {settings.monthly_credits} used, "
+            f"{settings.monthly_credits - settings.reserve - used:g} available beyond the reserve")
+
+
+def check_credits(settings: Settings, fetch: Fetch | None, user: str, day: date) -> tuple[float | None, str]:
+    """Return (used credits or None, reason if unknown)."""
+    if fetch is None:
+        return None, "secret COPILOT_BILLING_TOKEN missing"
+    try:
+        return used_ai_credits(fetch, user, day), ""
+    except SettingsError as exc:
+        # One line, as it goes into $GITHUB_OUTPUT and the run summary.
+        return None, " ".join(str(exc).split())[:300]
 
 
 def resolve(settings: Settings, provider: str, count: int, day: date,
             fetch: Fetch | None, user: str) -> tuple[dict[str, str], str]:
     """Return the outputs for a cleanup request and a one-line explanation."""
     outputs = {"skip_days": str(settings.skip_days), "waiting_months": str(settings.waiting_months),
-               "batches": "1", "count": str(count or settings.count), "provider": provider}
+               "batches": "1", "count": str(count or settings.count), "provider": provider,
+               "model": settings.cleanup_model if provider in ("copilot", "auto") else "", "credits": ""}
     if provider != "auto":
+        if provider == "copilot":
+            used, _ = check_credits(settings, fetch, user, day)
+            if used is not None:
+                outputs["credits"] = credits_line(settings, used)
         return outputs, f"provider {provider} given by the request"
     rule = settings.rule_for(day)
     if rule is None:
@@ -198,16 +245,18 @@ def resolve(settings: Settings, provider: str, count: int, day: date,
     outputs["provider"] = rule.provider
     outputs["count"] = str(count or rule.count)
     if rule.provider == "claude":
+        outputs["model"] = ""
         return outputs, f"rule for {day:%a %Y-%m-%d}: claude"
-    if fetch is None:
+    used, reason = check_credits(settings, fetch, user, day)
+    if used is None:
         outputs["provider"] = ""
-        return outputs, "Copilot quota unknown (secret COPILOT_BILLING_TOKEN missing); skipped"
-    used = used_premium_requests(fetch, user, day)
-    available = settings.monthly_requests - settings.reserve - used
-    batches = rule.max_batches if settings.cost_per_run == 0 else \
-        min(rule.max_batches, int(available // settings.cost_per_run))
-    explanation = (f"Copilot quota {settings.monthly_requests}, used {used:g}, reserve "
-                   f"{settings.reserve}, {available:g} available")
+        return outputs, f"Copilot AI Credits unknown ({reason}); skipped"
+    outputs["credits"] = credits_line(settings, used)
+    available = settings.monthly_credits - settings.reserve - used
+    batches = rule.max_batches if settings.cost_per_batch == 0 else \
+        min(rule.max_batches, int(available // settings.cost_per_batch))
+    explanation = (f"Copilot AI Credits {settings.monthly_credits}, used {used:g}, reserve "
+                   f"{settings.reserve}, {available:g} available, about {settings.cost_per_batch} per batch")
     if batches < 1:
         outputs["provider"] = ""
         return outputs, explanation + "; not enough for a run, skipped"
@@ -228,6 +277,10 @@ def main(argv: list[str] | None = None) -> int:
     res.add_argument("--user", required=True, help="GitHub user whose Copilot quota is checked")
     res.add_argument("--date", default="")
     res.add_argument("--github-output", type=Path)
+    cred = sub.add_parser("credits")
+    cred.add_argument("--user", required=True, help="GitHub user whose AI Credits are read")
+    cred.add_argument("--date", default="")
+    cred.add_argument("--github-output", type=Path)
     args = parser.parse_args(argv)
 
     try:
@@ -238,8 +291,13 @@ def main(argv: list[str] | None = None) -> int:
             print(f"cleanup={'yes' if settings.rule_for(day) else 'no'}")
             return 0
         token = os.environ.get("COPILOT_BILLING_TOKEN", "")
-        outputs, explanation = resolve(settings, args.provider, int(args.count or 0), day,
-                                       billing_fetch(token) if token else None, args.user)
+        fetch = billing_fetch(token) if token else None
+        if args.command == "credits":
+            used, reason = check_credits(settings, fetch, args.user, day)
+            outputs = {"credits": credits_line(settings, used) if used is not None else ""}
+            explanation = f"AI Credits: {outputs['credits']}" if used is not None else f"AI Credits unknown ({reason})"
+        else:
+            outputs, explanation = resolve(settings, args.provider, int(args.count or 0), day, fetch, args.user)
     except (SettingsError, ValueError) as exc:
         print(f"Settings error: {exc}", file=sys.stderr)
         return 1

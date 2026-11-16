@@ -26,7 +26,7 @@ cleanup:
   #   provider:    claude or copilot
   #   count:       issues per run or batch (leave out: count above)
   #   max_batches: copilot only: up to this many batches in one night, as far
-  #                as the Copilot quota below allows (leave out: 1)
+  #                as the Copilot AI Credits below allow (leave out: 1)
   auto:
     # Friday 3:00 suits Claude: the weekly limit resets on Friday at 5:00.
     - days: 1-20
@@ -35,17 +35,21 @@ cleanup:
     - days: 1-20
       weekdays: [tue]
       provider: copilot
-    # Limited to one batch per night until the quota check counts GitHub AI Credits:
-    # the billing API used now only counts the old premium requests and reports 0.
+    # Unused AI Credits expire at the end of the month, so they go to the cleanup.
     - days: 21-31
       provider: copilot
-      max_batches: 1
+      max_batches: 5
 
 copilot:
-  # Premium requests included per month (Copilot Pro: 300).
-  monthly_requests: 300
-  # Premium requests one Copilot run costs (model multiplier).
-  cost_per_run: 1
-  # Premium requests that must stay free for your own work. A Copilot run of
-  # the plan above only starts if enough is left beyond this reserve.
-  reserve: 30
+  # GitHub AI Credits included per month. Since June 2026 Copilot is billed
+  # by tokens in AI Credits instead of premium requests.
+  monthly_credits: 1500
+  # AI Credits one cleanup batch costs, an estimate. The report header shows
+  # the credits used before each run; compare consecutive reports to measure it.
+  cost_per_batch: 100
+  # AI Credits that must stay free for your own work. A Copilot run of the
+  # plan above only starts if enough is left beyond this reserve.
+  reserve: 300
+  # Model for cleanup-issues runs with Copilot (empty: Copilot's default).
+  # A cheaper model uses fewer AI Credits per batch.
+  cleanup_model: claude-haiku-5.5

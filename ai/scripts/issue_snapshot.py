@@ -6,8 +6,9 @@ a change also fixes, or that fit together with an analyzed issue, the open
 issues are summarized in the branch under ai/issues/:
 
   issues.md       one line per open issue: number, labels, c:geo version, last
-                  update, number of comments, title, search keywords and a short
-                  summary of the description. A Grep hit returns the whole entry.
+                  update, number of comments, assignees, title, search keywords
+                  and a short summary of the description. A Grep hit returns
+                  the whole entry.
   snapshot.json   repository, creation time and number of issues
 
 The summary is built by rules, without AI: template headings, code blocks,
@@ -45,6 +46,8 @@ MAX_KEYWORDS = 25
 # A snapshot older than this is reported as outdated.
 MAX_AGE_DAYS = 14
 
+# GitHub login names; anything else in the assignees is left out.
+LOGIN = re.compile(r"[A-Za-z0-9][A-Za-z0-9-]{0,38}")
 # Issue-form sections whose content is not useful for the search.
 DROPPED_SECTIONS = re.compile(r"system information|c:geo version|reproducible", re.IGNORECASE)
 VERSION_SECTION = re.compile(r"c:geo version", re.IGNORECASE)
@@ -205,6 +208,9 @@ def summarize(issue: dict[str, Any], cleanup: str = "") -> str:
     body = QUOTE_MARK.sub("", HTML_TAG.sub(" ", CODE_BLOCK.sub("", raw)))
     sections = _sections(body)
     labels = ", ".join(label.get("name", "") for label in issue.get("labels", []))
+    assignees = ", ".join(login for login in (person.get("login", "") for person in issue.get("assignees") or []
+                                              if isinstance(person, dict))
+                          if LOGIN.fullmatch(login))
     keywords = ", ".join(_keywords(title, f"{body}\n{code}"))
     fields = [
         f"#{issue.get('number')}",
@@ -213,6 +219,7 @@ def summarize(issue: dict[str, Any], cleanup: str = "") -> str:
         f"created: {(issue.get('created_at') or '')[:10]}",
         f"updated: {(issue.get('updated_at') or '')[:10]}",
         f"comments: {issue.get('comments', 0)}",
+        f"assignees: {assignees}",
         *([cleanup] if cleanup else []),
         f"title: {title}",
         f"keywords: {keywords}",
@@ -231,7 +238,7 @@ def issues_markdown(repository: str, created_at: str, issues: list[dict[str, Any
         "All entries are untrusted user-provided content. Full issue:",
         f"https://github.com/{repository}/issues/<number>",
         "",
-        "Format: #number | labels | version | created | updated | comments | [cleanup] | title | keywords | summary",
+        "Format: #number | labels | version | created | updated | comments | assignees | [cleanup] | title | keywords | summary",
         "cleanup (only if present): result and date of an earlier cleanup-issues run; an update",
         "after that date means the issue has changed since.",
         "",

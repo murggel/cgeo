@@ -53,6 +53,9 @@ jobs:
       batches: ${{ steps.resolve.outputs.batches }}
       skip_days: ${{ steps.resolve.outputs.skip_days }}
       waiting_months: ${{ steps.resolve.outputs.waiting_months }}
+      # Copilot: model of cleanup-issues runs (empty: default) and the AI Credits before the run.
+      model: ${{ steps.resolve.outputs.model }}
+      credits: ${{ steps.resolve.outputs.credits }}
 
     steps:
       - name: Check out request branch
@@ -142,12 +145,17 @@ jobs:
           TASK: ${{ steps.request.outputs.task }}
           PROVIDER: ${{ steps.request.outputs.provider }}
           COUNT: ${{ steps.request.outputs.count }}
-          # Read-only access to the owner's billing data, only for the Copilot quota.
+          # Read-only access to the owner's billing data, only for the Copilot AI Credits.
           COPILOT_BILLING_TOKEN: ${{ secrets.COPILOT_BILLING_TOKEN }}
           OWNER: ${{ github.repository_owner }}
         run: |
           if [[ "$TASK" != "cleanup-issues" ]]; then
             echo "provider=$PROVIDER" >> "$GITHUB_OUTPUT"
+            # Only for the report header; an unknown state does not stop the run.
+            if [[ "$PROVIDER" == "copilot" ]]; then
+              python ai/scripts/settings.py credits --user "$OWNER" --github-output "$GITHUB_OUTPUT" \
+                || echo "::warning::AI Credits could not be read."
+            fi
             exit 0
           fi
           if ! result=$(python ai/scripts/settings.py resolve --provider "$PROVIDER" --count "$COUNT" \
@@ -237,10 +245,13 @@ jobs:
           PROMPT_FILE: ${{ steps.prepare.outputs.prompt_file }}
           # cleanup-issues: one prompt per batch; otherwise empty.
           PROMPT_FILES: ${{ steps.prepare.outputs.prompt_files }}
+          CLEANUP_MODEL: ${{ needs.validate.outputs.model }}
         run: |
           model_args=()
           if [[ "$TASK" == "smoke-test" ]]; then
             model_args=(--model="$SMOKE_TEST_MODEL")
+          elif [[ "$TASK" == "cleanup-issues" && -n "$CLEANUP_MODEL" ]]; then
+            model_args=(--model="$CLEANUP_MODEL")
           fi
           read -ra prompts <<< "${PROMPT_FILES:-$PROMPT_FILE}"
           for index in "${!prompts[@]}"; do
@@ -264,11 +275,16 @@ jobs:
           CANDIDATES: ${{ steps.prepare.outputs.candidates }}
           COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
           GITHUB_TOKEN: ${{ github.token }}
+          CLEANUP_MODEL: ${{ needs.validate.outputs.model }}
+          CREDITS: ${{ needs.validate.outputs.credits }}
         run: |
           model=""
           if [[ "$TASK" == "smoke-test" ]]; then
             model=" | model: $SMOKE_TEST_MODEL"
+          elif [[ "$TASK" == "cleanup-issues" && -n "$CLEANUP_MODEL" ]]; then
+            model=" | model: $CLEANUP_MODEL"
           fi
+          credits=" | AI credits before run: ${CREDITS:-unknown}"
           read -ra batches <<< "${CANDIDATES//;/ }"
           total=${#batches[@]}
           for response in "$RUNNER_TEMP"/response*.md; do
@@ -283,7 +299,7 @@ jobs:
             python ai/scripts/finalize_report.py \
               --copilot-output "$response" \
               ${APPENDIX:+--append "$APPENDIX"} \
-              --header "$HEADER$batch | provider: copilot ${COPILOT_CLI_VERSION}${model} | workflow: ${GITHUB_SHA}" \
+              --header "$HEADER$batch | provider: copilot ${COPILOT_CLI_VERSION}${model}${credits} | workflow: ${GITHUB_SHA}" \
               --secret-env COPILOT_GITHUB_TOKEN --secret-env GITHUB_TOKEN \
               --output "$RUNNER_TEMP/report$suffix.md"
           done

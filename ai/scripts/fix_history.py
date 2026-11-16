@@ -15,7 +15,9 @@ the full upstream clone:
 - ``git log --follow -S`` gives the commit that introduced that code,
 - the GitHub API gives the pull request that contains this commit,
 - the block is replaced by a section that lists the result per issue,
-- each placeholder becomes "This was changed in #<PR>." or is removed.
+- each placeholder becomes "This was changed in #<PR>." or is removed,
+- the entry of each issue that could be closed gets its assignees from the
+  issue snapshot ("assigned: @login" or "unassigned").
 
 The first commit with the code is not always the fix (code can be older than
 the issue, or be reworked later), so the result is a hint for the maintainer.
@@ -44,6 +46,7 @@ EVIDENCE_BLOCK = re.compile(r"^[ \t]*```fix-evidence[ \t]*\n(.*?)^[ \t]*```[ \t]
 EVIDENCE_LINE = re.compile(r"^#([1-9][0-9]{0,8})\s+(\S+)\s+(.+?)\s*$")
 SQUASH_SUBJECT = re.compile(r"^(.*?)\s*\(#([1-9][0-9]{0,8})\)\s*$")
 PLACEHOLDER = re.compile(r"[ \t]?\[fix-pr #([1-9][0-9]{0,8})\]")
+LOGIN = re.compile(r"[A-Za-z0-9][A-Za-z0-9-]{0,38}")
 MIN_NEEDLE = 4
 MAX_NEEDLE = 120
 MAX_TITLE = 100
@@ -243,12 +246,47 @@ def link_fixes(report: str, git: Git, fetch: Fetch, repository: str, created: di
     return re.sub(r"\n{3,}", "\n\n", report), findings
 
 
-def created_dates(snapshot_dir: Path) -> dict[int, str]:
+def entry_line(number: int, repository: str) -> re.Pattern[str]:
+    """The list entry of an issue in a category section: "- [#447](.../issues/447) title"."""
+    link = re.escape(f"[#{number}](https://github.com/{repository}/issues/{number})")
+    return re.compile(rf"^([ \t]*[-*][ \t]+(?:\*\*)?{link}.*?)[ \t]*$", re.MULTILINE)
+
+
+def add_assignees(report: str, repository: str, assignees: dict[int, list[str]], checked: set[int]) -> str:
+    """Name the assignees of each issue that could be closed, at the end of its entry line.
+
+    Only issues of the result block with a category other than keep-open, and
+    only those whose snapshot entry has the assignees field.
+    """
     try:
-        entries = issue_cleanup.parse_entries(snapshot_dir)
+        results = issue_cleanup.parse_results(report, checked)
     except issue_cleanup.CleanupError:
-        return {}
+        return report
+    for number, category in sorted(results.items()):
+        if category == "keep-open" or number not in assignees:
+            continue
+        logins = assignees[number]
+        note = "assigned: " + ", ".join(f"@{login}" for login in logins) if logins else "unassigned"
+        report = entry_line(number, repository).sub(lambda match: f"{match.group(1)} — {note}", report, count=1)
+    return report
+
+
+def snapshot_entries(snapshot_dir: Path) -> list[dict]:
+    try:
+        return issue_cleanup.parse_entries(snapshot_dir)
+    except issue_cleanup.CleanupError:
+        return []
+
+
+def created_dates(entries: list[dict]) -> dict[int, str]:
     return {entry["number"]: entry.get("created", "") for entry in entries}
+
+
+def assignee_logins(entries: list[dict]) -> dict[int, list[str]]:
+    """Assignees per issue; issues of an older snapshot without the field are left out."""
+    return {entry["number"]: [login for login in (part.strip() for part in entry["assignees"].split(","))
+                              if LOGIN.fullmatch(login)]
+            for entry in entries if "assignees" in entry}
 
 
 def main(argv: list[str] | None = None, fetch: Fetch | None = None, git: Git | None = None) -> int:
@@ -272,7 +310,10 @@ def main(argv: list[str] | None = None, fetch: Fetch | None = None, git: Git | N
         return 1
     fetch = fetch or fetch_context.github_fetch(os.environ.get("GH_API_TOKEN"))
     git = git or run_git(args.upstream)
-    report, findings = link_fixes(report, git, fetch, args.repository, created_dates(args.issues), checked)
+    entries = snapshot_entries(args.issues)
+    # Before link_fixes, whose section of pull requests also lists the fixed issues.
+    report = add_assignees(report, args.repository, assignee_logins(entries), checked)
+    report, findings = link_fixes(report, git, fetch, args.repository, created_dates(entries), checked)
     args.report.write_text(report, encoding="utf-8")
     found = sum(1 for item in findings if item.pr)
     print(f"{args.report.name}: {len(findings)} fixed issues with evidence, {found} with a pull request.")

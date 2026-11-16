@@ -291,7 +291,7 @@ Usage counts against your Claude subscription. If the token stops working, creat
 2. Repository access: **Public repositories**. Account permissions: **Copilot Requests**. Give it no repository write permissions.
 3. Copy the token and save it as repository secret `COPILOT_GITHUB_TOKEN` (same place as above).
 
-Usage is billed to the Copilot plan of the account that created the token. On Copilot Free every request counts as a premium request.
+Usage is billed to the Copilot plan of the account that created the token. It is billed in GitHub AI Credits by the tokens used.
 
 ### 4. Test it
 
@@ -423,7 +423,7 @@ The AI has no network access, so it cannot search GitHub itself. To still find r
 |---|---|
 | `cleanup.json` | Results of earlier [cleanup runs](#issue-cleanup): category and date per issue. |
 | `cleanup/<name>.md` | The reports of the cleanup runs. |
-| `issues.md` | One line per open issue: number, labels, c:geo version, creation date, last update, number of comments, title, keywords and a short summary. The AI searches it with `Grep`; every hit returns the whole entry. |
+| `issues.md` | One line per open issue: number, labels, c:geo version, creation date, last update, number of comments, assignees, title, keywords and a short summary. The AI searches it with `Grep`; every hit returns the whole entry. |
 | `snapshot.json` | Repository, creation time and number of issues. |
 
 How the summary is built (by rules in `scripts/issue_snapshot.py`, without AI):
@@ -480,11 +480,12 @@ How it works:
    - *Keep open:* everything else and every case of doubt. Age alone and unimplemented feature requests are no reason to close.
 4. **Report:** `ai/issues/cleanup/<name>.md`, grouped by category, with reason, confidence and a closing comment in English for each issue you could close. Issues to keep open are only listed by number. The AI closes nothing.
 5. **Fixing pull requests (by rules, without AI):** for each *probably fixed* issue the AI names a file and a short piece of code that only the fix introduced. `scripts/fix_history.py` searches the full history of `cgeo/cgeo` for the first commit that added this code (`git log --follow -S`) and looks up its pull request (GitHub API, otherwise the `(#<number>)` at the end of a squash commit). The report gets a section with pull request, commit and date per issue, and the closing comment says "This was changed in #<PR>." The result is a hint: the first commit with the code is not always the fix. If the commit is older than the issue, the closing comment does not name it.
+   The same script adds the GitHub assignees from the snapshot to each issue you could close: "— assigned: @login" or "— unassigned" at the end of its entry.
 6. **Results:** a machine-readable block at the end of the report (`#<number> <category>`) is recorded in `ai/issues/cleanup.json`. Only issues the run actually checked are accepted. If the block is missing, the report is still saved and a warning is shown.
 
-Costs: Copilot charges per prompt, not per text size, so more issues per run are cheaper than more runs. Above about 25 to 30 issues the checks get less thorough.
+Costs: since June 2026 Copilot bills by tokens in GitHub AI Credits, so the cost grows with the text the model reads and writes. Cleanup runs with Copilot use the cheaper model `copilot.cleanup_model` (default `claude-haiku-5.5`). Above about 25 to 30 issues per run the checks get less thorough. The header of every Copilot report (the HTML comment in its first line) shows the AI Credits used this month before the run, e.g. `AI credits before run: 950 of 1500 used, 250 available beyond the reserve`. The difference between two consecutive nights, divided by the batches, is the real cost per batch; adjust `copilot.cost_per_batch` to it.
 
-With `provider: auto` the workflow chooses provider, number of issues and number of batches from [`ai/settings.yml`](#settings-and-schedule) and the Copilot quota. Several batches give one report each: `<name>.md`, `<name>-2.md`, ...
+With `provider: auto` the workflow chooses provider, number of issues and number of batches from [`ai/settings.yml`](#settings-and-schedule) and the Copilot AI Credits. Several batches give one report each: `<name>.md`, `<name>-2.md`, ...
 
 ## Settings and schedule
 
@@ -496,24 +497,25 @@ With `provider: auto` the workflow chooses provider, number of issues and number
 | `snapshot.days` | Days of the month on which the scheduled task renews the snapshot. |
 | `cleanup.count`, `skip_days`, `waiting_months` | Default issues per cleanup run, pause for checked issues, minimum age of an unanswered question. |
 | `cleanup.auto` | Plan for `provider: auto`: rules with `days`, `weekdays`, `provider`, `count` and `max_batches` (Copilot only). The first rule that matches the night is used. |
-| `copilot.monthly_requests`, `cost_per_run`, `reserve` | Copilot quota per month (Pro: 300), premium requests per run, requests that must stay free for your own work. |
+| `copilot.monthly_credits`, `cost_per_batch`, `reserve` | GitHub AI Credits per month (1500), estimated credits per cleanup batch, credits that must stay free for your own work. |
+| `copilot.cleanup_model` | Copilot model for `cleanup-issues` (`claude-haiku-5.5`; empty: Copilot's default). |
 
 The default plan:
 
 - Days 1–20: Claude on Fridays (the Claude weekly limit resets on Friday at 5:00), Copilot on Tuesdays, one run of 20 issues each.
-- Days 21–31: Copilot every night, up to 5 batches, as far as the quota allows. Unused premium requests expire at the end of the month, so they are used for the cleanup.
+- Days 21–31: Copilot every night, up to 5 batches, as far as the AI Credits allow. Unused AI Credits expire at the end of the month, so they are used for the cleanup.
 
 How a night runs:
 
 1. A scheduled Claude Code task wakes up every night at 3:00 in a session with this repository and runs `python3 ai/scripts/settings.py tonight`. It pushes a `refresh-issues` request on snapshot days and, after the new snapshot, a `cleanup-issues` request with `provider: auto` if a rule matches. Otherwise it pushes nothing.
-2. The workflow resolves `provider: auto` with `settings.py resolve`: it picks the rule of the night and, for Copilot, reads the premium requests used this month from the GitHub billing API. Available = `monthly_requests` − `reserve` − used; the number of batches is limited by that and by `max_batches`. If nothing is available, the run is skipped. That costs no AI quota, only the request commit; the reason is shown in the run summary.
+2. The workflow resolves `provider: auto` with `settings.py resolve`: it picks the rule of the night and, for Copilot, reads the AI Credits used this month from the GitHub billing API (entries with `sku` "Copilot AI Credits" and `unitType` "ai-credits", summed over `grossQuantity` of all models). Available = `monthly_credits` − `reserve` − used; the number of batches is limited by available ÷ `cost_per_batch` and by `max_batches`. If not enough is available, or the billing API fails or returns no AI Credits entries, the Copilot run is skipped. That costs no AI credits, only the request commit; the reason is shown in the run summary.
 3. Claude's quota cannot be read, so Claude rules run as planned. Keep them sparse if you get close to your weekly limit.
 
 The nightly session itself uses a little of your Claude quota, even when it pushes nothing.
 
 ### Copilot quota token
 
-The quota check needs the repository secret `COPILOT_BILLING_TOKEN`: a fine-grained personal access token of the account that owns the Copilot subscription.
+The AI Credits check needs the repository secret `COPILOT_BILLING_TOKEN`: a fine-grained personal access token of the account that owns the Copilot subscription.
 
 1. GitHub → **Settings** → **Developer settings** → **Personal access tokens** → **Fine-grained tokens** → **Generate new token**.
 2. Name it, for example *cgeo AI workflow quota*. Choose an expiration date and note it.
@@ -522,4 +524,4 @@ The quota check needs the repository secret `COPILOT_BILLING_TOKEN`: a fine-grai
 5. Generate the token and copy it.
 6. In `murggel/cgeo`: **Settings** → **Secrets and variables** → **Actions** → **New repository secret**, name `COPILOT_BILLING_TOKEN`, paste the token.
 
-The workflow uses it only in the step that resolves the provider, for `GET /users/<owner>/settings/billing/premium_request/usage`. Without the secret, Copilot rules of `provider: auto` are skipped. If the check reports HTTP 403 or 404 although the secret is set, the account may not support this endpoint with fine-grained tokens; then try a classic token with the `user` scope.
+The workflow uses it only in the step that resolves the provider, for `GET /users/<owner>/settings/billing/ai_credit/usage`. Without the secret, Copilot rules of `provider: auto` are skipped, and other Copilot reports show `AI credits before run: unknown`. If the check reports HTTP 403 or 404 although the secret is set, the account may not support this endpoint with fine-grained tokens; then try a classic token with the `user` scope.
