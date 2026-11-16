@@ -1,0 +1,28 @@
+# Third review: remaining open defects in the authorization area, with possible solutions.
+task: review-branch
+provider: claude
+branch: feature/improve-authorization
+base: master # or release
+# Optional: additional instructions that are added to the prompt (max. 4000 characters).
+# They can steer focus, scope or form of the review, but never lift the read-only rules.
+instructions: |
+   This is a follow-up review. If the branch head is unchanged since the previous report, say so and do not repeat it.
+   Start with a short table: every finding of the previous report with status fixed, partly fixed or still open.
+
+   Main focus: look specifically for defects that are still open in the authorization area, not only in the changed lines.
+   Cover the whole flow for GC (credentials), opencaching sites and geocaching.su (OAuth) and GeoKrety (token):
+   authorize, re-authorize with a different account, revoke via long tap, app restart, loss of internet connection,
+   the status shown on the main screen and in the settings, and the OC settings screens opened via list, search and deep link.
+   Also name open cgeo/cgeo issues that belong to this area and say whether the branch fixes them, partly fixes them or not.
+
+   For every open defect give:
+   - where it is (file and line) and a concrete scenario that triggers it,
+   - impact and severity,
+   - one or more possible solutions with their pros and cons, and which one you recommend,
+   - whether it should be fixed in this branch or in a separate change.
+
+   End with a prioritized list of the recommended next steps for this branch.
+# Optional: build on the committed report of an earlier request in the same directory.
+previous: review-002-claude
+# Optional: rule-based preselection of candidate issues from the issue snapshot.
+preselect: true
