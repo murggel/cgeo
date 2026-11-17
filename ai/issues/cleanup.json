@@ -31,6 +31,10 @@
   "category": "keep-open",
   "date": "2026-11-15"
  },
+ "2380": {
+  "category": "keep-open",
+  "date": "2026-11-17"
+ },
  "2781": {
   "category": "keep-open",
   "date": "2026-11-15"
@@ -38,6 +42,10 @@
  "3102": {
   "category": "keep-open",
   "date": "2026-11-15"
+ },
+ "3123": {
+  "category": "keep-open",
+  "date": "2026-11-17"
  },
  "3273": {
   "category": "keep-open",
@@ -59,6 +67,10 @@
   "category": "keep-open",
   "date": "2026-11-15"
  },
+ "3891": {
+  "category": "keep-open",
+  "date": "2026-11-17"
+ },
  "4130": {
   "category": "keep-open",
   "date": "2026-11-15"
@@ -67,9 +79,17 @@
   "category": "keep-open",
   "date": "2026-11-15"
  },
+ "4258": {
+  "category": "keep-open",
+  "date": "2026-11-17"
+ },
  "4280": {
   "category": "keep-open",
   "date": "2026-11-15"
+ },
+ "4405": {
+  "category": "keep-open",
+  "date": "2026-11-17"
  },
  "4495": {
   "category": "keep-open",
@@ -86,6 +106,10 @@
  "4744": {
   "category": "keep-open",
   "date": "2026-11-15"
+ },
+ "4751": {
+  "category": "keep-open",
+  "date": "2026-11-17"
  },
  "4822": {
   "category": "keep-open",
@@ -106,6 +130,10 @@
  "5011": {
   "category": "keep-open",
   "date": "2026-11-15"
+ },
+ "5077": {
+  "category": "keep-open",
+  "date": "2026-11-17"
  },
  "5122": {
   "category": "keep-open",
@@ -147,6 +175,14 @@
   "category": "keep-open",
   "date": "2026-11-15"
  },
+ "5791": {
+  "category": "keep-open",
+  "date": "2026-11-17"
+ },
+ "5852": {
+  "category": "keep-open",
+  "date": "2026-11-17"
+ },
  "5853": {
   "category": "keep-open",
   "date": "2026-11-15"
@@ -158,5 +194,49 @@
  "5894": {
   "category": "keep-open",
   "date": "2026-11-15"
+ },
+ "6005": {
+  "category": "keep-open",
+  "date": "2026-11-17"
+ },
+ "6143": {
+  "category": "keep-open",
+  "date": "2026-11-17"
+ },
+ "6227": {
+  "category": "keep-open",
+  "date": "2026-11-17"
+ },
+ "6274": {
+  "category": "keep-open",
+  "date": "2026-11-17"
+ },
+ "6289": {
+  "category": "keep-open",
+  "date": "2026-11-17"
+ },
+ "6348": {
+  "category": "keep-open",
+  "date": "2026-11-17"
+ },
+ "6409": {
+  "category": "keep-open",
+  "date": "2026-11-17"
+ },
+ "6489": {
+  "category": "keep-open",
+  "date": "2026-11-17"
+ },
+ "6511": {
+  "category": "fixed",
+  "date": "2026-11-17"
+ },
+ "6638": {
+  "category": "keep-open",
+  "date": "2026-11-17"
+ },
+ "6650": {
+  "category": "keep-open",
+  "date": "2026-11-17"
  }
 }
