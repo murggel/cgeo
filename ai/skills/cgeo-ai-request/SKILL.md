@@ -137,7 +137,7 @@ provider: claude
 branch: feature/improve-authorization
 base: master
 instructions: |
-   This is a follow-up review. If the branch head is unchanged since the previous report, say so and do not repeat it.
+   This is a follow-up review. If the branch head is unchanged since the previous report, say so.
    Start with a short table: every finding of the previous report with status fixed, partly fixed or still open.
    Main focus: look specifically for defects that are still open in the authorization area, not only in the changed lines.
    For every open defect give location, a concrete scenario, impact, possible solutions with pros and cons and your recommendation.

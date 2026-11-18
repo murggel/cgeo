@@ -90,8 +90,12 @@ established fact.
 
 Verify each finding or conclusion of that report against the current code. Begin your answer
 with a section "Status of the previous report" that marks each of them as fixed, still open
-or wrong, with a brief reason. In the rest of your answer, do not repeat the details of points
-that are unchanged; refer to them and concentrate on what is new or different.
+or wrong, with a brief reason. The rest of your answer replaces the earlier report and must be
+complete on its own: the reader will not open the earlier report. Describe every point that is
+still open in full (location, scenario, impact and, where the output asks for it, solutions),
+even when it is unchanged, with file and line numbers checked against the current code. Mark
+what is new or different since the earlier report, and leave out only points that are fixed or
+wrong; the status section already covers them.
 """
 
 INSTRUCTIONS_SECTION = """\

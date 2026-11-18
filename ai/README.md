@@ -200,7 +200,7 @@ base: release
 previous: review-001
 ```
 
-- The AI checks every point of the earlier report against the current code and starts its answer with a section "Status of the previous report": fixed, still open or wrong. After that it concentrates on what is new.
+- The AI checks every point of the earlier report against the current code and starts its answer with a section "Status of the previous report": fixed, still open or wrong. The rest of the new report is complete on its own: it describes every open point in full, also unchanged ones, and marks what is new or different. You do not need to keep the earlier report at hand.
 - The earlier report must already be in the commit you push. Wait until its run is finished and run `git pull --rebase origin dev/ai-workflows` first. Otherwise the request is rejected.
 - Only the report is passed on, not the `instructions` of the earlier request. Repeat them if they still matter.
 - The provider may differ from the earlier one. The report header says `previous: <folder>`.
