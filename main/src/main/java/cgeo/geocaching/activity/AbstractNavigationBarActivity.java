@@ -62,6 +62,7 @@ import androidx.appcompat.app.ActionBar;
 import androidx.core.graphics.Insets;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -461,38 +462,44 @@ public abstract class AbstractNavigationBarActivity extends AbstractActionBarAct
 
     private void startBackgroundLogin(@Nullable final Handler updateUserInfoHandler) {
 
-        final ILogin[] loginConns = ConnectorFactory.getActiveLiveConnectors();
+        final boolean mustLogin;
+        final List<ILogin> loginConns = new ArrayList<>();
 
         //ensure that login is not done while another login is still in progress
         synchronized (LOGINS_IN_PROGRESS) {
             if (LOGINS_IN_PROGRESS.get() > 0) {
                 return;
             }
-            LOGINS_IN_PROGRESS.set(loginConns.length);
+            mustLogin = ConnectorFactory.mustRelog();
+            for (final ILogin conn : ConnectorFactory.getActiveLiveConnectors()) {
+                if (mustLogin || !conn.isLoggedIn()) {
+                    loginConns.add(conn);
+                }
+            }
+            // count only the connectors which really log in, otherwise the counter never gets back to 0
+            LOGINS_IN_PROGRESS.set(loginConns.size());
         }
 
-        final boolean mustLogin = ConnectorFactory.mustRelog();
-
         for (final ILogin conn : loginConns) {
-            if (mustLogin || !conn.isLoggedIn()) {
-                AndroidRxUtils.networkScheduler.scheduleDirect(() -> {
+            AndroidRxUtils.networkScheduler.scheduleDirect(() -> {
+                try {
                     if (mustLogin) {
                         // Properly log out from geocaching.com
                         conn.logout();
                     }
                     conn.login();
-
+                } finally {
                     LOGINS_IN_PROGRESS.addAndGet(-1);
+                }
 
-                    // the login state might have changed...
-                    if (anyConnectorLoggedIn()) {
-                        runOnUiThread(() -> onLoginIssue(false));
-                    }
-                    if (updateUserInfoHandler != null) {
-                        updateUserInfoHandler.sendEmptyMessage(-1);
-                    }
-                });
-            }
+                // the login state might have changed...
+                if (anyConnectorLoggedIn()) {
+                    runOnUiThread(() -> onLoginIssue(false));
+                }
+                if (updateUserInfoHandler != null) {
+                    updateUserInfoHandler.sendEmptyMessage(-1);
+                }
+            });
         }
     }
 
