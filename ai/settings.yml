@@ -35,6 +35,12 @@ cleanup:
     - days: 1-20
       weekdays: [tue]
       provider: copilot
+    # Absence 26.11.-1.12.2026: the Claude limit is unused on these nights.
+    # The night of the 26th stays with Copilot for the lowered reserve.
+    # Remove this rule after the trip.
+    - days: [27, 28, 29, 30]
+      provider: claude
+      count: 30
     # Unused AI Credits expire at the end of the month, so they go to the cleanup.
     - days: 21-31
       provider: copilot
