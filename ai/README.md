@@ -21,6 +21,7 @@ The AI only reads. It cannot change code, post comments, or submit reviews.
 11. [Issue snapshot](#issue-snapshot)
 12. [Issue cleanup](#issue-cleanup)
 13. [Settings and schedule](#settings-and-schedule)
+14. [Skills for interactive sessions](#skills-for-interactive-sessions)
 
 ## Quick start
 
@@ -386,7 +387,9 @@ Possible future hardening: if the workflow is ever opened to other users or trig
 | `scripts/test_*.py` | Unit tests for the scripts. |
 | `scripts/requirements.txt` | Python dependencies with hashes. |
 | `prompts/`, `skills/` | Instructions for the AI, shared by both providers. |
-| `skills/cgeo-ai-request/` | Not used by the workflow: a skill for interactive Claude sessions that writes, validates and pushes a `request.yml`, follows the run and summarizes the report. Upload it as an account skill in claude.ai (zip the folder) to use it. |
+| `skills/cgeo-ai-request/` | Not used by the workflow: a skill for interactive Claude sessions that writes, validates and pushes a `request.yml`, follows the run and summarizes the report. See [Skills for interactive sessions](#skills-for-interactive-sessions). |
+| `skills/cgeo-support-ticket/` | Not used by the workflow: a skill for interactive Claude sessions that analyzes a ticket of the c:geo support system (with logcat attachments) and writes a reply to the user and a developer analysis. See [Skills for interactive sessions](#skills-for-interactive-sessions). |
+| `skills/interactive-skills.txt`, `skills/install-skills.ps1` | The list of skills for interactive sessions and the Windows script that links them into `~/.claude/skills/`. |
 | `templates/` | Example request files, in the same folder layout as `requests/`. |
 
 ### Adding a task or provider
@@ -526,3 +529,53 @@ The AI Credits check needs the repository secret `COPILOT_BILLING_TOKEN`: a fine
 6. In `murggel/cgeo`: **Settings** → **Secrets and variables** → **Actions** → **New repository secret**, name `COPILOT_BILLING_TOKEN`, paste the token.
 
 The workflow uses it only in the step that resolves the provider, for `GET /users/<owner>/settings/billing/ai_credit/usage`. Without the secret, Copilot rules of `provider: auto` are skipped, and other Copilot reports show `AI credits before run: unknown`. If the check reports HTTP 403 or 404 although the secret is set, the account may not support this endpoint with fine-grained tokens; then try a classic token with the `user` scope.
+
+## Skills for interactive sessions
+
+Some skills in `skills/` are not used by the workflow but by interactive Claude Code sessions: `cgeo-ai-request` and `cgeo-support-ticket`. `skills/interactive-skills.txt` lists them. This branch is the only place where they are maintained, so every change is a commit here. Do not keep copies as account skills in claude.ai: a second version with the same name gets out of date.
+
+Claude Code loads personal skills from `~/.claude/skills/` (Windows: `%USERPROFILE%\.claude\skills`) in every session, whatever branch is checked out. Both ways below put the listed skills there.
+
+### Local sessions on Windows (desktop app, CLI)
+
+Once, in a PowerShell in your existing clone of `murggel/cgeo`:
+
+```powershell
+git fetch origin dev/ai-workflows
+git worktree add $HOME\cgeo-ai dev/ai-workflows
+powershell -ExecutionPolicy Bypass -File $HOME\cgeo-ai\ai\skills\install-skills.ps1
+```
+
+If `dev/ai-workflows` is already checked out in the clone, `git worktree add` refuses; switch the clone to another branch first, or run the script from that clone instead of a worktree.
+
+The script creates a directory junction per skill (no administrator rights needed). From then on:
+
+- **Changes to a skill:** `git -C $HOME\cgeo-ai pull --rebase` and start a new session.
+- **New skill:** add its folder to `interactive-skills.txt`, pull, and run the script again.
+- **Existing folder of the same name** in `~/.claude/skills/`: the script skips it with a warning; `-Force` renames it to `<name>.bak` and links the skill.
+
+### Cloud sessions (claude.ai, app)
+
+The setup script of the cloud environment for `murggel/cgeo` fetches this branch when a session starts and copies the listed skills into `/root/.claude/skills/`:
+
+```bash
+# Install the interactive c:geo skills from murggel/cgeo:dev/ai-workflows (ai/skills/).
+if [ -d cgeo/.git ]; then
+  if git -C cgeo fetch -q --depth 1 origin dev/ai-workflows; then
+    rm -rf /root/.claude/cgeo-skills
+    mkdir -p /root/.claude/cgeo-skills /root/.claude/skills
+    git -C cgeo archive FETCH_HEAD ai/skills | tar -x -C /root/.claude/cgeo-skills
+    src=/root/.claude/cgeo-skills/ai/skills
+    for s in $(grep -v '^#' "$src/interactive-skills.txt" | tr -d '\r'); do
+      if [ -f "$src/$s/SKILL.md" ]; then
+        rm -rf "/root/.claude/skills/$s"
+        cp -r "$src/$s" "/root/.claude/skills/$s"
+      fi
+    done
+  else
+    echo "cgeo skills: could not fetch dev/ai-workflows, skipped"
+  fi
+fi
+```
+
+A session picks up changes when its container is built fresh; a resumed session keeps the version it started with. `cgeo-support-ticket` needs a logged-in browser for the support system and therefore works fully only in local sessions.

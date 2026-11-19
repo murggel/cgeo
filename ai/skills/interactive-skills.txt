@@ -1,0 +1,6 @@
+# Skills for interactive Claude sessions, one folder name of ai/skills/ per line.
+# ai/skills/install-skills.ps1 (Windows) and the setup script of the cloud
+# environment install exactly these into ~/.claude/skills/.
+# Skills used only by the workflow (cgeo-issue-analysis) are not listed.
+cgeo-ai-request
+cgeo-support-ticket
