@@ -31,6 +31,10 @@
   "category": "keep-open",
   "date": "2026-11-15"
  },
+ "1806": {
+  "category": "keep-open",
+  "date": "2026-11-20"
+ },
  "2380": {
   "category": "keep-open",
   "date": "2026-11-17"
@@ -38,6 +42,10 @@
  "2781": {
   "category": "keep-open",
   "date": "2026-11-15"
+ },
+ "3049": {
+  "category": "keep-open",
+  "date": "2026-11-20"
  },
  "3102": {
   "category": "keep-open",
@@ -91,6 +99,10 @@
   "category": "keep-open",
   "date": "2026-11-17"
  },
+ "4457": {
+  "category": "keep-open",
+  "date": "2026-11-20"
+ },
  "4495": {
   "category": "keep-open",
   "date": "2026-11-15"
@@ -111,6 +123,10 @@
   "category": "keep-open",
   "date": "2026-11-17"
  },
+ "4802": {
+  "category": "keep-open",
+  "date": "2026-11-20"
+ },
  "4822": {
   "category": "keep-open",
   "date": "2026-11-15"
@@ -122,6 +138,14 @@
  "4872": {
   "category": "keep-open",
   "date": "2026-11-15"
+ },
+ "4899": {
+  "category": "keep-open",
+  "date": "2026-11-20"
+ },
+ "5004": {
+  "category": "keep-open",
+  "date": "2026-11-20"
  },
  "5009": {
   "category": "keep-open",
@@ -203,6 +227,10 @@
   "category": "keep-open",
   "date": "2026-11-17"
  },
+ "6162": {
+  "category": "keep-open",
+  "date": "2026-11-20"
+ },
  "6227": {
   "category": "keep-open",
   "date": "2026-11-17"
@@ -219,6 +247,10 @@
   "category": "keep-open",
   "date": "2026-11-17"
  },
+ "6360": {
+  "category": "fixed",
+  "date": "2026-11-20"
+ },
  "6409": {
   "category": "keep-open",
   "date": "2026-11-17"
@@ -231,6 +263,10 @@
   "category": "fixed",
   "date": "2026-11-17"
  },
+ "6590": {
+  "category": "keep-open",
+  "date": "2026-11-20"
+ },
  "6638": {
   "category": "keep-open",
   "date": "2026-11-17"
@@ -238,5 +274,49 @@
  "6650": {
   "category": "keep-open",
   "date": "2026-11-17"
+ },
+ "6901": {
+  "category": "keep-open",
+  "date": "2026-11-20"
+ },
+ "6910": {
+  "category": "keep-open",
+  "date": "2026-11-20"
+ },
+ "6949": {
+  "category": "keep-open",
+  "date": "2026-11-20"
+ },
+ "6970": {
+  "category": "keep-open",
+  "date": "2026-11-20"
+ },
+ "6994": {
+  "category": "keep-open",
+  "date": "2026-11-20"
+ },
+ "7090": {
+  "category": "keep-open",
+  "date": "2026-11-20"
+ },
+ "7096": {
+  "category": "keep-open",
+  "date": "2026-11-20"
+ },
+ "7117": {
+  "category": "keep-open",
+  "date": "2026-11-20"
+ },
+ "7173": {
+  "category": "keep-open",
+  "date": "2026-11-20"
+ },
+ "7215": {
+  "category": "keep-open",
+  "date": "2026-11-20"
+ },
+ "7283": {
+  "category": "keep-open",
+  "date": "2026-11-20"
  }
 }
