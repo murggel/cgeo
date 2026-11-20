@@ -378,7 +378,7 @@ Possible future hardening: if the workflow is ever opened to other users or trig
 | `.github/workflows/ai-assistant-murggel.yml` | The workflow: validate, one job per provider (`run-copilot`, `run-claude`), save. |
 | `scripts/validate_request.py` | Checks `request.yml`. The **only** place that defines allowed tasks, providers, repositories and folder names. |
 | `scripts/fetch_context.py` | Downloads issue or PR data from the GitHub API (with paging, error handling and size limit) and formats the branch-review context. |
-| `scripts/issue_cleanup.py` | Selects the issues for `cleanup-issues` and records their results in `issues/cleanup.json`. |
+| `scripts/issue_cleanup.py` | Selects the issues for `cleanup-issues`, records their results in `issues/cleanup.json` and writes the overview `issues/cleanup/index.md`. |
 | `scripts/fix_history.py` | Finds the pull requests of the issues that `cleanup-issues` considers fixed and lists them in the report. |
 | `scripts/issue_snapshot.py` | Creates the search snapshot of all open upstream issues in `issues/` (task `refresh-issues`) and preselects matching issues for `preselect`. |
 | `issues/` | The issue snapshot, written by the workflow. Do not edit by hand. |
@@ -426,7 +426,7 @@ The AI has no network access, so it cannot search GitHub itself. To still find r
 | File | Content |
 |---|---|
 | `cleanup.json` | Results of earlier [cleanup runs](#issue-cleanup): category and date per issue. |
-| `cleanup/<name>.md` | The reports of the cleanup runs. |
+| `cleanup/index.md` | Overview of all cleanup reports: per report the provider, the number of checked issues, the counts per category and the issues that can probably be closed. Written by the workflow after every cleanup run. The reports themselves are in the request folders. |
 | `issues.md` | One line per open issue: number, labels, c:geo version, creation date, last update, number of comments, assignees, title, keywords and a short summary. The AI searches it with `Grep`; every hit returns the whole entry. |
 | `snapshot.json` | Repository, creation time and number of issues. |
 
@@ -482,14 +482,16 @@ How it works:
    - *No longer applicable:* feature, connector, service or code path was removed or reworked.
    - *Waiting for information:* the last substantive comment asks the reporter for something, the reporter has not answered, and that comment is at least `waiting_months` (default 6) old. The label *Feedback required* means feedback from other developers and is no reason on its own.
    - *Keep open:* everything else and every case of doubt. Age alone and unimplemented feature requests are no reason to close.
-4. **Report:** `ai/issues/cleanup/<name>.md`, grouped by category, with reason, confidence and a closing comment in English for each issue you could close. Issues to keep open are only listed by number. The AI closes nothing.
+4. **Report:** `ai/requests/cleanup/<name>/report.md` next to the request, grouped by category, with reason, confidence and a closing comment in English for each issue you could close. Issues to keep open are only listed by number. The AI closes nothing.
 5. **Fixing pull requests (by rules, without AI):** for each *probably fixed* issue the AI names a file and a short piece of code that only the fix introduced. `scripts/fix_history.py` searches the full history of `cgeo/cgeo` for the first commit that added this code (`git log --follow -S`) and looks up its pull request (GitHub API, otherwise the `(#<number>)` at the end of a squash commit). The report gets a section with pull request, commit and date per issue. The result is a hint: the first commit with the code is not always the fix, and a commit older than the issue is marked as probably not the fix. The closing comments therefore do not name the pull request; check it first and add it yourself if it fits.
    The same script adds the GitHub assignees from the snapshot to each issue you could close: "— assigned: @login" or "— unassigned" at the end of its entry.
 6. **Results:** a machine-readable block at the end of the report (`#<number> <category>`) is recorded in `ai/issues/cleanup.json`. Only issues the run actually checked are accepted. If the block is missing, the report is still saved and a warning is shown.
 
 Costs: since June 2026 Copilot bills by tokens in GitHub AI Credits, so the cost grows with the text the model reads and writes. Cleanup runs with Copilot use the cheaper model `copilot.cleanup_model` (default `claude-haiku-5.5`). Above about 25 to 30 issues per run the checks get less thorough. The header of every Copilot report (the HTML comment in its first line) shows the AI Credits used this month before the run, e.g. `AI credits before run: 950 of 1500 used, 250 available beyond the reserve`. The difference between two consecutive nights, divided by the batches, is the real cost per batch; adjust `copilot.cost_per_batch` to it.
 
-With `provider: auto` the workflow chooses provider, number of issues and number of batches from [`ai/settings.yml`](#settings-and-schedule) and the Copilot AI Credits. Several batches give one report each: `<name>.md`, `<name>-2.md`, ...
+With `provider: auto` the workflow chooses provider, number of issues and number of batches from [`ai/settings.yml`](#settings-and-schedule) and the Copilot AI Credits. Several batches give one report each in the same request folder: `report.md`, `report-2.md`, ...
+
+Overview: after every run the workflow rewrites [`ai/issues/cleanup/index.md`](issues/cleanup/index.md) from all reports under `ai/requests/cleanup/`, newest first. Each row links to its report and lists the issues that can probably be closed with their category, so you can see at a glance where there is something to do.
 
 ## Settings and schedule
 

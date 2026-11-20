@@ -12,6 +12,9 @@ parts that run without AI:
 - apply (command line): reads the machine-readable result block of a cleanup
   report and records category and date per issue in ai/issues/cleanup.json.
   The next snapshot shows these results in its entries.
+- index (command line): writes ai/issues/cleanup/index.md, an overview of all
+  cleanup reports. The reports themselves are in the request folders,
+  ai/requests/cleanup/<name>/report.md and report-2.md, ... for further batches.
 
 The result block is AI output and therefore untrusted: only lines of the form
 ``#<number> <category>`` for issues that the run actually checked are used.
@@ -21,6 +24,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import sys
 from datetime import date, datetime, timedelta
@@ -31,6 +35,12 @@ from typing import Any
 ISSUES_FILE = "issues.md"
 STATE_FILE = "cleanup.json"
 REPORTS_DIR = "cleanup"
+INDEX_FILE = "index.md"
+REPORT_FILE = re.compile(r"^report(?:-([2-9]|[1-9][0-9]))?\.md$")
+UPSTREAM_ISSUES = "https://github.com/cgeo/cgeo/issues/"
+PROVIDER = re.compile(r"\| provider: (claude|copilot)\b")
+# Categories that mean "can probably be closed", in the order of the index columns.
+CLOSABLE = ("fixed", "duplicate", "obsolete", "waiting")
 SKIP_DAYS = 183
 DEFAULT_COUNT = 20
 MAX_COUNT = 30
@@ -146,6 +156,70 @@ def apply(report_path: Path, state_path: Path, snapshot_dir: Path, checked: set[
     return summary
 
 
+def report_paths(requests_dir: Path) -> list[tuple[str, int, Path]]:
+    """All cleanup reports as (request name, batch, path), newest first."""
+    reports = []
+    if not requests_dir.is_dir() or requests_dir.is_symlink():
+        return reports
+    for folder in requests_dir.iterdir():
+        if folder.is_symlink() or not folder.is_dir():
+            continue
+        for path in folder.iterdir():
+            match = REPORT_FILE.match(path.name)
+            if match and path.is_file() and not path.is_symlink():
+                reports.append((folder.name, int(match.group(1) or 1), path))
+    reports.sort(key=lambda item: (item[0], item[1]), reverse=True)
+    return reports
+
+
+def index_markdown(requests_dir: Path, index_dir: Path) -> str:
+    """The overview of all cleanup reports, newest first."""
+    lines = [
+        "# Issue cleanup reports",
+        "",
+        "Written by the workflow after every cleanup run; do not edit by hand. The reports are in",
+        "the request folders `ai/requests/cleanup/<name>/` (`report.md`, further batches of the",
+        "same night `report-2.md`, ...). The AI closes nothing: check each issue before closing it.",
+        "",
+        "| Report | Provider | Checked | Fixed | Duplicates | Obsolete | Waiting | Can probably be closed |",
+        "|---|---|---|---|---|---|---|---|",
+    ]
+    for name, batch, path in report_paths(requests_dir):
+        try:
+            report = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeError):
+            continue
+        title = name if batch == 1 else f"{name} ({batch})"
+        link = Path(os.path.relpath(path, index_dir)).as_posix()
+        provider = PROVIDER.search(report.split("\n", 1)[0])
+        row = [f"[{title}]({link})", provider.group(1) if provider else "?"]
+        block = RESULT_BLOCK.search(report)
+        if not block:
+            lines.append("| " + " | ".join(row + ["–"] * 5 + ["no result block"]) + " |")
+            continue
+        results: dict[int, str] = {}
+        for line in block.group(1).splitlines():
+            result = RESULT_LINE.match(line.strip())
+            if result:
+                results[int(result.group(1))] = result.group(2)
+        row.append(str(len(results)))
+        row += [str(sum(1 for category in results.values() if category == key)) for key in CLOSABLE]
+        closable = [f"[#{number}]({UPSTREAM_ISSUES}{number}) {category}"
+                    for number, category in results.items() if category in CLOSABLE]
+        row.append(", ".join(closable) or "–")
+        lines.append("| " + " | ".join(row) + " |")
+    return "\n".join(lines) + "\n"
+
+
+def write_index(requests_dir: Path, index_path: Path) -> str:
+    """Write the overview of all cleanup reports and return a one-line summary."""
+    if index_path.is_symlink():
+        raise CleanupError(f"{index_path} is a symbolic link")
+    index_path.parent.mkdir(parents=True, exist_ok=True)
+    index_path.write_text(index_markdown(requests_dir, index_path.parent), encoding="utf-8")
+    return f"wrote {index_path} with {len(report_paths(requests_dir))} reports"
+
+
 def snapshot_field(state: dict[str, dict[str, str]], number: int) -> str:
     """The cleanup field of a snapshot entry, or an empty string."""
     entry = state.get(str(number))
@@ -165,8 +239,20 @@ def main(argv: list[str] | None = None) -> int:
     apply_parser.add_argument("--checked", required=True,
                               help="comma-separated numbers of the issues the run checked")
     apply_parser.add_argument("--date", default="", help="date of the run (YYYY-MM-DD), default today")
+    index_parser = sub.add_parser("index", help="write the overview of all cleanup reports")
+    index_parser.add_argument("--requests", type=Path, default=Path("ai/requests/cleanup"),
+                              help="folder holding the cleanup requests and their reports")
+    index_parser.add_argument("--index", type=Path,
+                              default=Path("ai/issues") / REPORTS_DIR / INDEX_FILE)
     args = parser.parse_args(argv)
 
+    if args.command == "index":
+        try:
+            print(write_index(args.requests, args.index))
+        except (CleanupError, OSError) as exc:
+            print(f"Cannot write the cleanup index: {exc}", file=sys.stderr)
+            return 1
+        return 0
     try:
         checked = {int(part) for part in args.checked.split(",") if part}
         today = datetime.strptime(args.date, "%Y-%m-%d").date() if args.date else date.today()

@@ -1,6 +1,7 @@
 # Copy this template to ai/requests/cleanup/<name>/request.yml, e.g. ai/requests/cleanup/2026-11-15/request.yml.
 # Checks open cgeo/cgeo issues from the issue snapshot and recommends which ones can be closed.
-# The report goes to ai/issues/cleanup/<name>.md, the results to ai/issues/cleanup.json.
+# The report goes to report.md in this folder (report-2.md, ... for further batches), the results
+# to ai/issues/cleanup.json, the overview of all reports to ai/issues/cleanup/index.md.
 task: cleanup-issues
 # auto: provider, number of issues and batches follow ai/settings.yml and the Copilot quota
 # (the scheduled task uses this); claude or copilot: one run with that provider.

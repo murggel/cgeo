@@ -517,15 +517,13 @@ jobs:
             cleanup-issues) message="Add ${PROVIDER^} issue cleanup report ${REQUEST_DIR##*/}" ;;
             *) message="Add ${PROVIDER^} smoke-test report" ;;
           esac
+          # Cleanup runs write one report per batch into the request folder; their results go
+          # to ai/issues/cleanup.json and the overview of all reports to ai/issues/cleanup/index.md.
           report_paths=("$REQUEST_DIR/report.md")
-          # Cleanup reports live next to the snapshot (one per batch); their results go to
-          # ai/issues/cleanup.json.
-          if [[ "$TASK" == "cleanup-issues" ]]; then
-            report_paths=("ai/issues/cleanup/${REQUEST_DIR##*/}.md")
-            for (( batch = 2; batch <= ${#checked[@]}; batch++ )); do
-              report_paths+=("ai/issues/cleanup/${REQUEST_DIR##*/}-$batch.md")
-            done
-          fi
+          for (( batch = 2; batch <= ${#checked[@]}; batch++ )); do
+            report_paths+=("$REQUEST_DIR/report-$batch.md")
+          done
+          cleanup_index=ai/issues/cleanup/index.md
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -538,7 +536,7 @@ jobs:
 
             # No path component may be a symlink; otherwise the bot
             # could write outside the request directory.
-            for report_path in "${report_paths[@]}" ai/issues/cleanup.json; do
+            for report_path in "${report_paths[@]}" ai/issues/cleanup.json "$cleanup_index"; do
               IFS=/ read -ra parts <<< "$report_path"
               path=""
               for part in "${parts[@]}"; do
@@ -569,6 +567,14 @@ jobs:
                 fi
               fi
             done
+            if [[ "$TASK" == "cleanup-issues" ]]; then
+              if python3 ai/scripts/issue_cleanup.py index --requests ai/requests/cleanup \
+                  --index "$cleanup_index"; then
+                git add -- "$cleanup_index"
+              else
+                echo "::warning::The overview $cleanup_index could not be updated."
+              fi
+            fi
             if git diff --cached --quiet; then
               echo "The report is unchanged; no commit is needed."
               exit 0
