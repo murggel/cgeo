@@ -258,7 +258,7 @@ def create_snapshot(fetch: Fetch, repository: str, directory: Path,
     issues = _list_open_issues(fetch, repository)
     directory.mkdir(parents=True, exist_ok=True)
     for path in directory.iterdir():
-        if path.name not in (ISSUES_FILE, STATE_FILE, issue_cleanup.STATE_FILE, issue_cleanup.REPORTS_DIR):
+        if path.name not in (ISSUES_FILE, STATE_FILE, issue_cleanup.STATE_FILE, issue_cleanup.INDEX_FILE):
             raise ContextError(f"unexpected entry {path} in the snapshot directory")
     cleanup = issue_cleanup.load_state(cleanup_state) if cleanup_state else {}
     (directory / ISSUES_FILE).write_text(issues_markdown(repository, created_at, issues, cleanup),

@@ -518,12 +518,12 @@ jobs:
             *) message="Add ${PROVIDER^} smoke-test report" ;;
           esac
           # Cleanup runs write one report per batch into the request folder; their results go
-          # to ai/issues/cleanup.json and the overview of all reports to ai/issues/cleanup/index.md.
+          # to ai/issues/cleanup.json and the overview of all reports to ai/issues/cleanup.md.
           report_paths=("$REQUEST_DIR/report.md")
           for (( batch = 2; batch <= ${#checked[@]}; batch++ )); do
             report_paths+=("$REQUEST_DIR/report-$batch.md")
           done
-          cleanup_index=ai/issues/cleanup/index.md
+          cleanup_index=ai/issues/cleanup.md
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"

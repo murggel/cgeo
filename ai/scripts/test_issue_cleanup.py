@@ -16,7 +16,7 @@ class IndexTest(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         root = Path(self.tmp.name)
         self.requests = root / "ai" / "requests" / "cleanup"
-        self.index = root / "ai" / "issues" / "cleanup" / "index.md"
+        self.index = root / "ai" / "issues" / "cleanup.md"
 
     def tearDown(self):
         self.tmp.cleanup()
@@ -36,9 +36,9 @@ class IndexTest(unittest.TestCase):
                 if line.startswith("| [")]
         self.assertEqual(3, len(rows))
         self.assertTrue(rows[0].startswith(
-            "| [2026-11-21 (2)](../../requests/cleanup/2026-11-21/report-2.md) | copilot | 2 | 0 | 0 | 1 | 1 |"))
+            "| [2026-11-21 (2)](../requests/cleanup/2026-11-21/report-2.md) | copilot | 2 | 0 | 0 | 1 | 1 |"))
         self.assertIn("[#13](https://github.com/cgeo/cgeo/issues/13) waiting", rows[0])
-        self.assertTrue(rows[1].startswith("| [2026-11-21](../../requests/cleanup/2026-11-21/report.md) |"))
+        self.assertTrue(rows[1].startswith("| [2026-11-21](../requests/cleanup/2026-11-21/report.md) |"))
         self.assertTrue(rows[2].startswith("| [2026-11-20]("))
         self.assertIn("| claude | 2 | 1 | 0 | 0 | 0 | [#11]", rows[2])
         self.assertNotIn("#10", rows[2])

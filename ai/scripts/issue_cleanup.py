@@ -12,7 +12,7 @@ parts that run without AI:
 - apply (command line): reads the machine-readable result block of a cleanup
   report and records category and date per issue in ai/issues/cleanup.json.
   The next snapshot shows these results in its entries.
-- index (command line): writes ai/issues/cleanup/index.md, an overview of all
+- index (command line): writes ai/issues/cleanup.md, an overview of all
   cleanup reports. The reports themselves are in the request folders,
   ai/requests/cleanup/<name>/report.md and report-2.md, ... for further batches.
 
@@ -34,8 +34,7 @@ from typing import Any
 
 ISSUES_FILE = "issues.md"
 STATE_FILE = "cleanup.json"
-REPORTS_DIR = "cleanup"
-INDEX_FILE = "index.md"
+INDEX_FILE = "cleanup.md"
 REPORT_FILE = re.compile(r"^report(?:-([2-9]|[1-9][0-9]))?\.md$")
 UPSTREAM_ISSUES = "https://github.com/cgeo/cgeo/issues/"
 PROVIDER = re.compile(r"\| provider: (claude|copilot)\b")
@@ -243,7 +242,7 @@ def main(argv: list[str] | None = None) -> int:
     index_parser.add_argument("--requests", type=Path, default=Path("ai/requests/cleanup"),
                               help="folder holding the cleanup requests and their reports")
     index_parser.add_argument("--index", type=Path,
-                              default=Path("ai/issues") / REPORTS_DIR / INDEX_FILE)
+                              default=Path("ai/issues") / INDEX_FILE)
     args = parser.parse_args(argv)
 
     if args.command == "index":
