@@ -6,6 +6,11 @@ same night `report-2.md`, ...). The AI closes nothing: check each issue before c
 
 | Report | Provider | Checked | Fixed | Duplicates | Obsolete | Waiting | Can probably be closed |
 |---|---|---|---|---|---|---|---|
+| [2026-11-22 (5)](../requests/cleanup/2026-11-22/report-5.md) | copilot | 20 | 2 | 0 | 1 | 0 | [#4549](https://github.com/cgeo/cgeo/issues/4549) fixed, [#2724](https://github.com/cgeo/cgeo/issues/2724) fixed, [#8144](https://github.com/cgeo/cgeo/issues/8144) obsolete |
+| [2026-11-22 (4)](../requests/cleanup/2026-11-22/report-4.md) | copilot | 20 | 0 | 0 | 0 | 0 | – |
+| [2026-11-22 (3)](../requests/cleanup/2026-11-22/report-3.md) | copilot | 20 | 1 | 0 | 0 | 0 | [#12886](https://github.com/cgeo/cgeo/issues/12886) fixed |
+| [2026-11-22 (2)](../requests/cleanup/2026-11-22/report-2.md) | copilot | 20 | 0 | 1 | 0 | 0 | [#12459](https://github.com/cgeo/cgeo/issues/12459) duplicate |
+| [2026-11-22](../requests/cleanup/2026-11-22/report.md) | copilot | 20 | 1 | 2 | 0 | 0 | [#12241](https://github.com/cgeo/cgeo/issues/12241) fixed, [#11440](https://github.com/cgeo/cgeo/issues/11440) duplicate, [#11722](https://github.com/cgeo/cgeo/issues/11722) duplicate |
 | [2026-11-21 (5)](../requests/cleanup/2026-11-21/report-5.md) | copilot | 20 | 2 | 0 | 2 | 0 | [#10568](https://github.com/cgeo/cgeo/issues/10568) obsolete, [#10656](https://github.com/cgeo/cgeo/issues/10656) obsolete, [#1286](https://github.com/cgeo/cgeo/issues/1286) fixed, [#5206](https://github.com/cgeo/cgeo/issues/5206) fixed |
 | [2026-11-21 (4)](../requests/cleanup/2026-11-21/report-4.md) | copilot | 20 | 3 | 0 | 0 | 0 | [#9855](https://github.com/cgeo/cgeo/issues/9855) fixed, [#10125](https://github.com/cgeo/cgeo/issues/10125) fixed, [#6809](https://github.com/cgeo/cgeo/issues/6809) fixed |
 | [2026-11-21 (3)](../requests/cleanup/2026-11-21/report-3.md) | copilot | 20 | 0 | 0 | 2 | 0 | [#8614](https://github.com/cgeo/cgeo/issues/8614) obsolete, [#3798](https://github.com/cgeo/cgeo/issues/3798) obsolete |

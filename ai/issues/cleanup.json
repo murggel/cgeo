@@ -11,6 +11,10 @@
   "category": "fixed",
   "date": "2026-11-15"
  },
+ "651": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
  "734": {
   "category": "keep-open",
   "date": "2026-11-15"
@@ -63,6 +67,10 @@
   "category": "keep-open",
   "date": "2026-11-21"
  },
+ "2724": {
+  "category": "fixed",
+  "date": "2026-11-22"
+ },
  "2781": {
   "category": "keep-open",
   "date": "2026-11-15"
@@ -86,6 +94,10 @@
  "3273": {
   "category": "keep-open",
   "date": "2026-11-15"
+ },
+ "3282": {
+  "category": "keep-open",
+  "date": "2026-11-22"
  },
  "3486": {
   "category": "keep-open",
@@ -119,6 +131,10 @@
   "category": "keep-open",
   "date": "2026-11-17"
  },
+ "3954": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
  "3971": {
   "category": "keep-open",
   "date": "2026-11-21"
@@ -151,6 +167,10 @@
   "category": "obsolete",
   "date": "2026-11-21"
  },
+ "4319": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
  "4405": {
   "category": "keep-open",
   "date": "2026-11-17"
@@ -166,6 +186,10 @@
  "4532": {
   "category": "keep-open",
   "date": "2026-11-15"
+ },
+ "4549": {
+  "category": "fixed",
+  "date": "2026-11-22"
  },
  "4672": {
   "category": "keep-open",
@@ -319,6 +343,10 @@
   "category": "keep-open",
   "date": "2026-11-21"
  },
+ "5986": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
  "6005": {
   "category": "keep-open",
   "date": "2026-11-17"
@@ -338,6 +366,10 @@
  "6227": {
   "category": "keep-open",
   "date": "2026-11-17"
+ },
+ "6272": {
+  "category": "keep-open",
+  "date": "2026-11-22"
  },
  "6274": {
   "category": "keep-open",
@@ -398,6 +430,10 @@
  "6853": {
   "category": "keep-open",
   "date": "2026-11-21"
+ },
+ "6855": {
+  "category": "keep-open",
+  "date": "2026-11-22"
  },
  "6901": {
   "category": "keep-open",
@@ -499,6 +535,10 @@
   "category": "keep-open",
   "date": "2026-11-21"
  },
+ "7555": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
  "7600": {
   "category": "keep-open",
   "date": "2026-11-21"
@@ -551,9 +591,17 @@
   "category": "keep-open",
   "date": "2026-11-21"
  },
+ "8144": {
+  "category": "obsolete",
+  "date": "2026-11-22"
+ },
  "8222": {
   "category": "keep-open",
   "date": "2026-11-21"
+ },
+ "8286": {
+  "category": "keep-open",
+  "date": "2026-11-22"
  },
  "8323": {
   "category": "keep-open",
@@ -578,6 +626,14 @@
  "8752": {
   "category": "keep-open",
   "date": "2026-11-21"
+ },
+ "8805": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "8884": {
+  "category": "keep-open",
+  "date": "2026-11-22"
  },
  "8895": {
   "category": "keep-open",
@@ -610,6 +666,10 @@
  "9529": {
   "category": "keep-open",
   "date": "2026-11-21"
+ },
+ "9586": {
+  "category": "keep-open",
+  "date": "2026-11-22"
  },
  "9699": {
   "category": "keep-open",
@@ -663,6 +723,10 @@
   "category": "keep-open",
   "date": "2026-11-21"
  },
+ "10522": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
  "10547": {
   "category": "keep-open",
   "date": "2026-11-21"
@@ -687,9 +751,21 @@
   "category": "keep-open",
   "date": "2026-11-21"
  },
+ "11026": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
  "11027": {
   "category": "keep-open",
   "date": "2026-11-21"
+ },
+ "11036": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "11055": {
+  "category": "keep-open",
+  "date": "2026-11-22"
  },
  "11377": {
   "category": "keep-open",
@@ -699,9 +775,17 @@
   "category": "keep-open",
   "date": "2026-11-21"
  },
+ "11429": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
  "11439": {
   "category": "keep-open",
   "date": "2026-11-21"
+ },
+ "11440": {
+  "category": "duplicate",
+  "date": "2026-11-22"
  },
  "11469": {
   "category": "keep-open",
@@ -718,5 +802,321 @@
  "11579": {
   "category": "keep-open",
   "date": "2026-11-21"
+ },
+ "11722": {
+  "category": "duplicate",
+  "date": "2026-11-22"
+ },
+ "11728": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "11897": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "11926": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "11960": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "11961": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "11986": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "12004": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "12021": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "12034": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "12061": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "12065": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "12085": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "12151": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "12159": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "12180": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "12186": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "12241": {
+  "category": "fixed",
+  "date": "2026-11-22"
+ },
+ "12389": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "12428": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "12459": {
+  "category": "duplicate",
+  "date": "2026-11-22"
+ },
+ "12498": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "12504": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "12527": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "12545": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "12560": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "12622": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "12628": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "12645": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "12650": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "12672": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "12702": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "12714": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "12725": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "12729": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "12744": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "12750": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "12788": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "12859": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "12877": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "12885": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "12886": {
+  "category": "fixed",
+  "date": "2026-11-22"
+ },
+ "12907": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "12920": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "12937": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "12951": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "12991": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "13013": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "13018": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "13032": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "13062": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "13113": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "13139": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "13146": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "13151": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "13153": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "13165": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "13196": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "13208": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "13227": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "13251": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "13252": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "13253": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "13266": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "13308": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "13321": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "13336": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "13359": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "13374": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "13387": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "13388": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "13444": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "13492": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "13506": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "13552": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "13559": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "13564": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "13603": {
+  "category": "keep-open",
+  "date": "2026-11-22"
+ },
+ "13614": {
+  "category": "keep-open",
+  "date": "2026-11-22"
  }
 }
