@@ -540,25 +540,42 @@ Claude Code loads personal skills from `~/.claude/skills/` (Windows: `%USERPROFI
 
 ### Local sessions on Windows (desktop app, CLI)
 
-Once, in a PowerShell in your existing clone of `murggel/cgeo`:
+The skills are linked from a separate git worktree that keeps `dev/ai-workflows` checked out for good. That worktree is also the place where you work on this branch: write requests, change skills, commit and push there. Changes to a skill take effect in the next session, even before you push.
+
+**Once**, in a PowerShell in your existing clone of `murggel/cgeo`. `<worktree>` is any folder on a local NTFS drive, e.g. `D:\dev\cgeo-ai`; avoid network drives and folders synced by OneDrive, Dropbox and the like.
 
 ```powershell
 git fetch origin dev/ai-workflows
-git worktree add $HOME\cgeo-ai dev/ai-workflows
-powershell -ExecutionPolicy Bypass -File $HOME\cgeo-ai\ai\skills\install-skills.ps1
+git worktree add <worktree> dev/ai-workflows
+git -C <worktree> pull --rebase origin dev/ai-workflows
+powershell -ExecutionPolicy Bypass -File <worktree>\ai\skills\install-skills.ps1
 ```
 
-If `dev/ai-workflows` is already checked out in the clone, `git worktree add` refuses; switch the clone to another branch first, or run the script from that clone instead of a worktree.
+- **The `pull` is needed** if a local branch `dev/ai-workflows` already existed: `git worktree add` checks out that local branch, which can be older than `origin`.
+- **`origin` must be `murggel/cgeo`.** If your clone calls the fork differently (`git remote -v`), use that name instead.
+- **Already checked out elsewhere:** git allows a branch in only one worktree at a time, so `git worktree add` refuses if `dev/ai-workflows` is checked out in the clone or another worktree. Switch that one to another branch first. From then on you cannot check out `dev/ai-workflows` anywhere else; use the new worktree for it.
+- **No clone yet:** clone only this branch instead of adding a worktree, then run the script from there:
+  `git clone --branch dev/ai-workflows --single-branch --filter=blob:none https://github.com/murggel/cgeo.git <worktree>`
 
-The script creates a directory junction per skill (no administrator rights needed). From then on:
+The script prints `Linked <skill> -> <path>` per skill and creates a directory junction for each (no administrator rights needed). Check the result with:
 
-- **Changes to a skill:** `git -C $HOME\cgeo-ai pull --rebase` and start a new session.
+```powershell
+Get-ChildItem $env:USERPROFILE\.claude\skills | Select-Object Name, LinkType, Target
+```
+
+Every skill of `interactive-skills.txt` should show `Junction` and a target in the worktree. Then start a new session with the environment *This computer* and type `/`.
+
+**From then on:**
+
+- **Changes to a skill:** `git -C <worktree> pull --rebase` and start a new session.
 - **New skill:** add its folder to `interactive-skills.txt`, pull, and run the script again.
+- **Moving the worktree:** do not move it in Explorer. Use `git worktree move <old> <new>` and run the script again from the new place; it replaces the old junctions. The links point to the old path until then.
 - **Existing folder of the same name** in `~/.claude/skills/`: the script skips it with a warning; `-Force` renames it to `<name>.bak` and links the skill.
+- **Older copies of a skill** elsewhere (an account skill or plugin in claude.ai, or an old personal skill folder) show up as a second entry in the `/` menu, e.g. `cgeo-support-ticket:cgeo-support-ticket`. Remove them.
 
 ### Cloud sessions (claude.ai, app)
 
-The setup script of the cloud environment for `murggel/cgeo` fetches this branch when a session starts and copies the listed skills into `/root/.claude/skills/`:
+The setup script of the cloud environment `cgeo` (personal environment for `murggel/cgeo`; choose it instead of *Default* when starting a session) fetches this branch when a session starts and copies the listed skills into `/root/.claude/skills/`:
 
 ```bash
 # Install the interactive c:geo skills from murggel/cgeo:dev/ai-workflows (ai/skills/).
