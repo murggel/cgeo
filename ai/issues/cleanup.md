@@ -6,6 +6,11 @@ same night `report-2.md`, ...). The AI closes nothing: check each issue before c
 
 | Report | Provider | Checked | Fixed | Duplicates | Obsolete | Waiting | Can probably be closed |
 |---|---|---|---|---|---|---|---|
+| [2026-11-24 (5)](../requests/cleanup/2026-11-24/report-5.md) | copilot | 20 | 2 | 2 | 0 | 0 | [#13108](https://github.com/cgeo/cgeo/issues/13108) fixed, [#14931](https://github.com/cgeo/cgeo/issues/14931) duplicate, [#16516](https://github.com/cgeo/cgeo/issues/16516) duplicate, [#16731](https://github.com/cgeo/cgeo/issues/16731) fixed |
+| [2026-11-24 (4)](../requests/cleanup/2026-11-24/report-4.md) | copilot | 20 | 0 | 1 | 0 | 1 | [#16187](https://github.com/cgeo/cgeo/issues/16187) duplicate, [#16362](https://github.com/cgeo/cgeo/issues/16362) waiting |
+| [2026-11-24 (3)](../requests/cleanup/2026-11-24/report-3.md) | copilot | 20 | 0 | 3 | 0 | 0 | [#14329](https://github.com/cgeo/cgeo/issues/14329) duplicate, [#15924](https://github.com/cgeo/cgeo/issues/15924) duplicate, [#15388](https://github.com/cgeo/cgeo/issues/15388) duplicate |
+| [2026-11-24 (2)](../requests/cleanup/2026-11-24/report-2.md) | copilot | 20 | 1 | 0 | 0 | 0 | [#11849](https://github.com/cgeo/cgeo/issues/11849) fixed |
+| [2026-11-24](../requests/cleanup/2026-11-24/report.md) | copilot | 20 | 1 | 1 | 1 | 0 | [#11394](https://github.com/cgeo/cgeo/issues/11394) fixed, [#15313](https://github.com/cgeo/cgeo/issues/15313) duplicate, [#15358](https://github.com/cgeo/cgeo/issues/15358) obsolete |
 | [2026-11-23 (5)](../requests/cleanup/2026-11-23/report-5.md) | copilot | 20 | 3 | 0 | 0 | 1 | [#15071](https://github.com/cgeo/cgeo/issues/15071) fixed, [#14989](https://github.com/cgeo/cgeo/issues/14989) fixed, [#14983](https://github.com/cgeo/cgeo/issues/14983) fixed, [#11927](https://github.com/cgeo/cgeo/issues/11927) waiting |
 | [2026-11-23 (4)](../requests/cleanup/2026-11-23/report-4.md) | copilot | 20 | 2 | 0 | 0 | 0 | [#9340](https://github.com/cgeo/cgeo/issues/9340) fixed, [#14579](https://github.com/cgeo/cgeo/issues/14579) fixed |
 | [2026-11-23 (3)](../requests/cleanup/2026-11-23/report-3.md) | copilot | 20 | 1 | 0 | 0 | 1 | [#11112](https://github.com/cgeo/cgeo/issues/11112) waiting, [#13781](https://github.com/cgeo/cgeo/issues/13781) fixed |
