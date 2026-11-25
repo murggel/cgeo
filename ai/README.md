@@ -426,7 +426,7 @@ The AI has no network access, so it cannot search GitHub itself. To still find r
 | File | Content |
 |---|---|
 | `cleanup.json` | Results of earlier [cleanup runs](#issue-cleanup): category and date per issue. |
-| `cleanup.md` | Overview of all cleanup reports: per report the provider, the number of checked issues, the counts per category and the issues that can probably be closed. Written by the workflow after every cleanup run. The reports themselves are in the request folders. |
+| `cleanup.md` | Overview of the cleanup runs: first the issues that can probably be closed, by category, then all reports with provider, number of checked issues and counts per category. Written by the workflow after every cleanup run and issue snapshot. The reports themselves are in the request folders. |
 | `issues.md` | One line per open issue: number, labels, c:geo version, creation date, last update, number of comments, assignees, title, keywords and a short summary. The AI searches it with `Grep`; every hit returns the whole entry. |
 | `snapshot.json` | Repository, creation time and number of issues. |
 
@@ -491,7 +491,10 @@ Costs: since June 2026 Copilot bills by tokens in GitHub AI Credits, so the cost
 
 With `provider: auto` the workflow chooses provider, number of issues and number of batches from [`ai/settings.yml`](#settings-and-schedule) and the Copilot AI Credits. Several batches give one report each in the same request folder: `report.md`, `report-2.md`, ...
 
-Overview: after every run the workflow rewrites [`ai/issues/cleanup.md`](issues/cleanup.md) from all reports under `ai/requests/cleanup/`, newest first. Each row links to its report and lists the issues that can probably be closed with their category, so you can see at a glance where there is something to do.
+Overview: after every cleanup run and every issue snapshot the workflow rewrites [`ai/issues/cleanup.md`](issues/cleanup.md) from all reports under `ai/requests/cleanup/`:
+
+- **Issues that can probably be closed**, one table per category (probably fixed, duplicates, no longer applicable, waiting for information) with issue, title from the snapshot and a link to the report. Only the latest result per issue counts: a later run that keeps an issue open removes it here. Issues that are no longer open in the issue snapshot are left out, so closed issues disappear with the next snapshot.
+- **Reports**, newest first: provider, number of checked issues, counts per category and the issues that can probably be closed.
 
 ## Settings and schedule
 

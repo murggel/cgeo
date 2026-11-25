@@ -33,7 +33,7 @@ class IndexTest(unittest.TestCase):
         self.write("2026-11-21", "request.yml", "task: cleanup-issues\n")
         issue_cleanup.write_index(self.requests, self.index)
         rows = [line for line in self.index.read_text(encoding="utf-8").splitlines()
-                if line.startswith("| [")]
+                if line.startswith("| [2026")]
         self.assertEqual(3, len(rows))
         self.assertTrue(rows[0].startswith(
             "| [2026-11-21 (2)](../requests/cleanup/2026-11-21/report-2.md) | copilot | 2 | 0 | 0 | 1 | 1 |"))
@@ -59,7 +59,44 @@ class IndexTest(unittest.TestCase):
 
     def test_no_reports(self):
         issue_cleanup.write_index(self.requests, self.index)
-        self.assertTrue(self.index.read_text(encoding="utf-8").endswith("|---|---|---|---|---|---|---|---|\n"))
+        text = self.index.read_text(encoding="utf-8")
+        self.assertTrue(text.endswith("|---|---|---|---|---|---|---|---|\n"))
+        self.assertIn("### Probably fixed (0)\n\nNone.", text)
+
+    def snapshot(self, *entries: str) -> Path:
+        directory = self.index.parent
+        directory.mkdir(parents=True, exist_ok=True)
+        (directory / "issues.md").write_text("# Open issues\n" + "".join(e + "\n" for e in entries),
+                                             encoding="utf-8")
+        (directory / "snapshot.json").write_text('{"created_at": "2026-12-01T08:00:00Z"}', encoding="utf-8")
+        return directory
+
+    def test_status_tables_latest_result_and_closed_left_out(self):
+        self.write("2026-11-20", "report.md", report("claude", "#11 fixed\n#12 fixed\n#13 waiting\n#15 fixed\n"))
+        self.write("2026-11-21", "report.md", report("copilot", "#12 keep-open\n#14 duplicate\n#13 obsolete\n"))
+        snapshot = self.snapshot(
+            "#11 | labels: Bug | created: 2020-01-01 | updated: 2020-01-02 | title: Crash [map] | x | summary: s",
+            "#12 | labels: | title: Twelve | summary: s",
+            "#13 | labels: | title: Thirteen | summary: s",
+            "#14 | labels: | title: Fourteen | summary: s")
+        issue_cleanup.write_index(self.requests, self.index, snapshot)
+        text = self.index.read_text(encoding="utf-8")
+        self.assertLess(text.index("## Issues that can probably be closed"), text.index("## Reports"))
+        self.assertIn("Left out: 1 issues that are no longer open in the issue snapshot of 2026-12-01.", text)
+        fixed = text[text.index("### Probably fixed (1)"):text.index("### Duplicates (1)")]
+        self.assertIn("| [#11](https://github.com/cgeo/cgeo/issues/11) | Crash \\[map\\] | "
+                      "[2026-11-20](../requests/cleanup/2026-11-20/report.md) |", fixed)
+        self.assertNotIn("#12", fixed)
+        self.assertNotIn("#15", fixed)
+        self.assertIn("### No longer applicable (1)", text)
+        self.assertIn("| [#13](https://github.com/cgeo/cgeo/issues/13) | Thirteen | [2026-11-21]", text)
+        self.assertIn("### Waiting for information (0)\n\nNone.", text)
+
+    def test_status_without_snapshot_keeps_all(self):
+        self.write("2026-11-20", "report.md", report("claude", "#15 fixed\n"))
+        issue_cleanup.write_index(self.requests, self.index, self.index.parent / "missing")
+        self.assertIn("| [#15](https://github.com/cgeo/cgeo/issues/15) | – | [2026-11-20]",
+                      self.index.read_text(encoding="utf-8"))
 
     @unittest.skipUnless(hasattr(os, "symlink"), "symbolic links not available")
     def test_symlinks_skipped_and_refused(self):

@@ -569,7 +569,7 @@ jobs:
             done
             if [[ "$TASK" == "cleanup-issues" ]]; then
               if python3 ai/scripts/issue_cleanup.py index --requests ai/requests/cleanup \
-                  --index "$cleanup_index"; then
+                  --index "$cleanup_index" --issues ai/issues; then
                 git add -- "$cleanup_index"
               else
                 echo "::warning::The overview $cleanup_index could not be updated."
@@ -672,6 +672,15 @@ jobs:
             cp -- "$RUNNER_TEMP/issues/issues.md" "$RUNNER_TEMP/issues/snapshot.json" "$snapshot_dir"/
             cp -- "$RUNNER_TEMP/report.md" "$report_path"
             git add -- "$snapshot_dir/issues.md" "$snapshot_dir/snapshot.json" "$report_path"
+            # The overview leaves out issues that are no longer open in the new snapshot.
+            if [[ -L "$snapshot_dir/cleanup.md" ]]; then
+              echo "::warning::$snapshot_dir/cleanup.md is a symbolic link; the overview is not updated."
+            elif python3 ai/scripts/issue_cleanup.py index --requests ai/requests/cleanup \
+                --index "$snapshot_dir/cleanup.md" --issues "$snapshot_dir"; then
+              git add -- "$snapshot_dir/cleanup.md"
+            else
+              echo "::warning::The overview $snapshot_dir/cleanup.md could not be updated."
+            fi
             if git diff --cached --quiet; then
               echo "The snapshot is unchanged; no commit is needed."
               exit 0
