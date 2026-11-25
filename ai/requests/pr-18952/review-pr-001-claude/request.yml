@@ -1,0 +1,4 @@
+# First review of PR #18952.
+task: review-pr
+provider: claude
+pr: 18952
