@@ -1,12 +1,11 @@
 import io
 import os
-import re
 import tempfile
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path, PurePosixPath
 
-from validate_request import Request, check_commit_message, main, validate_request
+from validate_request import Request, main, validate_request
 
 
 ISSUE_PATH = "ai/requests/issue-17573/analysis-001/request.yml"
@@ -417,53 +416,6 @@ class ValidateRequestTest(unittest.TestCase):
         with redirect_stderr(io.StringIO()) as stderr:
             self.assertEqual(main([SMOKE_PATH]), 1)
         self.assertIn("Invalid request: provider", stderr.getvalue())
-
-    # Commit messages
-
-    def test_commit_message_without_reference_is_accepted(self):
-        for message in ("AI request: review-pr pr-18952",
-                        "Add Claude analysis report for issue-12345",
-                        "Add Copilot review report for branch fix/map-18947",
-                        "Fix &#123; entity\n\nCo-Authored-By: Claude <noreply@anthropic.com>\n"
-                        "Claude-Session: https://claude.ai/code/session_01ABC"):
-            with self.subTest(message=message):
-                check_commit_message(message)
-
-    def test_commit_message_with_reference_is_rejected(self):
-        for message, reference in (("AI request: review PR #18952", "#18952"),
-                                   ("Review\n\nSee cgeo/cgeo#123 for details", "#123"),
-                                   ("Fixes PR#42", "#42"),
-                                   ("Relates to gh-77", "gh-77"),
-                                   ("See https://github.com/cgeo/cgeo/issues/447", "issues/447"),
-                                   ("See github.com/cgeo/cgeo/pull/18952", "pull/18952")):
-            with self.subTest(message=message):
-                with self.assertRaisesRegex(ValueError, re.escape(reference)):
-                    check_commit_message(message)
-
-    def test_main_checks_commit_message_only(self):
-        with redirect_stdout(io.StringIO()) as stdout:
-            self.assertEqual(main(["--commit-message", "AI request: review-pr pr-18952"]), 0)
-        self.assertIn("Commit message OK.", stdout.getvalue())
-        with redirect_stderr(io.StringIO()) as stderr:
-            self.assertEqual(main(["--commit-message", "ok", "--commit-message", "PR #1"]), 1)
-        self.assertIn("Invalid commit message: 'PR #1' contains #1", stderr.getvalue())
-
-    def test_main_rejects_reference_before_request(self):
-        self.write(SMOKE_PATH, "task: smoke-test\nprovider: claude\n")
-        cwd = os.getcwd()
-        os.chdir(self.root)
-        self.addCleanup(os.chdir, cwd)
-        with redirect_stdout(io.StringIO()) as stdout, redirect_stderr(io.StringIO()) as stderr:
-            self.assertEqual(main([SMOKE_PATH, "--commit-message", "smoke #5"]), 1)
-            self.assertEqual(main([SMOKE_PATH, "--commit-message", "AI request: smoke-test"]), 0)
-        self.assertIn("Invalid commit message", stderr.getvalue())
-        self.assertIn("smoke-test", stdout.getvalue())
-
-    def test_main_needs_request_or_commit_message(self):
-        with redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
-            main([])
-        with redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
-            main(["--commit-message", "ok", "--github-output", "out"])
 
 
 if __name__ == "__main__":

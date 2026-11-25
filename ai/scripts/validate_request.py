@@ -16,12 +16,6 @@ issues. verify-issues names its target (issue, pr or branch with base), the
 refresh-issues runs no AI and therefore names no provider. cleanup-issues
 checks ``count`` open issues from the snapshot, optionally only those with one
 of the given ``labels``.
-
-The script also checks commit messages (``--commit-message``): GitHub links a
-message that contains ``#<number>``, ``GH-<number>``, ``<owner>/<repo>#<number>``
-or an issue or pull request URL to that issue or pull request in cgeo/cgeo, even
-from this fork, and everyone sees the link there. Commit messages name the
-subject folder instead, for example ``pr-18952``.
 """
 
 from __future__ import annotations
@@ -58,15 +52,6 @@ ALLOWED_BASES = frozenset({"master", "release"})
 DEFAULT_REPOSITORY = "cgeo/cgeo"
 # Only smoke tests may choose a repository; all other tasks use the default.
 ALLOWED_REPOSITORIES = frozenset({"cgeo/cgeo", "murggel/cgeo"})
-
-# Issue and pull request references that GitHub turns into links (see above).
-# "&#<number>" is an HTML character reference, not an issue reference.
-COMMIT_REFERENCE = re.compile(
-    r"(?<!&)#[0-9]+"
-    r"|\bGH-[0-9]+"
-    r"|github\.com/[^\s/]+/[^\s/]+/(?:issues|pull|discussions)/[0-9]+",
-    re.IGNORECASE,
-)
 
 NUMBER = r"(?P<number>[1-9][0-9]{0,8})"
 DESCRIPTION = r"(?:-[A-Za-z0-9_-]+)?"
@@ -477,42 +462,13 @@ def validate_request(request_path: str | PurePosixPath, root: Path = Path(".")) 
                    _preselect(request), cleanup_count, labels)
 
 
-def check_commit_message(message: str) -> None:
-    """Rejects a commit message that GitHub would link to an issue or pull request."""
-    references = list(dict.fromkeys(match.group(0) for match in COMMIT_REFERENCE.finditer(message)))
-    if references:
-        subject = message.strip().splitlines()[0] if message.strip() else ""
-        raise ValueError(
-            f"'{subject}' contains {', '.join(references)}; GitHub would link it to the issue "
-            "or pull request in cgeo/cgeo. Name the subject folder instead, e.g. pr-18952."
-        )
-
-
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("request_file", nargs="?", help="path relative to the repository root")
+    parser.add_argument("request_file", help="path relative to the repository root")
     parser.add_argument(
         "--github-output", type=Path, help="append the workflow outputs to this file"
     )
-    parser.add_argument(
-        "--commit-message", action="append", default=[], metavar="TEXT",
-        help="also check this commit message; may be given more than once",
-    )
     args = parser.parse_args(argv)
-    if args.request_file is None and not args.commit_message:
-        parser.error("give a request file, --commit-message or both")
-    if args.request_file is None and args.github_output:
-        parser.error("--github-output needs a request file")
-
-    try:
-        for message in args.commit_message:
-            check_commit_message(message)
-    except ValueError as exc:
-        print(f"Invalid commit message: {exc}", file=sys.stderr)
-        return 1
-    if args.request_file is None:
-        print(f"Commit message{'s' if len(args.commit_message) > 1 else ''} OK.")
-        return 0
 
     try:
         request = validate_request(args.request_file)

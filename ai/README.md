@@ -376,7 +376,9 @@ Possible future hardening: if the workflow is ever opened to other users or trig
 | Path | Purpose |
 |---|---|
 | `.github/workflows/ai-assistant-murggel.yml` | The workflow: validate, one job per provider (`run-copilot`, `run-claude`), save. |
-| `scripts/validate_request.py` | Checks `request.yml`. The **only** place that defines allowed tasks, providers, repositories and folder names. With `--commit-message` it also rejects commit messages with issue or PR references (`#<number>`, `GH-<number>`, issue or PR URLs), which GitHub would link to cgeo/cgeo. |
+| `scripts/validate_request.py` | Checks `request.yml`. The **only** place that defines allowed tasks, providers, repositories and folder names. |
+| `scripts/check_commit_message.py` | Rejects commit messages with issue or PR references (`#<number>`, `GH-<number>`, issue or PR URLs), which GitHub would link to cgeo/cgeo. Used by the commit-msg hook, the `cgeo-ai-request` skill and the workflow. |
+| `hooks/commit-msg`, `hooks/install-hooks.ps1` | The local commit-msg hook that runs `check_commit_message.py` on `dev/ai-workflows`, and the Windows script that installs it. See [Commit messages](#commit-messages). |
 | `scripts/fetch_context.py` | Downloads issue or PR data from the GitHub API (with paging, error handling and size limit) and formats the branch-review context. |
 | `scripts/issue_cleanup.py` | Selects the issues for `cleanup-issues`, records their results in `issues/cleanup.json` and writes the overview `issues/cleanup.md`. |
 | `scripts/fix_history.py` | Finds the pull requests of the issues that `cleanup-issues` considers fixed and lists them in the report. |
@@ -575,6 +577,24 @@ Every skill of `interactive-skills.txt` should show `Junction` and a target in t
 - **Moving the worktree:** do not move it in Explorer. Use `git worktree move <old> <new>` and run the script again from the new place; it replaces the old junctions. The links point to the old path until then.
 - **Existing folder of the same name** in `~/.claude/skills/`: the script skips it with a warning; `-Force` renames it to `<name>.bak` and links the skill.
 - **Older copies of a skill** elsewhere (an account skill or plugin in claude.ai, or an old personal skill folder) show up as a second entry in the `/` menu, e.g. `cgeo-support-ticket:cgeo-support-ticket`. Remove them.
+
+### Commit messages
+
+GitHub links a commit message that contains `#<number>`, `GH-<number>`, `<owner>/<repo>#<number>` or an issue or PR URL to that issue or PR in cgeo/cgeo, even from this fork, and everyone sees the link there. Commit messages on this branch therefore name the subject folder instead, e.g. `AI request: review-pr pr-18952`. `scripts/check_commit_message.py` checks this in three places:
+
+- **commit-msg hook (local):** rejects such a commit before it exists. It acts only on `dev/ai-workflows`; on other branches, whose commits go into upstream pull requests, it does nothing. `git commit --no-verify` skips it once.
+- **`cgeo-ai-request` skill:** runs the check before every commit, also in cloud sessions, where the hook is not installed.
+- **Workflow:** checks the messages of the pushed commits and fails the run, and checks its own report commit message before it commits. This comes too late to prevent the link, but makes it visible.
+
+Install the hook once per clone, in the worktree of `dev/ai-workflows` (the hooks folder is shared by all worktrees of a clone):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File <worktree>\ai\hooks\install-hooks.ps1
+```
+
+On Linux or macOS: `cp ai/hooks/commit-msg "$(git rev-parse --git-path hooks)/commit-msg" && chmod +x "$(git rev-parse --git-path hooks)/commit-msg"`.
+
+The script does not replace an existing, different commit-msg hook unless you add `-Force` (it saves the old one as `commit-msg.bak`). The hook needs Python 3.9 or newer as `python3`, `python` or `py`. It calls `check_commit_message.py` of the checkout, so a `git pull` is enough for changes to the check; run the script again only when `hooks/commit-msg` itself changes. Test it with `git commit --allow-empty -m "test #1"`: the commit must be refused.
 
 ### Cloud sessions (claude.ai, app)
 

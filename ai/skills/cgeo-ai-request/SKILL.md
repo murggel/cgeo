@@ -99,18 +99,17 @@ pip install -q -r ai/scripts/requirements.txt   # once per session
 python3 ai/scripts/validate_request.py ai/requests/<subject>/<id>/request.yml
 ```
 
-Only when the validator exits with code 0, check the commit message with the validator as well and commit only when that also exits with code 0:
+Only when the validator exits with code 0, check the commit message and commit only when that also exits with code 0:
 
 ```bash
-python3 ai/scripts/validate_request.py ai/requests/<subject>/<id>/request.yml \
-    --commit-message "AI request: <task> <subject folder>"   # e.g. "AI request: review-pr pr-18952"
+python3 ai/scripts/check_commit_message.py -- "AI request: <task> <subject folder>"   # e.g. "AI request: review-pr pr-18952"
 git add ai/requests/<subject>/<id>/request.yml
 git commit -m "AI request: <task> <subject folder>"
 git pull --rebase origin dev/ai-workflows
 git push origin dev/ai-workflows
 ```
 
-- **No issue or PR references in commit messages:** GitHub links a commit message that contains `#<number>`, `<owner>/<repo>#<number>` or an issue or PR URL to that issue or PR in cgeo/cgeo, even from this fork, and the link is visible to everyone there. Never write any of these in a commit message. Name the target by its subject folder instead (`pr-18952`, `issue-12345`, `branch-improve-authorization`). Check the message with `--commit-message` before every commit; the check in the workflow runs only after the push, when GitHub has already created the link.
+- **No issue or PR references in commit messages:** GitHub links a commit message that contains `#<number>`, `<owner>/<repo>#<number>` or an issue or PR URL to that issue or PR in cgeo/cgeo, even from this fork, and the link is visible to everyone there. Never write any of these in a commit message. Name the target by its subject folder instead (`pr-18952`, `issue-12345`, `branch-improve-authorization`). Check the message with `ai/scripts/check_commit_message.py` before every commit, even where the commit-msg hook of `ai/hooks/` is installed; the check in the workflow runs only after the push, when GitHub has already created the link.
 
 - **One file per push:** every push may contain exactly one new or changed `request.yml`. Push several requests one by one, each with its own commit and push.
 - **End of the commit message:** use the attribution lines the session prescribes.

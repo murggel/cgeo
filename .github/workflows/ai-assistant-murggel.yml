@@ -137,12 +137,16 @@ jobs:
 
           # GitHub has already linked a referencing commit to the issue or pull
           # request in cgeo/cgeo; failing here cannot undo that, but makes it visible.
-          message_args=()
+          commit_messages=()
           while IFS= read -r -d '' commit_message; do
-            message_args+=(--commit-message "$commit_message")
+            commit_messages+=("$commit_message")
           done < <(jq -j '.[].message + "\u0000"' <<< "$PUSHED_COMMITS")
-          if ! result=$(python ai/scripts/validate_request.py "$request_file" "${message_args[@]}" \
-              --github-output "$GITHUB_OUTPUT" 2>&1); then
+          if [[ "${#commit_messages[@]}" -gt 0 ]] \
+              && ! result=$(python ai/scripts/check_commit_message.py -- "${commit_messages[@]}" 2>&1); then
+            fail "$result"
+          fi
+
+          if ! result=$(python ai/scripts/validate_request.py "$request_file" --github-output "$GITHUB_OUTPUT" 2>&1); then
             fail "$result"
           fi
           printf '## AI request validated\n\n%s\n' "$result" >> "$GITHUB_STEP_SUMMARY"
@@ -526,7 +530,7 @@ jobs:
             cleanup-issues) message="Add ${PROVIDER^} issue cleanup report ${REQUEST_DIR##*/}" ;;
             *) message="Add ${PROVIDER^} smoke-test report" ;;
           esac
-          if ! python3 ai/scripts/validate_request.py --commit-message "$message"; then
+          if ! python3 ai/scripts/check_commit_message.py -- "$message"; then
             echo "::error::The report commit message would reference an issue or pull request in cgeo/cgeo. The report is still available as the 'report' artifact."
             exit 1
           fi

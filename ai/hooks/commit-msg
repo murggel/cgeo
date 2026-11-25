@@ -1,0 +1,27 @@
+#!/bin/sh
+# commit-msg hook for murggel/cgeo, installed by ai/hooks/install-hooks.ps1 or
+# by copying this file into the hooks folder of the clone (see ai/README.md).
+#
+# GitHub links a commit message with "#<number>", "GH-<number>" or an issue or
+# PR URL to that issue or PR in cgeo/cgeo, even from the fork. On the branch
+# dev/ai-workflows this hook rejects such messages with
+# ai/scripts/check_commit_message.py; on all other branches it does nothing,
+# because commits for upstream pull requests reference their issues on purpose.
+# "git commit --no-verify" skips the check once.
+
+[ "$(git symbolic-ref --quiet --short HEAD 2>/dev/null)" = "dev/ai-workflows" ] || exit 0
+
+script="$(git rev-parse --show-toplevel)/ai/scripts/check_commit_message.py"
+if [ ! -f "$script" ]; then
+    echo "commit-msg: $script not found; the message was not checked." >&2
+    exit 0
+fi
+
+for python in python3 python py; do
+    if "$python" -c 'import sys; sys.exit(sys.version_info < (3, 9))' >/dev/null 2>&1; then
+        exec "$python" "$script" --file "$1"
+    fi
+done
+echo "commit-msg: no Python 3.9 or newer found, so the message cannot be checked." >&2
+echo "commit-msg: install Python or skip the check once with git commit --no-verify." >&2
+exit 1
