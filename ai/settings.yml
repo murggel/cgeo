@@ -55,7 +55,7 @@ copilot:
   cost_per_batch: 100
   # AI Credits that must stay free for your own work. A Copilot run of the
   # plan above only starts if enough is left beyond this reserve.
-  reserve: 300
+  reserve: 0
   # Model for cleanup-issues runs with Copilot (empty: Copilot's default).
   # A cheaper model uses fewer AI Credits per batch.
   cleanup_model: claude-haiku-5.5
