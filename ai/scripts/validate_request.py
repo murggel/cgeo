@@ -105,7 +105,7 @@ TASKS = {
         # auto: the workflow chooses by ai/settings.yml and the Copilot quota.
         providers=frozenset({"auto", "claude", "copilot"}),
         required_keys=frozenset(),
-        optional_keys=frozenset({"count", "labels", "instructions"}),
+        optional_keys=frozenset({"count", "labels", "instructions", "extra"}),
         subject=re.compile("cleanup"),
         request_id=NAME,
         layout="ai/requests/cleanup/<name>/request.yml",
@@ -145,6 +145,7 @@ class Request:
     preselect: int = 0
     cleanup_count: int = 0
     labels: tuple[str, ...] = ()
+    extra: bool = False
 
     def outputs(self) -> dict[str, str]:
         outputs = {
@@ -167,6 +168,7 @@ class Request:
         if self.task == "cleanup-issues":
             outputs["count"] = str(self.cleanup_count or "")
             outputs["labels"] = json.dumps(list(self.labels))
+            outputs["extra"] = "true" if self.extra else ""
         return outputs
 
     def summary(self) -> str:
@@ -191,6 +193,8 @@ class Request:
             lines.append(f"- Issues to check: {self.cleanup_count}")
         if self.labels:
             lines.append(f"- Labels: {', '.join(self.labels)}")
+        if self.extra:
+            lines.append("- Extra request (cleanup.extra in ai/settings.yml)")
         lines.append(f"- Request: {self.path.as_posix()}")
         return "\n".join(lines)
 
@@ -363,6 +367,17 @@ def _cleanup(request: dict[str, Any]) -> tuple[int, tuple[str, ...]]:
     return count, tuple(label.strip() for label in labels)
 
 
+def _extra(request: dict[str, Any], provider: str) -> bool:
+    """``extra: true`` marks the additional cleanup request of the scheduled task."""
+    if "extra" not in request:
+        return False
+    if request["extra"] is not True:
+        raise ValueError("extra must be true (or left out)")
+    if provider == "auto":
+        raise ValueError("extra needs provider claude or copilot, not auto")
+    return True
+
+
 def _verify(request: dict[str, Any], subject: str) -> tuple[str, str]:
     """verify-issues: return the issues to verify and the target (issue, pr or branch)."""
     targets = [key for key in ("issue", "pr", "branch") if key in request]
@@ -459,7 +474,8 @@ def validate_request(request_path: str | PurePosixPath, root: Path = Path(".")) 
     cleanup_count, labels = _cleanup(request) if task == "cleanup-issues" else (0, ())
     return Request(path, task, provider, number, repository, _instructions(request), branch, base,
                    _previous_report(request, root, path, report_key), verify, verify_target,
-                   _preselect(request), cleanup_count, labels)
+                   _preselect(request), cleanup_count, labels,
+                   _extra(request, provider) if task == "cleanup-issues" else False)
 
 
 def main(argv: list[str] | None = None) -> int:

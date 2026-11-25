@@ -52,6 +52,16 @@ class ValidateRequestTest(unittest.TestCase):
                     Request(PurePosixPath(ISSUE_PATH), "analyze-issue", provider, 17573, "cgeo/cgeo"),
                 )
 
+    def test_cleanup_extra(self):
+        request = self.validate("ai/requests/cleanup/2026-11-27-claude/request.yml",
+                                "task: cleanup-issues\nprovider: claude\nextra: true\n")
+        self.assertTrue(request.extra)
+        self.assertEqual(request.outputs()["extra"], "true")
+        self.assertInvalid("ai/requests/cleanup/2026-11-27-x/request.yml",
+                           "task: cleanup-issues\nprovider: auto\nextra: true\n", "not auto")
+        self.assertInvalid("ai/requests/cleanup/2026-11-27-y/request.yml",
+                           "task: cleanup-issues\nprovider: claude\nextra: yes please\n", "extra must be true")
+
     def test_descriptions_in_directory_names(self):
         request = self.validate(
             "ai/requests/issue-17573-map_crash/analysis-002-follow-up/request.yml",

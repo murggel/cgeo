@@ -158,6 +158,7 @@ jobs:
           TASK: ${{ steps.request.outputs.task }}
           PROVIDER: ${{ steps.request.outputs.provider }}
           COUNT: ${{ steps.request.outputs.count }}
+          EXTRA: ${{ steps.request.outputs.extra }}
           # Read-only access to the owner's billing data, only for the Copilot AI Credits.
           COPILOT_BILLING_TOKEN: ${{ secrets.COPILOT_BILLING_TOKEN }}
           OWNER: ${{ github.repository_owner }}
@@ -172,7 +173,7 @@ jobs:
             exit 0
           fi
           if ! result=$(python ai/scripts/settings.py resolve --provider "$PROVIDER" --count "$COUNT" \
-              --user "$OWNER" --github-output "$GITHUB_OUTPUT" 2>&1); then
+              --extra "$EXTRA" --user "$OWNER" --github-output "$GITHUB_OUTPUT" 2>&1); then
             echo "::error::$result"
             exit 1
           fi
@@ -541,6 +542,7 @@ jobs:
             report_paths+=("$REQUEST_DIR/report-$batch.md")
           done
           cleanup_index=ai/issues/cleanup.md
+          cleanup_compare=ai/issues/cleanup-compare.md
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -553,7 +555,7 @@ jobs:
 
             # No path component may be a symlink; otherwise the bot
             # could write outside the request directory.
-            for report_path in "${report_paths[@]}" ai/issues/cleanup.json "$cleanup_index"; do
+            for report_path in "${report_paths[@]}" ai/issues/cleanup.json "$cleanup_index" "$cleanup_compare"; do
               IFS=/ read -ra parts <<< "$report_path"
               path=""
               for part in "${parts[@]}"; do
@@ -586,8 +588,8 @@ jobs:
             done
             if [[ "$TASK" == "cleanup-issues" ]]; then
               if python3 ai/scripts/issue_cleanup.py index --requests ai/requests/cleanup \
-                  --index "$cleanup_index" --issues ai/issues; then
-                git add -- "$cleanup_index"
+                  --index "$cleanup_index" --compare "$cleanup_compare" --issues ai/issues; then
+                git add -- "$cleanup_index" "$cleanup_compare"
               else
                 echo "::warning::The overview $cleanup_index could not be updated."
               fi
@@ -690,11 +692,12 @@ jobs:
             cp -- "$RUNNER_TEMP/report.md" "$report_path"
             git add -- "$snapshot_dir/issues.md" "$snapshot_dir/snapshot.json" "$report_path"
             # The overview leaves out issues that are no longer open in the new snapshot.
-            if [[ -L "$snapshot_dir/cleanup.md" ]]; then
-              echo "::warning::$snapshot_dir/cleanup.md is a symbolic link; the overview is not updated."
+            if [[ -L "$snapshot_dir/cleanup.md" || -L "$snapshot_dir/cleanup-compare.md" ]]; then
+              echo "::warning::The cleanup overview is a symbolic link; it is not updated."
             elif python3 ai/scripts/issue_cleanup.py index --requests ai/requests/cleanup \
-                --index "$snapshot_dir/cleanup.md" --issues "$snapshot_dir"; then
-              git add -- "$snapshot_dir/cleanup.md"
+                --index "$snapshot_dir/cleanup.md" --compare "$snapshot_dir/cleanup-compare.md" \
+                --issues "$snapshot_dir"; then
+              git add -- "$snapshot_dir/cleanup.md" "$snapshot_dir/cleanup-compare.md"
             else
               echo "::warning::The overview $snapshot_dir/cleanup.md could not be updated."
             fi

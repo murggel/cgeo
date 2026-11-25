@@ -127,6 +127,32 @@ class ResolveTest(unittest.TestCase):
         self.assertEqual((outputs["provider"], outputs["model"]), ("claude", ""))
 
 
+class ExtraTest(unittest.TestCase):
+    SETTINGS = {**BASE, "cleanup": {**BASE["cleanup"], "extra": [
+        {"days": "26-30", "until": "2026-11-30", "provider": "claude", "count": 30}]}}
+
+    def test_extra_rule_with_until(self):
+        settings = parse(self.SETTINGS)
+        self.assertEqual(settings.extra_rule_for(date(2026, 11, 27)).provider, "claude")
+        self.assertIsNone(settings.extra_rule_for(date(2026, 12, 27)))
+        self.assertIsNone(settings.extra_rule_for(date(2026, 11, 25)))
+
+    def test_resolve_extra(self):
+        api = Api(error="must not be called")
+        outputs, explanation = resolve(parse(self.SETTINGS), "claude", 0, date(2026, 11, 27), api, "murggel", True)
+        self.assertEqual((outputs["provider"], outputs["count"], outputs["model"]), ("claude", "30", ""))
+        self.assertIn("extra rule", explanation)
+        outputs, explanation = resolve(parse(self.SETTINGS), "copilot", 0, date(2026, 11, 27), api, "murggel", True)
+        self.assertEqual(outputs["provider"], "")
+        outputs, _ = resolve(parse(self.SETTINGS), "claude", 0, date(2026, 12, 27), api, "murggel", True)
+        self.assertEqual(outputs["provider"], "")
+
+    def test_invalid_until(self):
+        bad = {**BASE, "cleanup": {**BASE["cleanup"], "extra": [{"provider": "claude", "until": "30.11."}]}}
+        with self.assertRaises(SettingsError):
+            parse(bad)
+
+
 class MainTest(unittest.TestCase):
     def test_credits_command_without_token(self):
         with tempfile.TemporaryDirectory() as temp:

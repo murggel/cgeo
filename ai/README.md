@@ -429,6 +429,7 @@ The AI has no network access, so it cannot search GitHub itself. To still find r
 |---|---|
 | `cleanup.json` | Results of earlier [cleanup runs](#issue-cleanup): category and date per issue. |
 | `cleanup.md` | Overview of the cleanup runs: first the issues that can probably be closed, by category, then all reports with provider, number of checked issues and counts per category. Written by the workflow after every cleanup run and issue snapshot. The reports themselves are in the request folders. |
+| `cleanup-compare.md` | Copilot and Claude side by side for the issues both have checked: agreement, a table of result pairs, and the issues with different and with the same result. Written together with `cleanup.md`. |
 | `issues.md` | One line per open issue: number, labels, c:geo version, creation date, last update, number of comments, assignees, title, keywords and a short summary. The AI searches it with `Grep`; every hit returns the whole entry. |
 | `snapshot.json` | Repository, creation time and number of issues. |
 
@@ -472,6 +473,7 @@ task: cleanup-issues
 provider: copilot
 count: 20                  # optional, 1 to 30, default from ai/settings.yml
 # labels: [Bug, Unverified] # optional: only issues with one of these labels
+# extra: true              # optional, only with claude or copilot: extra request, see cleanup.extra
 ```
 
 How it works:
@@ -498,6 +500,8 @@ Overview: after every cleanup run and every issue snapshot the workflow rewrites
 - **Issues that can probably be closed**, one table per category (probably fixed, duplicates, no longer applicable, waiting for information) with issue, title from the snapshot and a link to the report. Only the latest result per issue counts: a later run that keeps an issue open removes it here. Issues that are no longer open in the issue snapshot are left out, so closed issues disappear with the next snapshot.
 - **Reports**, newest first: provider, number of checked issues, counts per category and the issues that can probably be closed.
 
+The tables of issues that can probably be closed show the latest result of each provider (Copilot, Claude) in its own column. [`ai/issues/cleanup-compare.md`](issues/cleanup-compare.md) compares the two for the issues both have checked.
+
 ## Settings and schedule
 
 [`settings.yml`](settings.yml) holds everything you may want to adjust; `scripts/settings.py` reads and checks it. A mistake makes the next run fail with an explanation.
@@ -507,7 +511,8 @@ Overview: after every cleanup run and every issue snapshot the workflow rewrites
 | `timezone` | Time zone for days and weekdays (`Europe/Berlin`). |
 | `snapshot.days` | Days of the month on which the scheduled task renews the snapshot. |
 | `cleanup.count`, `skip_days`, `waiting_months` | Default issues per cleanup run, pause for checked issues, minimum age of an unanswered question. |
-| `cleanup.auto` | Plan for `provider: auto`: rules with `days`, `weekdays`, `provider`, `count` and `max_batches` (Copilot only). The first rule that matches the night is used. |
+| `cleanup.auto` | Plan for `provider: auto`: rules with `days`, `weekdays`, `provider`, `count` and `max_batches` (Copilot only). The first rule that matches the night is used. A rule may also have `until` (last date, e.g. `2026-11-30`). |
+| `cleanup.extra` | Rules (same keys) for an additional request per night: if one matches, the scheduled task also pushes a request with `extra: true` and that provider right after the `auto` one. Both start from the same state, so the extra run may check the same issues as the first batch of the other; `cleanup-compare.md` compares them. |
 | `copilot.monthly_credits`, `cost_per_batch`, `reserve` | GitHub AI Credits per month (1500), estimated credits per cleanup batch, credits that must stay free for your own work. |
 | `copilot.cleanup_model` | Copilot model for `cleanup-issues` (`claude-haiku-5.5`; empty: Copilot's default). |
 
@@ -518,7 +523,7 @@ The default plan:
 
 How a night runs:
 
-1. A scheduled Claude Code task wakes up every night at 3:00 in a session with this repository and runs `python3 ai/scripts/settings.py tonight`. It pushes a `refresh-issues` request on snapshot days and, after the new snapshot, a `cleanup-issues` request with `provider: auto` if a rule matches. Otherwise it pushes nothing.
+1. A scheduled Claude Code task wakes up every night at 3:00 in a session with this repository and runs `python3 ai/scripts/settings.py tonight`. It pushes a `refresh-issues` request on snapshot days and, after the new snapshot, a `cleanup-issues` request with `provider: auto` if a rule matches, and right after it a request with `extra: true` if `tonight` prints `cleanup_extra=<provider>` (rule of `cleanup.extra`), in the folder `<date>-<provider>`. Otherwise it pushes nothing.
 2. The workflow resolves `provider: auto` with `settings.py resolve`: it picks the rule of the night and, for Copilot, reads the AI Credits used this month from the GitHub billing API (entries with `sku` "Copilot AI Credits" and `unitType` "ai-credits", summed over `grossQuantity` of all models). Available = `monthly_credits` − `reserve` − used; the number of batches is limited by available ÷ `cost_per_batch` and by `max_batches`. If not enough is available, or the billing API fails or returns no AI Credits entries, the Copilot run is skipped. That costs no AI credits, only the request commit; the reason is shown in the run summary.
 3. Claude's quota cannot be read, so Claude rules run as planned. Keep them sparse if you get close to your weekly limit.
 

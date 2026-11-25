@@ -27,6 +27,7 @@ cleanup:
   #   count:       issues per run or batch (leave out: count above)
   #   max_batches: copilot only: up to this many batches in one night, as far
   #                as the Copilot AI Credits below allow (leave out: 1)
+  #   until:       last date on which the rule applies, e.g. 2026-11-30 (leave out: always)
   auto:
     # Friday 3:00 suits Claude: the weekly limit resets on Friday at 5:00.
     - days: 1-20
@@ -35,16 +36,22 @@ cleanup:
     - days: 1-20
       weekdays: [tue]
       provider: copilot
-    # Absence 26.11.-1.12.2026: the Claude limit is unused on these nights.
-    # The night of the 26th stays with Copilot for the lowered reserve.
-    # Remove this rule after the trip.
-    - days: [27, 28, 29, 30]
-      provider: claude
-      count: 30
     # Unused AI Credits expire at the end of the month, so they go to the cleanup.
     - days: 21-31
       provider: copilot
       max_batches: 5
+
+  # Extra requests: on a night that matches a rule here, the scheduled task also
+  # pushes a request with "extra: true" and that provider, right after the
+  # "auto" one. Both start from the same state, so the extra run may check the
+  # same issues as the first batch of the other one; ai/issues/cleanup-compare.md
+  # compares their results. Same keys as above.
+  extra:
+    # Trial during the absence: Claude in parallel to Copilot, to compare the two.
+    - days: 26-30
+      until: 2026-11-30
+      provider: claude
+      count: 30
 
 copilot:
   # GitHub AI Credits included per month. Since June 2026 Copilot is billed
@@ -52,7 +59,7 @@ copilot:
   monthly_credits: 1500
   # AI Credits one cleanup batch costs, an estimate. The report header shows
   # the credits used before each run; compare consecutive reports to measure it.
-  cost_per_batch: 100
+  cost_per_batch: 5
   # AI Credits that must stay free for your own work. A Copilot run of the
   # plan above only starts if enough is left beyond this reserve.
   reserve: 0

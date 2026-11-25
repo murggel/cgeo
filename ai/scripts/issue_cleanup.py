@@ -13,7 +13,8 @@ parts that run without AI:
   report and records category and date per issue in ai/issues/cleanup.json.
   The next snapshot shows these results in its entries.
 - index (command line): writes ai/issues/cleanup.md, an overview of all
-  cleanup reports. The reports themselves are in the request folders,
+  cleanup reports, and ai/issues/cleanup-compare.md, Copilot and Claude side
+  by side for the issues both have checked. The reports themselves are in the request folders,
   ai/requests/cleanup/<name>/report.md and report-2.md, ... for further batches.
 
 The result block is AI output and therefore untrusted: only lines of the form
@@ -35,6 +36,7 @@ from typing import Any
 ISSUES_FILE = "issues.md"
 STATE_FILE = "cleanup.json"
 INDEX_FILE = "cleanup.md"
+COMPARE_FILE = "cleanup-compare.md"
 REPORT_FILE = re.compile(r"^report(?:-([2-9]|[1-9][0-9]))?\.md$")
 UPSTREAM_ISSUES = "https://github.com/cgeo/cgeo/issues/"
 PROVIDER = re.compile(r"\| provider: (claude|copilot)\b")
@@ -246,37 +248,108 @@ def table_of_contents(lines: list[str]) -> list[str]:
     return toc + [""]
 
 
+PROVIDER_NAMES = (("copilot", "Copilot"), ("claude", "Claude"))
+
+
+def latest_results(reports: list[dict[str, Any]]) -> dict[int, dict[str, tuple[str, dict[str, Any]]]]:
+    """{number: {provider: (category, report)}}: the latest result of each provider per issue."""
+    latest: dict[int, dict[str, tuple[str, dict[str, Any]]]] = {}
+    for report in reports:  # newest first
+        for number, category in (report["results"] or {}).items():
+            latest.setdefault(number, {}).setdefault(report["provider"], (category, report))
+    return latest
+
+
+def _result_cell(results: dict[str, tuple[str, dict[str, Any]]], provider: str) -> str:
+    if provider not in results:
+        return "–"
+    category, report = results[provider]
+    return f"[{category}]({report['link']})"
+
+
+def _title(entries: dict[int, dict[str, Any]] | None, number: int) -> str:
+    return (_plain(str(entries.get(number, {}).get("title", ""))) if entries else "") or "–"
+
+
+def _issue_rows(numbers: list[int], latest: dict[int, dict[str, tuple[str, dict[str, Any]]]],
+                entries: dict[int, dict[str, Any]] | None) -> list[str]:
+    lines = ["| Issue | Title | " + " | ".join(name for _, name in PROVIDER_NAMES) + " |",
+             "|---|---|" + "---|" * len(PROVIDER_NAMES)]
+    for number in numbers:
+        cells = [_result_cell(latest[number], key) for key, _ in PROVIDER_NAMES]
+        lines.append(f"| [#{number}]({UPSTREAM_ISSUES}{number}) | {_title(entries, number)} | "
+                     + " | ".join(cells) + " |")
+    return lines
+
+
 def status_lines(reports: list[dict[str, Any]], snapshot_dir: Path | None) -> list[str]:
-    """The issues that can probably be closed, by category, from the latest result per issue."""
-    latest: dict[int, tuple[str, dict[str, Any]]] = {}
+    """The issues that can probably be closed, by category, from the latest result per provider."""
+    latest = latest_results(reports)
+    entries, created = _snapshot(snapshot_dir)
+    # The category of an issue: the newest result that can close it (reports are newest first).
+    category_of: dict[int, str] = {}
     for report in reports:
         for number, category in (report["results"] or {}).items():
-            latest.setdefault(number, (category, report))
-    entries, created = _snapshot(snapshot_dir)
-    closed = sorted(number for number, (category, _) in latest.items()
-                    if category in CLOSABLE and entries is not None and number not in entries)
+            if category in CLOSABLE and number not in category_of \
+                    and latest[number].get(report["provider"], ("",))[0] == category:
+                category_of[number] = category
+    closed = sorted(number for number in category_of if entries is not None and number not in entries)
     lines = [
         "## Issues that can probably be closed",
         "",
-        "The latest result per issue, by category; a later run that keeps an issue open removes it here.",
+        "Issues whose latest result of at least one provider says they can be closed, by category;",
+        "a later run of the same provider that keeps an issue open removes it here. The columns show",
+        "the latest result of each provider with a link to its report.",
     ]
     if closed:
-        lines.append(f"Left out: {len(closed)} issues that are no longer open in the issue snapshot"
-                     f"{' of ' + created if created else ''}.")
+        lines += ["", f"Left out: {len(closed)} issues that are no longer open in the issue snapshot"
+                  f"{' of ' + created if created else ''}."]
     for key in CLOSABLE:
-        rows = sorted(number for number, (category, _) in latest.items()
+        rows = sorted(number for number, category in category_of.items()
                       if category == key and number not in closed)
         lines += ["", f"### {CLOSABLE_HEADINGS[key]} ({len(rows)})", ""]
-        if not rows:
-            lines.append("None.")
-            continue
-        lines += ["| Issue | Title | Report |", "|---|---|---|"]
-        for number in rows:
-            report = latest[number][1]
-            title = _plain(str(entries.get(number, {}).get("title", ""))) if entries else ""
-            lines.append(f"| [#{number}]({UPSTREAM_ISSUES}{number}) | {title or '–'} | "
-                         f"[{report['title']}]({report['link']}) |")
+        lines += _issue_rows(rows, latest, entries) if rows else ["None."]
     return lines
+
+
+def compare_markdown(requests_dir: Path, index_dir: Path, snapshot_dir: Path | None = None) -> str:
+    """Copilot and Claude side by side for the issues both have checked."""
+    reports = read_reports(requests_dir, index_dir)
+    latest = latest_results(reports)
+    entries, _ = _snapshot(snapshot_dir)
+    both = sorted(number for number, results in latest.items()
+                  if all(key in results for key, _ in PROVIDER_NAMES))
+    same = [number for number in both if len({latest[number][key][0] for key, _ in PROVIDER_NAMES}) == 1]
+    different = [number for number in both if number not in same]
+    keys = list(CATEGORIES)
+    body = [
+        f"## Summary ({len(both)})",
+        "",
+        f"Issues checked by both: {len(both)}; same result: {len(same)}"
+        + (f" ({round(100 * len(same) / len(both))} %)" if both else "")
+        + f"; different result: {len(different)}.",
+        "",
+        "Number of issues per pair of results (rows: Copilot, columns: Claude):",
+        "",
+        "| Copilot \\ Claude | " + " | ".join(keys) + " |",
+        "|---|" + "---|" * len(keys),
+    ]
+    for row in keys:
+        counts = [sum(1 for number in both if latest[number]["copilot"][0] == row
+                      and latest[number]["claude"][0] == column) for column in keys]
+        body.append(f"| {row} | " + " | ".join(str(count) if count else "·" for count in counts) + " |")
+    body += ["", f"## Different results ({len(different)})", ""]
+    body += _issue_rows(different, latest, entries) if different else ["None."]
+    body += ["", f"## Same result ({len(same)})", ""]
+    body += _issue_rows(same, latest, entries) if same else ["None."]
+    lines = [
+        "# Issue cleanup: Copilot and Claude compared",
+        "",
+        "Written by the workflow together with [cleanup.md](cleanup.md); do not edit by hand. Only issues",
+        "that both providers have checked, each with its latest result and a link to the report.",
+        "",
+    ]
+    return "\n".join(lines + table_of_contents(body) + body) + "\n"
 
 
 def index_markdown(requests_dir: Path, index_dir: Path, snapshot_dir: Path | None = None) -> str:
@@ -314,13 +387,21 @@ def index_markdown(requests_dir: Path, index_dir: Path, snapshot_dir: Path | Non
     return "\n".join(lines + table_of_contents(body) + body) + "\n"
 
 
-def write_index(requests_dir: Path, index_path: Path, snapshot_dir: Path | None = None) -> str:
-    """Write the overview of all cleanup reports and return a one-line summary."""
-    if index_path.is_symlink():
-        raise CleanupError(f"{index_path} is a symbolic link")
+def write_index(requests_dir: Path, index_path: Path, snapshot_dir: Path | None = None,
+                compare_path: Path | None = None) -> str:
+    """Write the overview (and the comparison) of all cleanup reports; return a one-line summary."""
+    for path in (index_path, compare_path):
+        if path is not None and path.is_symlink():
+            raise CleanupError(f"{path} is a symbolic link")
     index_path.parent.mkdir(parents=True, exist_ok=True)
     index_path.write_text(index_markdown(requests_dir, index_path.parent, snapshot_dir), encoding="utf-8")
-    return f"wrote {index_path} with {len(report_paths(requests_dir))} reports"
+    summary = f"wrote {index_path} with {len(report_paths(requests_dir))} reports"
+    if compare_path is not None:
+        compare_path.parent.mkdir(parents=True, exist_ok=True)
+        compare_path.write_text(compare_markdown(requests_dir, compare_path.parent, snapshot_dir),
+                                encoding="utf-8")
+        summary += f" and {compare_path}"
+    return summary
 
 
 def snapshot_field(state: dict[str, dict[str, str]], number: int) -> str:
@@ -347,13 +428,15 @@ def main(argv: list[str] | None = None) -> int:
                               help="folder holding the cleanup requests and their reports")
     index_parser.add_argument("--index", type=Path,
                               default=Path("ai/issues") / INDEX_FILE)
+    index_parser.add_argument("--compare", type=Path,
+                              default=Path("ai/issues") / COMPARE_FILE)
     index_parser.add_argument("--issues", type=Path, default=Path("ai/issues"),
                               help="snapshot directory, for titles and to leave out closed issues")
     args = parser.parse_args(argv)
 
     if args.command == "index":
         try:
-            print(write_index(args.requests, args.index, args.issues))
+            print(write_index(args.requests, args.index, args.issues, args.compare))
         except (CleanupError, OSError) as exc:
             print(f"Cannot write the cleanup index: {exc}", file=sys.stderr)
             return 1

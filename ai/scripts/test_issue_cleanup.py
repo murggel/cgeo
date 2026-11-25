@@ -73,7 +73,7 @@ class IndexTest(unittest.TestCase):
 
     def test_status_tables_latest_result_and_closed_left_out(self):
         self.write("2026-11-20", "report.md", report("claude", "#11 fixed\n#12 fixed\n#13 waiting\n#15 fixed\n"))
-        self.write("2026-11-21", "report.md", report("copilot", "#12 keep-open\n#14 duplicate\n#13 obsolete\n"))
+        self.write("2026-11-21", "report.md", report("claude", "#12 keep-open\n#14 duplicate\n#13 obsolete\n"))
         snapshot = self.snapshot(
             "#11 | labels: Bug | created: 2020-01-01 | updated: 2020-01-02 | title: Crash [map] | x | summary: s",
             "#12 | labels: | title: Twelve | summary: s",
@@ -84,12 +84,12 @@ class IndexTest(unittest.TestCase):
         self.assertLess(text.index("## Issues that can probably be closed"), text.index("## Reports"))
         self.assertIn("Left out: 1 issues that are no longer open in the issue snapshot of 2026-12-01.", text)
         fixed = text[text.index("### Probably fixed (1)"):text.index("### Duplicates (1)")]
-        self.assertIn("| [#11](https://github.com/cgeo/cgeo/issues/11) | Crash \\[map\\] | "
-                      "[2026-11-20](../requests/cleanup/2026-11-20/report.md) |", fixed)
+        self.assertIn("| [#11](https://github.com/cgeo/cgeo/issues/11) | Crash \\[map\\] | – | "
+                      "[fixed](../requests/cleanup/2026-11-20/report.md) |", fixed)
         self.assertNotIn("#12", fixed)
         self.assertNotIn("#15", fixed)
         self.assertIn("### No longer applicable (1)", text)
-        self.assertIn("| [#13](https://github.com/cgeo/cgeo/issues/13) | Thirteen | [2026-11-21]", text)
+        self.assertIn("| [#13](https://github.com/cgeo/cgeo/issues/13) | Thirteen | – | [obsolete](", text)
         self.assertIn("### Waiting for information (0)\n\nNone.", text)
         self.assertIn("## Contents\n\n- [Issues that can probably be closed](#issues-that-can-probably-be-closed)\n"
                       "  - [Probably fixed (1)](#probably-fixed-1)\n", text)
@@ -99,7 +99,7 @@ class IndexTest(unittest.TestCase):
     def test_status_without_snapshot_keeps_all(self):
         self.write("2026-11-20", "report.md", report("claude", "#15 fixed\n"))
         issue_cleanup.write_index(self.requests, self.index, self.index.parent / "missing")
-        self.assertIn("| [#15](https://github.com/cgeo/cgeo/issues/15) | – | [2026-11-20]",
+        self.assertIn("| [#15](https://github.com/cgeo/cgeo/issues/15) | – | – | [fixed](",
                       self.index.read_text(encoding="utf-8"))
 
     @unittest.skipUnless(hasattr(os, "symlink"), "symbolic links not available")
@@ -120,6 +120,31 @@ class IndexTest(unittest.TestCase):
         os.symlink(outside, self.index)
         with self.assertRaises(issue_cleanup.CleanupError):
             issue_cleanup.write_index(self.requests, self.index)
+
+
+class CompareTest(unittest.TestCase):
+    setUp = IndexTest.setUp
+    tearDown = IndexTest.tearDown
+    write = IndexTest.write
+
+    def test_both_providers(self):
+        self.write("2026-11-26", "report.md", report("copilot 1.0", "#1 fixed\n#2 keep-open\n#3 waiting\n#4 fixed\n"))
+        self.write("2026-11-26-claude", "report.md", report("claude", "#1 fixed\n#2 duplicate\n#3 waiting\n#5 fixed\n"))
+        compare = self.index.parent / "cleanup-compare.md"
+        issue_cleanup.write_index(self.requests, self.index, None, compare)
+        text = compare.read_text(encoding="utf-8")
+        self.assertIn("Issues checked by both: 3; same result: 2 (67 %); different result: 1.", text)
+        self.assertIn("| keep-open | · | 1 | · | · | · |", text)
+        self.assertIn("| fixed | 1 | · | · | · | · |", text)
+        different = text[text.index("## Different results (1)"):text.index("## Same result (2)")]
+        self.assertIn("| [#2](https://github.com/cgeo/cgeo/issues/2) | – | "
+                      "[keep-open](../requests/cleanup/2026-11-26/report.md) | "
+                      "[duplicate](../requests/cleanup/2026-11-26-claude/report.md) |", different)
+        self.assertNotIn("#4", text)
+        self.assertIn("- [Different results (1)](#different-results-1)", text)
+        overview = self.index.read_text(encoding="utf-8")
+        self.assertIn("### Duplicates (1)", overview)
+        self.assertIn("### Probably fixed (3)", overview)
 
 
 if __name__ == "__main__":
