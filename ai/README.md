@@ -376,7 +376,7 @@ Possible future hardening: if the workflow is ever opened to other users or trig
 | Path | Purpose |
 |---|---|
 | `.github/workflows/ai-assistant-murggel.yml` | The workflow: validate, one job per provider (`run-copilot`, `run-claude`), save. |
-| `scripts/validate_request.py` | Checks `request.yml`. The **only** place that defines allowed tasks, providers, repositories and folder names. |
+| `scripts/validate_request.py` | Checks `request.yml`. The **only** place that defines allowed tasks, providers, repositories and folder names. With `--commit-message` it also rejects commit messages with issue or PR references (`#<number>`, `GH-<number>`, issue or PR URLs), which GitHub would link to cgeo/cgeo. |
 | `scripts/fetch_context.py` | Downloads issue or PR data from the GitHub API (with paging, error handling and size limit) and formats the branch-review context. |
 | `scripts/issue_cleanup.py` | Selects the issues for `cleanup-issues`, records their results in `issues/cleanup.json` and writes the overview `issues/cleanup.md`. |
 | `scripts/fix_history.py` | Finds the pull requests of the issues that `cleanup-issues` considers fixed and lists them in the report. |

@@ -84,6 +84,8 @@ jobs:
         env:
           BEFORE_SHA: ${{ github.event.before }}
           AFTER_SHA: ${{ github.sha }}
+          # Messages of all pushed commits, for the issue reference check.
+          PUSHED_COMMITS: ${{ toJSON(github.event.commits) }}
         run: |
           request_file="(unknown)"
 
@@ -133,7 +135,14 @@ jobs:
           fi
           request_file="${request_files[0]}"
 
-          if ! result=$(python ai/scripts/validate_request.py "$request_file" --github-output "$GITHUB_OUTPUT" 2>&1); then
+          # GitHub has already linked a referencing commit to the issue or pull
+          # request in cgeo/cgeo; failing here cannot undo that, but makes it visible.
+          message_args=()
+          while IFS= read -r -d '' commit_message; do
+            message_args+=(--commit-message "$commit_message")
+          done < <(jq -j '.[].message + "\u0000"' <<< "$PUSHED_COMMITS")
+          if ! result=$(python ai/scripts/validate_request.py "$request_file" "${message_args[@]}" \
+              --github-output "$GITHUB_OUTPUT" 2>&1); then
             fail "$result"
           fi
           printf '## AI request validated\n\n%s\n' "$result" >> "$GITHUB_STEP_SUMMARY"
@@ -517,6 +526,10 @@ jobs:
             cleanup-issues) message="Add ${PROVIDER^} issue cleanup report ${REQUEST_DIR##*/}" ;;
             *) message="Add ${PROVIDER^} smoke-test report" ;;
           esac
+          if ! python3 ai/scripts/validate_request.py --commit-message "$message"; then
+            echo "::error::The report commit message would reference an issue or pull request in cgeo/cgeo. The report is still available as the 'report' artifact."
+            exit 1
+          fi
           # Cleanup runs write one report per batch into the request folder; their results go
           # to ai/issues/cleanup.json and the overview of all reports to ai/issues/cleanup.md.
           report_paths=("$REQUEST_DIR/report.md")
