@@ -477,7 +477,7 @@ How it works:
 1. **Selection (by rules, without AI):** from `ai/issues/issues.md`, the issues with the oldest last activity first, optionally only those with one of the `labels`. Issues checked by a cleanup run in the last `skip_days` (default 183) are skipped, unless they have had activity since.
 2. **Download:** each selected issue with description, all comments, state and labels.
 3. **Check (AI):** against the full text, the current `cgeo/cgeo` code and the snapshot (for duplicates). Categories:
-   - *Probably fixed:* the problem no longer exists in the code, or the feature exists.
+   - *Probably fixed:* the problem no longer exists in the code, or the feature exists. Only `master` counts: a fix that is only on `release` or in an open pull request keeps the issue open.
    - *Duplicates:* another issue covers the same, which one is named.
    - *No longer applicable:* feature, connector, service or code path was removed or reworked.
    - *Waiting for information:* the last substantive comment asks the reporter for something, the reporter has not answered, and that comment is at least `waiting_months` (default 6) old. The label *Feedback required* means feedback from other developers and is no reason on its own.
