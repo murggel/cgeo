@@ -103,10 +103,12 @@ Only when the validator exits with code 0:
 
 ```bash
 git add ai/requests/<subject>/<id>/request.yml
-git commit -m "AI request: <short description>"
+git commit -m "AI request: <task> <subject folder>"   # e.g. "AI request: review-pr pr-18952"
 git pull --rebase origin dev/ai-workflows
 git push origin dev/ai-workflows
 ```
+
+- **No issue or PR references in commit messages:** GitHub links a commit message that contains `#<number>`, `<owner>/<repo>#<number>` or an issue or PR URL to that issue or PR in cgeo/cgeo, even from this fork, and the link is visible to everyone there. Never write any of these in a commit message. Name the target by its subject folder instead (`pr-18952`, `issue-12345`, `branch-improve-authorization`). Check the message before every commit.
 
 - **One file per push:** every push may contain exactly one new or changed `request.yml`. Push several requests one by one, each with its own commit and push.
 - **End of the commit message:** use the attribution lines the session prescribes.

@@ -510,10 +510,10 @@ jobs:
           done
 
           case "$TASK" in
-            analyze-issue) message="Add ${PROVIDER^} analysis report for issue #$NUMBER" ;;
-            review-pr) message="Add ${PROVIDER^} review report for PR #$NUMBER" ;;
+            analyze-issue) message="Add ${PROVIDER^} analysis report for issue-$NUMBER" ;;
+            review-pr) message="Add ${PROVIDER^} review report for pr-$NUMBER" ;;
             review-branch) message="Add ${PROVIDER^} review report for branch $REVIEW_BRANCH" ;;
-            verify-issues) message="Add ${PROVIDER^} issue verification for ${NUMBER:+#$NUMBER}${REVIEW_BRANCH}" ;;
+            verify-issues) message="Add ${PROVIDER^} issue verification for $(basename "$(dirname "$REQUEST_DIR")")" ;;
             cleanup-issues) message="Add ${PROVIDER^} issue cleanup report ${REQUEST_DIR##*/}" ;;
             *) message="Add ${PROVIDER^} smoke-test report" ;;
           esac
