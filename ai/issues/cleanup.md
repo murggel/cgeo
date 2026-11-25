@@ -5,6 +5,15 @@ reports are in the request folders `ai/requests/cleanup/<name>/` (`report.md`, f
 of the same night `report-2.md`, ...). The AI closes nothing: check each issue in its report
 before closing it.
 
+## Contents
+
+- [Issues that can probably be closed](#issues-that-can-probably-be-closed)
+  - [Probably fixed (39)](#probably-fixed-39)
+  - [Duplicates (13)](#duplicates-13)
+  - [No longer applicable (10)](#no-longer-applicable-10)
+  - [Waiting for information (7)](#waiting-for-information-7)
+- [Reports (29)](#reports-29)
+
 ## Issues that can probably be closed
 
 The latest result per issue, by category; a later run that keeps an issue open removes it here.
@@ -98,7 +107,7 @@ The latest result per issue, by category; a later run that keeps an issue open r
 | [#16977](https://github.com/cgeo/cgeo/issues/16977) | Tests -\> request was not successful: message=Forbidden | [2026-11-25 (2)](../requests/cleanup/2026-11-25/report-2.md) |
 | [#17568](https://github.com/cgeo/cgeo/issues/17568) | \[Nightly\] Long distance routing behaves erratic | [2026-11-25 (5)](../requests/cleanup/2026-11-25/report-5.md) |
 
-## Reports
+## Reports (29)
 
 | Report | Provider | Checked | Fixed | Duplicates | Obsolete | Waiting | Can probably be closed |
 |---|---|---|---|---|---|---|---|

@@ -91,6 +91,10 @@ class IndexTest(unittest.TestCase):
         self.assertIn("### No longer applicable (1)", text)
         self.assertIn("| [#13](https://github.com/cgeo/cgeo/issues/13) | Thirteen | [2026-11-21]", text)
         self.assertIn("### Waiting for information (0)\n\nNone.", text)
+        self.assertIn("## Contents\n\n- [Issues that can probably be closed](#issues-that-can-probably-be-closed)\n"
+                      "  - [Probably fixed (1)](#probably-fixed-1)\n", text)
+        self.assertIn("- [Reports (2)](#reports-2)\n", text)
+        self.assertLess(text.index("## Contents"), text.index("## Issues that can probably be closed"))
 
     def test_status_without_snapshot_keeps_all(self):
         self.write("2026-11-20", "report.md", report("claude", "#15 fixed\n"))

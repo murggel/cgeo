@@ -230,6 +230,22 @@ def _snapshot(snapshot_dir: Path | None) -> tuple[dict[int, dict[str, Any]] | No
     return entries, str(created)[:10]
 
 
+def _anchor(heading: str) -> str:
+    """The anchor GitHub gives a heading: lower case, punctuation removed, spaces as hyphens."""
+    return re.sub(r"[^a-z0-9 _-]", "", heading.lower()).replace(" ", "-")
+
+
+def table_of_contents(lines: list[str]) -> list[str]:
+    """Links to the ## and ### headings of the overview."""
+    toc = ["## Contents", ""]
+    for line in lines:
+        level, _, heading = line.partition(" ")
+        if level in ("##", "###"):
+            indent = "  " if level == "###" else ""
+            toc.append(f"{indent}- [{heading}](#{_anchor(heading)})")
+    return toc + [""]
+
+
 def status_lines(reports: list[dict[str, Any]], snapshot_dir: Path | None) -> list[str]:
     """The issues that can probably be closed, by category, from the latest result per issue."""
     latest: dict[int, tuple[str, dict[str, Any]]] = {}
@@ -275,10 +291,10 @@ def index_markdown(requests_dir: Path, index_dir: Path, snapshot_dir: Path | Non
         "before closing it.",
         "",
     ]
-    lines += status_lines(reports, snapshot_dir)
-    lines += [
+    body = status_lines(reports, snapshot_dir)
+    body += [
         "",
-        "## Reports",
+        f"## Reports ({len(reports)})",
         "",
         "| Report | Provider | Checked | Fixed | Duplicates | Obsolete | Waiting | Can probably be closed |",
         "|---|---|---|---|---|---|---|---|",
@@ -287,15 +303,15 @@ def index_markdown(requests_dir: Path, index_dir: Path, snapshot_dir: Path | Non
         row = [f"[{report['title']}]({report['link']})", report["provider"]]
         results = report["results"]
         if results is None:
-            lines.append("| " + " | ".join(row + ["–"] * 5 + ["no result block"]) + " |")
+            body.append("| " + " | ".join(row + ["–"] * 5 + ["no result block"]) + " |")
             continue
         row.append(str(len(results)))
         row += [str(sum(1 for category in results.values() if category == key)) for key in CLOSABLE]
         closable = [f"[#{number}]({UPSTREAM_ISSUES}{number}) {category}"
                     for number, category in results.items() if category in CLOSABLE]
         row.append(", ".join(closable) or "–")
-        lines.append("| " + " | ".join(row) + " |")
-    return "\n".join(lines) + "\n"
+        body.append("| " + " | ".join(row) + " |")
+    return "\n".join(lines + table_of_contents(body) + body) + "\n"
 
 
 def write_index(requests_dir: Path, index_path: Path, snapshot_dir: Path | None = None) -> str:

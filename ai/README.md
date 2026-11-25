@@ -491,7 +491,7 @@ Costs: since June 2026 Copilot bills by tokens in GitHub AI Credits, so the cost
 
 With `provider: auto` the workflow chooses provider, number of issues and number of batches from [`ai/settings.yml`](#settings-and-schedule) and the Copilot AI Credits. Several batches give one report each in the same request folder: `report.md`, `report-2.md`, ...
 
-Overview: after every cleanup run and every issue snapshot the workflow rewrites [`ai/issues/cleanup.md`](issues/cleanup.md) from all reports under `ai/requests/cleanup/`:
+Overview: after every cleanup run and every issue snapshot the workflow rewrites [`ai/issues/cleanup.md`](issues/cleanup.md) from all reports under `ai/requests/cleanup/`. A table of contents with the number of entries per section comes first, then:
 
 - **Issues that can probably be closed**, one table per category (probably fixed, duplicates, no longer applicable, waiting for information) with issue, title from the snapshot and a link to the report. Only the latest result per issue counts: a later run that keeps an issue open removes it here. Issues that are no longer open in the issue snapshot are left out, so closed issues disappear with the next snapshot.
 - **Reports**, newest first: provider, number of checked issues, counts per category and the issues that can probably be closed.
