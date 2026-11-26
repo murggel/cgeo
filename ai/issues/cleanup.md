@@ -9,10 +9,10 @@ before closing it.
 
 - [Issues that can probably be closed](#issues-that-can-probably-be-closed)
   - [Probably fixed (39)](#probably-fixed-39)
-  - [Duplicates (13)](#duplicates-13)
-  - [No longer applicable (10)](#no-longer-applicable-10)
-  - [Waiting for information (7)](#waiting-for-information-7)
-- [Reports (29)](#reports-29)
+  - [Duplicates (19)](#duplicates-19)
+  - [No longer applicable (11)](#no-longer-applicable-11)
+  - [Waiting for information (10)](#waiting-for-information-10)
+- [Reports (34)](#reports-34)
 
 ## Issues that can probably be closed
 
@@ -64,7 +64,7 @@ the latest result of each provider with a link to its report.
 | [#17375](https://github.com/cgeo/cgeo/issues/17375) | Upgrade to SDK35: Edge-to-Edge | [fixed](../requests/cleanup/2026-11-25/report-4.md) | – |
 | [#17485](https://github.com/cgeo/cgeo/issues/17485) | NPE in PersistableFolder.registerForIndirectChange | [fixed](../requests/cleanup/2026-11-25/report-5.md) | – |
 
-### Duplicates (13)
+### Duplicates (19)
 
 | Issue | Title | Copilot | Claude |
 |---|---|---|---|
@@ -77,12 +77,18 @@ the latest result of each provider with a link to its report.
 | [#14931](https://github.com/cgeo/cgeo/issues/14931) | update only cache state | [duplicate](../requests/cleanup/2026-11-24/report-5.md) | – |
 | [#15313](https://github.com/cgeo/cgeo/issues/15313) | wording of link to images (minor) | [duplicate](../requests/cleanup/2026-11-24/report.md) | – |
 | [#15388](https://github.com/cgeo/cgeo/issues/15388) | Geokrety - support rate limiting system | [duplicate](../requests/cleanup/2026-11-24/report-3.md) | – |
+| [#15879](https://github.com/cgeo/cgeo/issues/15879) | Allow placeholders in default caption for log images | [duplicate](../requests/cleanup/2026-11-26/report-2.md) | – |
 | [#15924](https://github.com/cgeo/cgeo/issues/15924) | possibility to add waypoint for projection/offset | [duplicate](../requests/cleanup/2026-11-24/report-3.md) | – |
 | [#16187](https://github.com/cgeo/cgeo/issues/16187) | Share Intent Receiver: track.gpx | [duplicate](../requests/cleanup/2026-11-24/report-4.md) | – |
 | [#16516](https://github.com/cgeo/cgeo/issues/16516) | GC.com: load images from "Image Gallery" | [duplicate](../requests/cleanup/2026-11-24/report-5.md) | – |
+| [#17215](https://github.com/cgeo/cgeo/issues/17215) | IllegalArgumentException and OutOfMemoryError in AbstractActivity.onStart | [duplicate](../requests/cleanup/2026-11-26/report-3.md) | – |
+| [#17242](https://github.com/cgeo/cgeo/issues/17242) | Support \[NAME\] and other placeholders in default image caption setting | [duplicate](../requests/cleanup/2026-11-26/report-2.md) | – |
 | [#17423](https://github.com/cgeo/cgeo/issues/17423) | Improve UI for loading tracks versus routes | [duplicate](../requests/cleanup/2026-11-25/report-5.md) | – |
+| [#17541](https://github.com/cgeo/cgeo/issues/17541) | Audio and video calls using \`c:geo\` or \`c:geo GPX import\` apps | [duplicate](../requests/cleanup/2026-11-26/report.md) | – |
+| [#17744](https://github.com/cgeo/cgeo/issues/17744) | Map shows all caches when no cache types are selected in filters | [duplicate](../requests/cleanup/2026-11-26/report.md) | – |
+| [#17747](https://github.com/cgeo/cgeo/issues/17747) | Feature Request: Improve “Special” Cache Types in Filters | [duplicate](../requests/cleanup/2026-11-26/report.md) | – |
 
-### No longer applicable (10)
+### No longer applicable (11)
 
 | Issue | Title | Copilot | Claude |
 |---|---|---|---|
@@ -96,8 +102,9 @@ the latest result of each provider with a link to its report.
 | [#10568](https://github.com/cgeo/cgeo/issues/10568) | Filtering for ALC fails after "Load more" in search results | [obsolete](../requests/cleanup/2026-11-21/report-5.md) | – |
 | [#10656](https://github.com/cgeo/cgeo/issues/10656) | catch IllegalArgumentException for EC active without login information | [obsolete](../requests/cleanup/2026-11-21/report-5.md) | – |
 | [#15358](https://github.com/cgeo/cgeo/issues/15358) | ToolbarWidgetWrapper: Progress display unsupported | [obsolete](../requests/cleanup/2026-11-24/report.md) | – |
+| [#18129](https://github.com/cgeo/cgeo/issues/18129) | GH Workflow check-secrets - deprecation warning | [obsolete](../requests/cleanup/2026-11-26/report-4.md) | – |
 
-### Waiting for information (7)
+### Waiting for information (10)
 
 | Issue | Title | Copilot | Claude |
 |---|---|---|---|
@@ -106,13 +113,21 @@ the latest result of each provider with a link to its report.
 | [#11927](https://github.com/cgeo/cgeo/issues/11927) | \[Nightly\] App Crash when leaving or rotating Live Map while it's still rendering | [waiting](../requests/cleanup/2026-11-23/report-5.md) | – |
 | [#16191](https://github.com/cgeo/cgeo/issues/16191) | found status of ALC is not automatically set | [waiting](../requests/cleanup/2026-11-25/report-2.md) | – |
 | [#16362](https://github.com/cgeo/cgeo/issues/16362) | Lines between tiles on Unified MF | [waiting](../requests/cleanup/2026-11-24/report-4.md) | – |
+| [#16744](https://github.com/cgeo/cgeo/issues/16744) | No proximity alert for Final? | [waiting](../requests/cleanup/2026-11-26/report.md) | – |
 | [#16977](https://github.com/cgeo/cgeo/issues/16977) | Tests -\> request was not successful: message=Forbidden | [waiting](../requests/cleanup/2026-11-25/report-2.md) | – |
 | [#17568](https://github.com/cgeo/cgeo/issues/17568) | \[Nightly\] Long distance routing behaves erratic | [waiting](../requests/cleanup/2026-11-25/report-5.md) | – |
+| [#17737](https://github.com/cgeo/cgeo/issues/17737) | Problems with activity stack | [waiting](../requests/cleanup/2026-11-26/report.md) | – |
+| [#17739](https://github.com/cgeo/cgeo/issues/17739) | Unexpected result when sorting a search result | [waiting](../requests/cleanup/2026-11-26/report-2.md) | – |
 
-## Reports (29)
+## Reports (34)
 
 | Report | Provider | Checked | Fixed | Duplicates | Obsolete | Waiting | Can probably be closed |
 |---|---|---|---|---|---|---|---|
+| [2026-11-26 (5)](../requests/cleanup/2026-11-26/report-5.md) | copilot | – | – | – | – | – | no result block |
+| [2026-11-26 (4)](../requests/cleanup/2026-11-26/report-4.md) | copilot | 20 | 0 | 0 | 1 | 0 | [#18129](https://github.com/cgeo/cgeo/issues/18129) obsolete |
+| [2026-11-26 (3)](../requests/cleanup/2026-11-26/report-3.md) | copilot | 20 | 0 | 1 | 0 | 0 | [#17215](https://github.com/cgeo/cgeo/issues/17215) duplicate |
+| [2026-11-26 (2)](../requests/cleanup/2026-11-26/report-2.md) | copilot | 20 | 0 | 2 | 0 | 1 | [#17739](https://github.com/cgeo/cgeo/issues/17739) waiting, [#15879](https://github.com/cgeo/cgeo/issues/15879) duplicate, [#17242](https://github.com/cgeo/cgeo/issues/17242) duplicate |
+| [2026-11-26](../requests/cleanup/2026-11-26/report.md) | copilot | 20 | 0 | 3 | 0 | 2 | [#16744](https://github.com/cgeo/cgeo/issues/16744) waiting, [#17541](https://github.com/cgeo/cgeo/issues/17541) duplicate, [#17744](https://github.com/cgeo/cgeo/issues/17744) duplicate, [#17747](https://github.com/cgeo/cgeo/issues/17747) duplicate, [#17737](https://github.com/cgeo/cgeo/issues/17737) waiting |
 | [2026-11-25 (5)](../requests/cleanup/2026-11-25/report-5.md) | copilot | 20 | 1 | 1 | 0 | 1 | [#17423](https://github.com/cgeo/cgeo/issues/17423) duplicate, [#17485](https://github.com/cgeo/cgeo/issues/17485) fixed, [#17568](https://github.com/cgeo/cgeo/issues/17568) waiting |
 | [2026-11-25 (4)](../requests/cleanup/2026-11-25/report-4.md) | copilot | 20 | 2 | 0 | 0 | 0 | [#12077](https://github.com/cgeo/cgeo/issues/12077) fixed, [#17375](https://github.com/cgeo/cgeo/issues/17375) fixed |
 | [2026-11-25 (3)](../requests/cleanup/2026-11-25/report-3.md) | copilot | 20 | 1 | 0 | 0 | 0 | [#17041](https://github.com/cgeo/cgeo/issues/17041) fixed |
