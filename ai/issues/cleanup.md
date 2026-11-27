@@ -8,11 +8,11 @@ before closing it.
 ## Contents
 
 - [Issues that can probably be closed](#issues-that-can-probably-be-closed)
-  - [Probably fixed (44)](#probably-fixed-44)
+  - [Probably fixed (46)](#probably-fixed-46)
   - [Duplicates (20)](#duplicates-20)
   - [No longer applicable (11)](#no-longer-applicable-11)
   - [Waiting for information (10)](#waiting-for-information-10)
-- [Reports (40)](#reports-40)
+- [Reports (41)](#reports-41)
 
 ## Issues that can probably be closed
 
@@ -20,7 +20,7 @@ Issues whose latest result of at least one provider says they can be closed, by 
 a later run of the same provider that keeps an issue open removes it here. The columns show
 the latest result of each provider with a link to its report.
 
-### Probably fixed (44)
+### Probably fixed (46)
 
 | Issue | Title | Copilot | Claude |
 |---|---|---|---|
@@ -60,14 +60,16 @@ the latest result of each provider with a link to its report.
 | [#14989](https://github.com/cgeo/cgeo/issues/14989) | No notification dot shown when directly launching into map | [fixed](../requests/cleanup/2026-11-23/report-5.md) | – |
 | [#15071](https://github.com/cgeo/cgeo/issues/15071) | Hyperlink in personal note is not parsed correctly | [fixed](../requests/cleanup/2026-11-23/report-5.md) | – |
 | [#16731](https://github.com/cgeo/cgeo/issues/16731) | OOM in detecting file type | [fixed](../requests/cleanup/2026-11-24/report-5.md) | – |
+| [#16751](https://github.com/cgeo/cgeo/issues/16751) | Android 16 / targetSDK 36 | [keep-open](../requests/cleanup/2026-11-27/report.md) | [fixed](../requests/cleanup/2026-11-27-claude/report.md) |
 | [#17041](https://github.com/cgeo/cgeo/issues/17041) | Beta version: IllegalStateException / missing context in DescriptionViewCreator | [fixed](../requests/cleanup/2026-11-25/report-3.md) | – |
 | [#17093](https://github.com/cgeo/cgeo/issues/17093) | RuntimeException in WherigoGameService.onCreate | [fixed](../requests/cleanup/2026-11-25/report-2.md) | – |
-| [#17105](https://github.com/cgeo/cgeo/issues/17105) | Ordered HTML list not displayed as such | [fixed](../requests/cleanup/2026-11-27/report.md) | – |
+| [#17105](https://github.com/cgeo/cgeo/issues/17105) | Ordered HTML list not displayed as such | [fixed](../requests/cleanup/2026-11-27/report.md) | [keep-open](../requests/cleanup/2026-11-27-claude/report.md) |
 | [#17375](https://github.com/cgeo/cgeo/issues/17375) | Upgrade to SDK35: Edge-to-Edge | [fixed](../requests/cleanup/2026-11-25/report-4.md) | – |
 | [#17485](https://github.com/cgeo/cgeo/issues/17485) | NPE in PersistableFolder.registerForIndirectChange | [fixed](../requests/cleanup/2026-11-25/report-5.md) | – |
 | [#17488](https://github.com/cgeo/cgeo/issues/17488) | Many ANR happening on c:geo startup | [keep-open](../requests/cleanup/2026-11-26/report.md) | [fixed](../requests/cleanup/2026-11-26-claude/report.md) |
+| [#17738](https://github.com/cgeo/cgeo/issues/17738) | Add "New in version" (What's New) info to F-Droid releases | [keep-open](../requests/cleanup/2026-11-27/report-2.md) | [fixed](../requests/cleanup/2026-11-27-claude/report.md) |
 | [#17995](https://github.com/cgeo/cgeo/issues/17995) | \[Wherigo / SAF\] Downloading cartridge creates duplicate "wherigo (n)" folders instead of using exis… | [fixed](../requests/cleanup/2026-11-27/report-2.md) | – |
-| [#18058](https://github.com/cgeo/cgeo/issues/18058) | Add a "cache placement" view to the map | [fixed](../requests/cleanup/2026-11-27/report.md) | – |
+| [#18058](https://github.com/cgeo/cgeo/issues/18058) | Add a "cache placement" view to the map | [fixed](../requests/cleanup/2026-11-27/report.md) | [keep-open](../requests/cleanup/2026-11-27-claude/report.md) |
 
 ### Duplicates (20)
 
@@ -125,10 +127,11 @@ the latest result of each provider with a link to its report.
 | [#17737](https://github.com/cgeo/cgeo/issues/17737) | Problems with activity stack | [waiting](../requests/cleanup/2026-11-26/report.md) | [keep-open](../requests/cleanup/2026-11-26-claude/report.md) |
 | [#17739](https://github.com/cgeo/cgeo/issues/17739) | Unexpected result when sorting a search result | [waiting](../requests/cleanup/2026-11-26/report-2.md) | [waiting](../requests/cleanup/2026-11-26-claude/report.md) |
 
-## Reports (40)
+## Reports (41)
 
 | Report | Provider | Checked | Fixed | Duplicates | Obsolete | Waiting | Can probably be closed |
 |---|---|---|---|---|---|---|---|
+| [2026-11-27-claude](../requests/cleanup/2026-11-27-claude/report.md) | claude | 30 | 2 | 0 | 0 | 0 | [#16751](https://github.com/cgeo/cgeo/issues/16751) fixed, [#17738](https://github.com/cgeo/cgeo/issues/17738) fixed |
 | [2026-11-27 (5)](../requests/cleanup/2026-11-27/report-5.md) | copilot | 20 | 0 | 0 | 0 | 0 | – |
 | [2026-11-27 (4)](../requests/cleanup/2026-11-27/report-4.md) | copilot | 20 | 0 | 1 | 0 | 0 | [#14909](https://github.com/cgeo/cgeo/issues/14909) duplicate |
 | [2026-11-27 (3)](../requests/cleanup/2026-11-27/report-3.md) | copilot | 20 | 0 | 0 | 0 | 0 | – |
