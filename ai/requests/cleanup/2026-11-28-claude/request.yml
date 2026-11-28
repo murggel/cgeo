@@ -1,0 +1,3 @@
+task: cleanup-issues
+provider: claude
+extra: true
