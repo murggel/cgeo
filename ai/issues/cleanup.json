@@ -2356,7 +2356,7 @@
   "date": "2026-11-25"
  },
  "17030": {
-  "category": "fixed",
+  "category": "keep-open",
   "date": "2026-11-28"
  },
  "17035": {
@@ -2812,7 +2812,7 @@
   "date": "2026-11-26"
  },
  "18229": {
-  "category": "fixed",
+  "category": "keep-open",
   "date": "2026-11-28"
  },
  "18233": {
@@ -3076,7 +3076,7 @@
   "date": "2026-11-28"
  },
  "18855": {
-  "category": "fixed",
+  "category": "keep-open",
   "date": "2026-11-28"
  },
  "18856": {
@@ -3136,11 +3136,11 @@
   "date": "2026-11-28"
  },
  "18895": {
-  "category": "fixed",
+  "category": "keep-open",
   "date": "2026-11-28"
  },
  "18901": {
-  "category": "fixed",
+  "category": "keep-open",
   "date": "2026-11-28"
  },
  "18908": {

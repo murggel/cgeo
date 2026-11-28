@@ -12,7 +12,7 @@ before closing it.
   - [Duplicates (20)](#duplicates-20)
   - [No longer applicable (11)](#no-longer-applicable-11)
   - [Waiting for information (10)](#waiting-for-information-10)
-- [Reports (43)](#reports-43)
+- [Reports (44)](#reports-44)
 
 ## Issues that can probably be closed
 
@@ -61,7 +61,7 @@ the latest result of each provider with a link to its report.
 | [#15071](https://github.com/cgeo/cgeo/issues/15071) | Hyperlink in personal note is not parsed correctly | [fixed](../requests/cleanup/2026-11-23/report-5.md) | – |
 | [#16731](https://github.com/cgeo/cgeo/issues/16731) | OOM in detecting file type | [fixed](../requests/cleanup/2026-11-24/report-5.md) | – |
 | [#16751](https://github.com/cgeo/cgeo/issues/16751) | Android 16 / targetSDK 36 | [keep-open](../requests/cleanup/2026-11-27/report.md) | [fixed](../requests/cleanup/2026-11-27-claude/report.md) |
-| [#17030](https://github.com/cgeo/cgeo/issues/17030) | Caches shown without log date/time in history list | [fixed](../requests/cleanup/2026-11-28/report.md) | – |
+| [#17030](https://github.com/cgeo/cgeo/issues/17030) | Caches shown without log date/time in history list | [fixed](../requests/cleanup/2026-11-28/report.md) | [keep-open](../requests/cleanup/2026-11-28-claude/report.md) |
 | [#17041](https://github.com/cgeo/cgeo/issues/17041) | Beta version: IllegalStateException / missing context in DescriptionViewCreator | [fixed](../requests/cleanup/2026-11-25/report-3.md) | – |
 | [#17093](https://github.com/cgeo/cgeo/issues/17093) | RuntimeException in WherigoGameService.onCreate | [fixed](../requests/cleanup/2026-11-25/report-2.md) | – |
 | [#17105](https://github.com/cgeo/cgeo/issues/17105) | Ordered HTML list not displayed as such | [fixed](../requests/cleanup/2026-11-27/report.md) | [keep-open](../requests/cleanup/2026-11-27-claude/report.md) |
@@ -71,10 +71,10 @@ the latest result of each provider with a link to its report.
 | [#17738](https://github.com/cgeo/cgeo/issues/17738) | Add "New in version" (What's New) info to F-Droid releases | [keep-open](../requests/cleanup/2026-11-27/report-2.md) | [fixed](../requests/cleanup/2026-11-27-claude/report.md) |
 | [#17995](https://github.com/cgeo/cgeo/issues/17995) | \[Wherigo / SAF\] Downloading cartridge creates duplicate "wherigo (n)" folders instead of using exis… | [fixed](../requests/cleanup/2026-11-27/report-2.md) | – |
 | [#18058](https://github.com/cgeo/cgeo/issues/18058) | Add a "cache placement" view to the map | [fixed](../requests/cleanup/2026-11-27/report.md) | [keep-open](../requests/cleanup/2026-11-27-claude/report.md) |
-| [#18229](https://github.com/cgeo/cgeo/issues/18229) | LOC file import hangs silently | [fixed](../requests/cleanup/2026-11-28/report-2.md) | – |
-| [#18855](https://github.com/cgeo/cgeo/issues/18855) | Wherigo text input problem | [fixed](../requests/cleanup/2026-11-28/report-2.md) | – |
-| [#18895](https://github.com/cgeo/cgeo/issues/18895) | Option: monospace font for notes | [fixed](../requests/cleanup/2026-11-28/report-2.md) | – |
-| [#18901](https://github.com/cgeo/cgeo/issues/18901) | Activity for geochecker.com not found (2026.10.08) | [fixed](../requests/cleanup/2026-11-28/report-2.md) | – |
+| [#18229](https://github.com/cgeo/cgeo/issues/18229) | LOC file import hangs silently | [fixed](../requests/cleanup/2026-11-28/report-2.md) | [keep-open](../requests/cleanup/2026-11-28-claude/report.md) |
+| [#18855](https://github.com/cgeo/cgeo/issues/18855) | Wherigo text input problem | [fixed](../requests/cleanup/2026-11-28/report-2.md) | [keep-open](../requests/cleanup/2026-11-28-claude/report.md) |
+| [#18895](https://github.com/cgeo/cgeo/issues/18895) | Option: monospace font for notes | [fixed](../requests/cleanup/2026-11-28/report-2.md) | [keep-open](../requests/cleanup/2026-11-28-claude/report.md) |
+| [#18901](https://github.com/cgeo/cgeo/issues/18901) | Activity for geochecker.com not found (2026.10.08) | [fixed](../requests/cleanup/2026-11-28/report-2.md) | [keep-open](../requests/cleanup/2026-11-28-claude/report.md) |
 
 ### Duplicates (20)
 
@@ -132,10 +132,11 @@ the latest result of each provider with a link to its report.
 | [#17737](https://github.com/cgeo/cgeo/issues/17737) | Problems with activity stack | [waiting](../requests/cleanup/2026-11-26/report.md) | [keep-open](../requests/cleanup/2026-11-26-claude/report.md) |
 | [#17739](https://github.com/cgeo/cgeo/issues/17739) | Unexpected result when sorting a search result | [waiting](../requests/cleanup/2026-11-26/report-2.md) | [waiting](../requests/cleanup/2026-11-26-claude/report.md) |
 
-## Reports (43)
+## Reports (44)
 
 | Report | Provider | Checked | Fixed | Duplicates | Obsolete | Waiting | Can probably be closed |
 |---|---|---|---|---|---|---|---|
+| [2026-11-28-claude](../requests/cleanup/2026-11-28-claude/report.md) | claude | 28 | 0 | 0 | 0 | 0 | – |
 | [2026-11-28 (2)](../requests/cleanup/2026-11-28/report-2.md) | copilot | 8 | 4 | 0 | 0 | 0 | [#18901](https://github.com/cgeo/cgeo/issues/18901) fixed, [#18229](https://github.com/cgeo/cgeo/issues/18229) fixed, [#18855](https://github.com/cgeo/cgeo/issues/18855) fixed, [#18895](https://github.com/cgeo/cgeo/issues/18895) fixed |
 | [2026-11-28](../requests/cleanup/2026-11-28/report.md) | copilot | 20 | 1 | 0 | 0 | 0 | [#17030](https://github.com/cgeo/cgeo/issues/17030) fixed |
 | [2026-11-27-claude](../requests/cleanup/2026-11-27-claude/report.md) | claude | 30 | 2 | 0 | 0 | 0 | [#16751](https://github.com/cgeo/cgeo/issues/16751) fixed, [#17738](https://github.com/cgeo/cgeo/issues/17738) fixed |
