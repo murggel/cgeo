@@ -1,0 +1,2 @@
+# Renew the issue snapshot after the latest release.
+task: refresh-issues
