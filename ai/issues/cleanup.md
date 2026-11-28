@@ -8,8 +8,8 @@ before closing it.
 ## Contents
 
 - [Issues that can probably be closed](#issues-that-can-probably-be-closed)
-  - [Probably fixed (51)](#probably-fixed-51)
-  - [Duplicates (20)](#duplicates-20)
+  - [Probably fixed (43)](#probably-fixed-43)
+  - [Duplicates (19)](#duplicates-19)
   - [No longer applicable (11)](#no-longer-applicable-11)
   - [Waiting for information (10)](#waiting-for-information-10)
 - [Reports (44)](#reports-44)
@@ -20,7 +20,9 @@ Issues whose latest result of at least one provider says they can be closed, by 
 a later run of the same provider that keeps an issue open removes it here. The columns show
 the latest result of each provider with a link to its report.
 
-### Probably fixed (51)
+Left out: 9 issues that are no longer open in the issue snapshot of 2026-11-28.
+
+### Probably fixed (43)
 
 | Issue | Title | Copilot | Claude |
 |---|---|---|---|
@@ -54,14 +56,10 @@ the latest result of each provider with a link to its report.
 | [#13640](https://github.com/cgeo/cgeo/issues/13640) | Lint: CustomSplashScreen | [fixed](../requests/cleanup/2026-11-23/report-2.md) | – |
 | [#13781](https://github.com/cgeo/cgeo/issues/13781) | Failure to show error toast | [fixed](../requests/cleanup/2026-11-23/report-3.md) | – |
 | [#13797](https://github.com/cgeo/cgeo/issues/13797) | ALC change of linear/random mode not detected | [fixed](../requests/cleanup/2026-11-23/report.md) | – |
-| [#14189](https://github.com/cgeo/cgeo/issues/14189) | NullPointerException on long tap on geocache waypoint | [fixed](../requests/cleanup/2026-11-23/report-2.md) | – |
 | [#14579](https://github.com/cgeo/cgeo/issues/14579) | Filter for missing T/D in 81er Matrix | [fixed](../requests/cleanup/2026-11-23/report-4.md) | – |
 | [#14983](https://github.com/cgeo/cgeo/issues/14983) | Move batch uploading notes/coords to background with proper notification | [fixed](../requests/cleanup/2026-11-23/report-5.md) | – |
 | [#14989](https://github.com/cgeo/cgeo/issues/14989) | No notification dot shown when directly launching into map | [fixed](../requests/cleanup/2026-11-23/report-5.md) | – |
-| [#15071](https://github.com/cgeo/cgeo/issues/15071) | Hyperlink in personal note is not parsed correctly | [fixed](../requests/cleanup/2026-11-23/report-5.md) | – |
-| [#16731](https://github.com/cgeo/cgeo/issues/16731) | OOM in detecting file type | [fixed](../requests/cleanup/2026-11-24/report-5.md) | – |
 | [#16751](https://github.com/cgeo/cgeo/issues/16751) | Android 16 / targetSDK 36 | [keep-open](../requests/cleanup/2026-11-27/report.md) | [fixed](../requests/cleanup/2026-11-27-claude/report.md) |
-| [#17030](https://github.com/cgeo/cgeo/issues/17030) | Caches shown without log date/time in history list | [fixed](../requests/cleanup/2026-11-28/report.md) | [keep-open](../requests/cleanup/2026-11-28-claude/report.md) |
 | [#17041](https://github.com/cgeo/cgeo/issues/17041) | Beta version: IllegalStateException / missing context in DescriptionViewCreator | [fixed](../requests/cleanup/2026-11-25/report-3.md) | – |
 | [#17093](https://github.com/cgeo/cgeo/issues/17093) | RuntimeException in WherigoGameService.onCreate | [fixed](../requests/cleanup/2026-11-25/report-2.md) | – |
 | [#17105](https://github.com/cgeo/cgeo/issues/17105) | Ordered HTML list not displayed as such | [fixed](../requests/cleanup/2026-11-27/report.md) | [keep-open](../requests/cleanup/2026-11-27-claude/report.md) |
@@ -71,12 +69,8 @@ the latest result of each provider with a link to its report.
 | [#17738](https://github.com/cgeo/cgeo/issues/17738) | Add "New in version" (What's New) info to F-Droid releases | [keep-open](../requests/cleanup/2026-11-27/report-2.md) | [fixed](../requests/cleanup/2026-11-27-claude/report.md) |
 | [#17995](https://github.com/cgeo/cgeo/issues/17995) | \[Wherigo / SAF\] Downloading cartridge creates duplicate "wherigo (n)" folders instead of using exis… | [fixed](../requests/cleanup/2026-11-27/report-2.md) | – |
 | [#18058](https://github.com/cgeo/cgeo/issues/18058) | Add a "cache placement" view to the map | [fixed](../requests/cleanup/2026-11-27/report.md) | [keep-open](../requests/cleanup/2026-11-27-claude/report.md) |
-| [#18229](https://github.com/cgeo/cgeo/issues/18229) | LOC file import hangs silently | [fixed](../requests/cleanup/2026-11-28/report-2.md) | [keep-open](../requests/cleanup/2026-11-28-claude/report.md) |
-| [#18855](https://github.com/cgeo/cgeo/issues/18855) | Wherigo text input problem | [fixed](../requests/cleanup/2026-11-28/report-2.md) | [keep-open](../requests/cleanup/2026-11-28-claude/report.md) |
-| [#18895](https://github.com/cgeo/cgeo/issues/18895) | Option: monospace font for notes | [fixed](../requests/cleanup/2026-11-28/report-2.md) | [keep-open](../requests/cleanup/2026-11-28-claude/report.md) |
-| [#18901](https://github.com/cgeo/cgeo/issues/18901) | Activity for geochecker.com not found (2026.10.08) | [fixed](../requests/cleanup/2026-11-28/report-2.md) | [keep-open](../requests/cleanup/2026-11-28-claude/report.md) |
 
-### Duplicates (20)
+### Duplicates (19)
 
 | Issue | Title | Copilot | Claude |
 |---|---|---|---|
@@ -94,7 +88,6 @@ the latest result of each provider with a link to its report.
 | [#15924](https://github.com/cgeo/cgeo/issues/15924) | possibility to add waypoint for projection/offset | [duplicate](../requests/cleanup/2026-11-24/report-3.md) | – |
 | [#16187](https://github.com/cgeo/cgeo/issues/16187) | Share Intent Receiver: track.gpx | [duplicate](../requests/cleanup/2026-11-24/report-4.md) | – |
 | [#16516](https://github.com/cgeo/cgeo/issues/16516) | GC.com: load images from "Image Gallery" | [duplicate](../requests/cleanup/2026-11-24/report-5.md) | – |
-| [#17215](https://github.com/cgeo/cgeo/issues/17215) | IllegalArgumentException and OutOfMemoryError in AbstractActivity.onStart | [duplicate](../requests/cleanup/2026-11-26/report-3.md) | – |
 | [#17242](https://github.com/cgeo/cgeo/issues/17242) | Support \[NAME\] and other placeholders in default image caption setting | [duplicate](../requests/cleanup/2026-11-26/report-2.md) | – |
 | [#17423](https://github.com/cgeo/cgeo/issues/17423) | Improve UI for loading tracks versus routes | [duplicate](../requests/cleanup/2026-11-25/report-5.md) | – |
 | [#17541](https://github.com/cgeo/cgeo/issues/17541) | Audio and video calls using \`c:geo\` or \`c:geo GPX import\` apps | [duplicate](../requests/cleanup/2026-11-26/report.md) | [keep-open](../requests/cleanup/2026-11-26-claude/report.md) |

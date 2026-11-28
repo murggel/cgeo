@@ -28,7 +28,7 @@ Number of issues per pair of results (rows: Copilot, columns: Claude):
 | Issue | Title | Copilot | Claude |
 |---|---|---|---|
 | [#16751](https://github.com/cgeo/cgeo/issues/16751) | Android 16 / targetSDK 36 | [keep-open](../requests/cleanup/2026-11-27/report.md) | [fixed](../requests/cleanup/2026-11-27-claude/report.md) |
-| [#17030](https://github.com/cgeo/cgeo/issues/17030) | Caches shown without log date/time in history list | [fixed](../requests/cleanup/2026-11-28/report.md) | [keep-open](../requests/cleanup/2026-11-28-claude/report.md) |
+| [#17030](https://github.com/cgeo/cgeo/issues/17030) | – | [fixed](../requests/cleanup/2026-11-28/report.md) | [keep-open](../requests/cleanup/2026-11-28-claude/report.md) |
 | [#17105](https://github.com/cgeo/cgeo/issues/17105) | Ordered HTML list not displayed as such | [fixed](../requests/cleanup/2026-11-27/report.md) | [keep-open](../requests/cleanup/2026-11-27-claude/report.md) |
 | [#17488](https://github.com/cgeo/cgeo/issues/17488) | Many ANR happening on c:geo startup | [keep-open](../requests/cleanup/2026-11-26/report.md) | [fixed](../requests/cleanup/2026-11-26-claude/report.md) |
 | [#17541](https://github.com/cgeo/cgeo/issues/17541) | Audio and video calls using \`c:geo\` or \`c:geo GPX import\` apps | [duplicate](../requests/cleanup/2026-11-26/report.md) | [keep-open](../requests/cleanup/2026-11-26-claude/report.md) |
@@ -36,10 +36,10 @@ Number of issues per pair of results (rows: Copilot, columns: Claude):
 | [#17738](https://github.com/cgeo/cgeo/issues/17738) | Add "New in version" (What's New) info to F-Droid releases | [keep-open](../requests/cleanup/2026-11-27/report-2.md) | [fixed](../requests/cleanup/2026-11-27-claude/report.md) |
 | [#17747](https://github.com/cgeo/cgeo/issues/17747) | Feature Request: Improve “Special” Cache Types in Filters | [duplicate](../requests/cleanup/2026-11-26/report.md) | [keep-open](../requests/cleanup/2026-11-26-claude/report.md) |
 | [#18058](https://github.com/cgeo/cgeo/issues/18058) | Add a "cache placement" view to the map | [fixed](../requests/cleanup/2026-11-27/report.md) | [keep-open](../requests/cleanup/2026-11-27-claude/report.md) |
-| [#18229](https://github.com/cgeo/cgeo/issues/18229) | LOC file import hangs silently | [fixed](../requests/cleanup/2026-11-28/report-2.md) | [keep-open](../requests/cleanup/2026-11-28-claude/report.md) |
-| [#18855](https://github.com/cgeo/cgeo/issues/18855) | Wherigo text input problem | [fixed](../requests/cleanup/2026-11-28/report-2.md) | [keep-open](../requests/cleanup/2026-11-28-claude/report.md) |
-| [#18895](https://github.com/cgeo/cgeo/issues/18895) | Option: monospace font for notes | [fixed](../requests/cleanup/2026-11-28/report-2.md) | [keep-open](../requests/cleanup/2026-11-28-claude/report.md) |
-| [#18901](https://github.com/cgeo/cgeo/issues/18901) | Activity for geochecker.com not found (2026.10.08) | [fixed](../requests/cleanup/2026-11-28/report-2.md) | [keep-open](../requests/cleanup/2026-11-28-claude/report.md) |
+| [#18229](https://github.com/cgeo/cgeo/issues/18229) | – | [fixed](../requests/cleanup/2026-11-28/report-2.md) | [keep-open](../requests/cleanup/2026-11-28-claude/report.md) |
+| [#18855](https://github.com/cgeo/cgeo/issues/18855) | – | [fixed](../requests/cleanup/2026-11-28/report-2.md) | [keep-open](../requests/cleanup/2026-11-28-claude/report.md) |
+| [#18895](https://github.com/cgeo/cgeo/issues/18895) | – | [fixed](../requests/cleanup/2026-11-28/report-2.md) | [keep-open](../requests/cleanup/2026-11-28-claude/report.md) |
+| [#18901](https://github.com/cgeo/cgeo/issues/18901) | – | [fixed](../requests/cleanup/2026-11-28/report-2.md) | [keep-open](../requests/cleanup/2026-11-28-claude/report.md) |
 
 ## Same result (75)
 
@@ -50,14 +50,14 @@ Number of issues per pair of results (rows: Copilot, columns: Claude):
 | [#4875](https://github.com/cgeo/cgeo/issues/4875) | Map for trackables | [keep-open](../requests/cleanup/2026-11-26/report.md) | [keep-open](../requests/cleanup/2026-11-26-claude/report.md) |
 | [#6153](https://github.com/cgeo/cgeo/issues/6153) | Opencache.uk authentication issue | [keep-open](../requests/cleanup/2026-11-27/report-2.md) | [keep-open](../requests/cleanup/2026-11-27-claude/report.md) |
 | [#6575](https://github.com/cgeo/cgeo/issues/6575) | Do not abort GPX import if importing of one contained cache fails | [keep-open](../requests/cleanup/2026-11-26/report.md) | [keep-open](../requests/cleanup/2026-11-26-claude/report.md) |
-| [#7919](https://github.com/cgeo/cgeo/issues/7919) | Filling "visiteddate" for Cache from Connectors vs Offline Logs is inconsistend -\> leads to e.g. So… | [keep-open](../requests/cleanup/2026-11-28/report.md) | [keep-open](../requests/cleanup/2026-11-28-claude/report.md) |
+| [#7919](https://github.com/cgeo/cgeo/issues/7919) | – | [keep-open](../requests/cleanup/2026-11-28/report.md) | [keep-open](../requests/cleanup/2026-11-28-claude/report.md) |
 | [#9595](https://github.com/cgeo/cgeo/issues/9595) | Quick Update for offline stored caches | [keep-open](../requests/cleanup/2026-11-26/report.md) | [keep-open](../requests/cleanup/2026-11-26-claude/report.md) |
 | [#12339](https://github.com/cgeo/cgeo/issues/12339) | Premium-only draft logs not shown in History list for basic members, even though they are stored an… | [keep-open](../requests/cleanup/2026-11-28/report.md) | [keep-open](../requests/cleanup/2026-11-28-claude/report.md) |
 | [#14038](https://github.com/cgeo/cgeo/issues/14038) | image upload should support more formats | [keep-open](../requests/cleanup/2026-11-26/report-2.md) | [keep-open](../requests/cleanup/2026-11-26-claude/report.md) |
 | [#14302](https://github.com/cgeo/cgeo/issues/14302) | Easy creation of calculated waypoints from their text | [keep-open](../requests/cleanup/2026-11-26/report-2.md) | [keep-open](../requests/cleanup/2026-11-26-claude/report.md) |
 | [#14360](https://github.com/cgeo/cgeo/issues/14360) | Wrong link behind listing image | [keep-open](../requests/cleanup/2026-11-27/report.md) | [keep-open](../requests/cleanup/2026-11-27-claude/report.md) |
 | [#15193](https://github.com/cgeo/cgeo/issues/15193) | Keep proximity notifications running when screen switches off | [keep-open](../requests/cleanup/2026-11-26/report.md) | [keep-open](../requests/cleanup/2026-11-26-claude/report.md) |
-| [#15398](https://github.com/cgeo/cgeo/issues/15398) | Offline log marker not updated correctly | [keep-open](../requests/cleanup/2026-11-28/report.md) | [keep-open](../requests/cleanup/2026-11-28-claude/report.md) |
+| [#15398](https://github.com/cgeo/cgeo/issues/15398) | – | [keep-open](../requests/cleanup/2026-11-28/report.md) | [keep-open](../requests/cleanup/2026-11-28-claude/report.md) |
 | [#16265](https://github.com/cgeo/cgeo/issues/16265) | NPE in GCParser | [keep-open](../requests/cleanup/2026-11-27/report.md) | [keep-open](../requests/cleanup/2026-11-27-claude/report.md) |
 | [#16744](https://github.com/cgeo/cgeo/issues/16744) | No proximity alert for Final? | [waiting](../requests/cleanup/2026-11-26/report.md) | [waiting](../requests/cleanup/2026-11-26-claude/report.md) |
 | [#16797](https://github.com/cgeo/cgeo/issues/16797) | Allow "individual route" import when no individual route exists | [keep-open](../requests/cleanup/2026-11-26/report.md) | [keep-open](../requests/cleanup/2026-11-26-claude/report.md) |
@@ -79,7 +79,7 @@ Number of issues per pair of results (rows: Copilot, columns: Claude):
 | [#17744](https://github.com/cgeo/cgeo/issues/17744) | Map shows all caches when no cache types are selected in filters | [duplicate](../requests/cleanup/2026-11-26/report.md) | [duplicate](../requests/cleanup/2026-11-26-claude/report.md) |
 | [#17797](https://github.com/cgeo/cgeo/issues/17797) | Importing a route GPX is possible, but breaks caches already saved. | [keep-open](../requests/cleanup/2026-11-26/report.md) | [keep-open](../requests/cleanup/2026-11-26-claude/report.md) |
 | [#17809](https://github.com/cgeo/cgeo/issues/17809) | Geokrety movement give mystery cache positions | [keep-open](../requests/cleanup/2026-11-26/report-2.md) | [keep-open](../requests/cleanup/2026-11-26-claude/report.md) |
-| [#17819](https://github.com/cgeo/cgeo/issues/17819) | Caches logged offline from live map are not shown in history (only after c:geo restart) | [keep-open](../requests/cleanup/2026-11-28/report.md) | [keep-open](../requests/cleanup/2026-11-28-claude/report.md) |
+| [#17819](https://github.com/cgeo/cgeo/issues/17819) | – | [keep-open](../requests/cleanup/2026-11-28/report.md) | [keep-open](../requests/cleanup/2026-11-28-claude/report.md) |
 | [#17828](https://github.com/cgeo/cgeo/issues/17828) | Internal WIG Player: Dialogs not readable due to automatic button actions | [keep-open](../requests/cleanup/2026-11-26/report-2.md) | [keep-open](../requests/cleanup/2026-11-26-claude/report.md) |
 | [#17837](https://github.com/cgeo/cgeo/issues/17837) | Feature request : Swipe left to remove caches from a list | [keep-open](../requests/cleanup/2026-11-27/report.md) | [keep-open](../requests/cleanup/2026-11-27-claude/report.md) |
 | [#17853](https://github.com/cgeo/cgeo/issues/17853) | Show offline log type counts (Found, DNF, Notes) on home screen | [keep-open](../requests/cleanup/2026-11-26/report-2.md) | [keep-open](../requests/cleanup/2026-11-26-claude/report.md) |
@@ -104,7 +104,7 @@ Number of issues per pair of results (rows: Copilot, columns: Claude):
 | [#18469](https://github.com/cgeo/cgeo/issues/18469) | Parsing Formular from Notes failed for empty variables | [keep-open](../requests/cleanup/2026-11-27/report-2.md) | [keep-open](../requests/cleanup/2026-11-27-claude/report.md) |
 | [#18475](https://github.com/cgeo/cgeo/issues/18475) | Request for HiddenDate-Filter for "Birthday-Caches" | [keep-open](../requests/cleanup/2026-11-27/report-2.md) | [keep-open](../requests/cleanup/2026-11-27-claude/report.md) |
 | [#18508](https://github.com/cgeo/cgeo/issues/18508) | Error in notifications (new?) | [keep-open](../requests/cleanup/2026-11-27/report-2.md) | [keep-open](../requests/cleanup/2026-11-27-claude/report.md) |
-| [#18853](https://github.com/cgeo/cgeo/issues/18853) | Order List by Custom Found Log is sorted strangely | [keep-open](../requests/cleanup/2026-11-28/report.md) | [keep-open](../requests/cleanup/2026-11-28-claude/report.md) |
+| [#18853](https://github.com/cgeo/cgeo/issues/18853) | – | [keep-open](../requests/cleanup/2026-11-28/report.md) | [keep-open](../requests/cleanup/2026-11-28-claude/report.md) |
 | [#18863](https://github.com/cgeo/cgeo/issues/18863) | NetworkOnMainThreadException - c:geo problem report (2026.10.18) | [keep-open](../requests/cleanup/2026-11-28/report.md) | [keep-open](../requests/cleanup/2026-11-28-claude/report.md) |
 | [#18864](https://github.com/cgeo/cgeo/issues/18864) | Play Store: Using too much memory for bitmpas | [keep-open](../requests/cleanup/2026-11-28/report.md) | [keep-open](../requests/cleanup/2026-11-28-claude/report.md) |
 | [#18865](https://github.com/cgeo/cgeo/issues/18865) | Play Store: Missing code obfuscation | [keep-open](../requests/cleanup/2026-11-28/report.md) | [keep-open](../requests/cleanup/2026-11-28-claude/report.md) |
